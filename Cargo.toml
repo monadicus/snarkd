@@ -1,0 +1,7 @@
+[workspace]
+resolver = "2"
+members = [
+    "snarkd_common",
+    "snarkd_node",
+    "snarkd_storage",
+]
