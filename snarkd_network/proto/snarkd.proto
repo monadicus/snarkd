@@ -1,0 +1,88 @@
+syntax = "proto3";
+
+package snarkd;
+
+enum CommandId {
+    BLOCK_TRANSMISSION = 0;
+    TRANSACTION_TRANSMISSION = 1;
+    GET_BLOCKS = 2;
+    SYNC_MEMORY_POOL = 3;
+    SYNC_PEERS = 4;
+    SYNC_BLOCKS = 5;
+    PING = 6;
+}
+
+enum ResponseCode {
+    // set for requests
+    NOT_A_RESPONSE = 0;
+    // error message in packet_body
+    ERROR = 1;
+}
+
+message BlockHeader {
+    uint32 canon_height = 1;
+    bytes canon_ledger_digest = 2;
+    bytes hash = 3;
+    bytes previous_block_hash = 4;
+    bytes merkle_root_hash = 5;
+    bytes pedersen_merkle_root_hash = 6;
+    bytes proof = 7;
+    uint32 time = 8;
+    uint32 difficulty_target = 9;
+    uint32 nonce = 10;
+}
+
+message Block {
+    BlockHeader header = 1;
+    repeated Transaction transactions = 2;
+}
+
+message Transaction {
+    bytes transaction_id = 1;
+    bytes ledger_digest = 2;
+    bytes old_serial_number1 = 3;
+    bytes old_serial_number2 = 4;
+    bytes new_commitment1 = 5;
+    bytes new_commitment2 = 6;
+    bytes program_commitment = 7;
+    bytes local_data_root = 8;
+    int64 value_balance = 9;
+    bytes signature1 = 10;
+    bytes signature2 = 11;
+    bytes new_record1 = 12;
+    bytes new_record2 = 13;
+    bytes proof = 14;
+    bytes memo = 15;
+    bytes inner_circuit_id = 16;
+}
+
+message BlockHashes {
+    repeated bytes hashes = 1;
+}
+
+message PeerList {
+    repeated string peers = 1;
+}
+
+message Blocks {
+    repeated Block blocks = 1;
+}
+
+message Transactions {
+    repeated Transaction transactions = 1;
+}
+
+message Packet {
+    CommandId command = 1;
+    uint64 id = 2;
+    ResponseCode response = 3;
+    bool expecting_response = 4;
+    oneof packet_body {
+        Blocks blocks = 5;
+        Transactions transactions = 6;
+        BlockHashes block_hashes = 7;
+        uint64 ping_pong = 8;
+        PeerList peers = 9;
+    }
+}
+

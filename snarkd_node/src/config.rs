@@ -33,7 +33,7 @@ const FULL_CONFIG_PATH: &str = "/etc/snarkd.yaml";
 
 lazy_static::lazy_static! {
     static ref CONFIG_PATH: PathBuf = {
-        let env_value = std::env::var("CONFIG_ENV_VAR").unwrap_or_default();
+        let env_value = std::env::var(CONFIG_ENV_VAR).unwrap_or_default();
         if !env_value.trim().is_empty() {
             return Path::new(&*env_value).to_path_buf();
         }

@@ -19,7 +19,6 @@ CREATE INDEX canon_height_lookup ON blocks(canon_height);
 CREATE TABLE IF NOT EXISTS transactions(
     id INTEGER PRIMARY KEY,
     transaction_id BLOB UNIQUE NOT NULL,
-    network INTEGER NOT NULL,
     ledger_digest BLOB NOT NULL,
     old_serial_number1 BLOB NOT NULL,
     old_serial_number2 BLOB NOT NULL,
