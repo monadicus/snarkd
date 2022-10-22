@@ -166,11 +166,20 @@ pub enum RequestError {
 impl Connection {
     pub async fn connect<A: ToSocketAddrs>(
         target: A,
-        mut handler: impl RequestHandler + Send + Sync + 'static,
+        handler: impl RequestHandler + Send + Sync + 'static,
     ) -> Result<Self> {
         let stream = TcpStream::connect(target).await?;
         let remote = stream.peer_addr()?;
-        let (mut reader, mut writer) = stream.into_split();
+        let (reader, writer) = stream.into_split();
+        Self::accept(reader, writer, remote, handler).await
+    }
+
+    pub async fn accept(
+        mut reader: impl AsyncRead + Unpin + Send + Sync + 'static,
+        mut writer: impl AsyncWrite + Unpin + Send + Sync + 'static,
+        remote: SocketAddr,
+        mut handler: impl RequestHandler + Send + Sync + 'static,
+    ) -> Result<Self> {
         let (inbound_sender, mut inbound_receiver) = mpsc::channel::<Packet>(CHANNEL_DEPTH);
         let (outbound_sender, mut outbound_receiver) = mpsc::channel::<Packet>(CHANNEL_DEPTH);
 
