@@ -1,3 +1,5 @@
+use super::{Field, Scalar};
+
 pub struct PrivateKey {
     pub seed: Field,
     pub sk_sig: Scalar,
