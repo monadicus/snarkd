@@ -2,30 +2,37 @@ syntax = "proto3";
 
 package snarkd;
 
+import "snarkd_common.proto";
+
 enum CommandId {
-    BLOCK_TRANSMISSION = 0;
-    TRANSACTION_TRANSMISSION = 1;
-    GET_BLOCKS = 2;
-    SYNC_MEMORY_POOL = 3;
-    SYNC_PEERS = 4;
-    SYNC_BLOCKS = 5;
-    PING = 6;
+    INTRODUCTION = 0;
+    BLOCK_TRANSMISSION = 1;
+    TRANSACTION_TRANSMISSION = 2;
+    GET_BLOCKS = 3;
+    SYNC_MEMORY_POOL = 4;
+    SYNC_PEERS = 5;
+    SYNC_BLOCKS = 6;
+    PING = 7;
 }
 
 enum ResponseCode {
     // set for requests
     NOT_A_RESPONSE = 0;
+    // success
+    OK = 1;
     // error message in packet_body
-    ERROR = 1;
+    PROTOCOL_ERROR = 3;
+    // error message in packet_body
+    INTERNAL_ERROR = 4;
 }
 
 message BlockHeader {
     uint32 canon_height = 1;
-    bytes canon_ledger_digest = 2;
-    bytes hash = 3;
-    bytes previous_block_hash = 4;
-    bytes merkle_root_hash = 5;
-    bytes pedersen_merkle_root_hash = 6;
+    snarkd_common.Digest canon_ledger_digest = 2;
+    snarkd_common.Digest hash = 3;
+    snarkd_common.Digest previous_block_hash = 4;
+    snarkd_common.Digest merkle_root_hash = 5;
+    snarkd_common.Digest pedersen_merkle_root_hash = 6;
     bytes proof = 7;
     uint32 time = 8;
     uint32 difficulty_target = 9;
@@ -38,26 +45,26 @@ message Block {
 }
 
 message Transaction {
-    bytes transaction_id = 1;
-    bytes ledger_digest = 2;
-    bytes old_serial_number1 = 3;
-    bytes old_serial_number2 = 4;
-    bytes new_commitment1 = 5;
-    bytes new_commitment2 = 6;
-    bytes program_commitment = 7;
-    bytes local_data_root = 8;
+    snarkd_common.Digest transaction_id = 1;
+    snarkd_common.Digest ledger_digest = 2;
+    snarkd_common.Digest old_serial_number1 = 3;
+    snarkd_common.Digest old_serial_number2 = 4;
+    snarkd_common.Digest new_commitment1 = 5;
+    snarkd_common.Digest new_commitment2 = 6;
+    snarkd_common.Digest program_commitment = 7;
+    snarkd_common.Digest local_data_root = 8;
     int64 value_balance = 9;
-    bytes signature1 = 10;
-    bytes signature2 = 11;
+    snarkd_common.Digest signature1 = 10;
+    snarkd_common.Digest signature2 = 11;
     bytes new_record1 = 12;
     bytes new_record2 = 13;
     bytes proof = 14;
-    bytes memo = 15;
-    bytes inner_circuit_id = 16;
+    snarkd_common.Digest memo = 15;
+    snarkd_common.Digest inner_circuit_id = 16;
 }
 
-message BlockHashes {
-    repeated bytes hashes = 1;
+message DigestList {
+    repeated snarkd_common.Digest hashes = 1;
 }
 
 message PeerList {
@@ -72,6 +79,12 @@ message Transactions {
     repeated Transaction transactions = 1;
 }
 
+message Introduction {
+    string target_address = 1;
+    string version = 2;
+    string instance_id = 3;
+}
+
 message Packet {
     CommandId command = 1;
     uint64 id = 2;
@@ -80,9 +93,11 @@ message Packet {
     oneof packet_body {
         Blocks blocks = 5;
         Transactions transactions = 6;
-        BlockHashes block_hashes = 7;
+        DigestList digests = 7;
         uint64 ping_pong = 8;
         PeerList peers = 9;
+        Introduction introduction = 10;
+        string error_message = 11;
     }
 }
 

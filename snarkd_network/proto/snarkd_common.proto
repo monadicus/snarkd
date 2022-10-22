@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package snarkd_common;
+
+message Digest {
+    bytes inner = 1;
+}

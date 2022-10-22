@@ -1,5 +1,13 @@
-use std::{fmt, ops::Deref};
+use std::{
+    fmt,
+    ops::{Deref, DerefMut},
+};
 
+use prost::{
+    bytes::{Buf, BufMut},
+    encoding::{skip_field, DecodeContext, WireType},
+    DecodeError, Message,
+};
 use serde::{Deserialize, Serialize};
 use smallvec::SmallVec;
 
@@ -46,6 +54,12 @@ impl Deref for Digest {
     }
 }
 
+impl DerefMut for Digest {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
 #[allow(clippy::from_over_into)]
 impl Into<InnerType> for Digest {
     fn into(self) -> InnerType {
@@ -86,5 +100,55 @@ impl Digest {
         } else {
             None
         }
+    }
+}
+
+impl Message for Digest {
+    fn encode_raw<B>(&self, buf: &mut B)
+    where
+        B: BufMut,
+    {
+        if !self.is_empty() {
+            prost::encoding::encode_key(1, WireType::LengthDelimited, buf);
+            prost::encoding::encode_varint(self.len() as u64, buf);
+            buf.put(self.as_slice());
+        }
+    }
+    fn merge_field<B>(
+        &mut self,
+        tag: u32,
+        wire_type: WireType,
+        buf: &mut B,
+        ctx: DecodeContext,
+    ) -> Result<(), DecodeError>
+    where
+        B: Buf,
+    {
+        if tag == 1 {
+            prost::encoding::check_wire_type(WireType::LengthDelimited, wire_type)?;
+            let len = prost::encoding::decode_varint(buf)?;
+            if len > buf.remaining() as u64 {
+                return Err(DecodeError::new("buffer underflow"));
+            }
+            let len = len as usize;
+
+            self.truncate(0);
+            self.reserve_exact(len);
+            buf.copy_to_slice(unsafe { std::slice::from_raw_parts_mut(self.as_mut_ptr(), len) });
+
+            Ok(())
+        } else {
+            skip_field(wire_type, tag, buf, ctx)
+        }
+    }
+
+    fn encoded_len(&self) -> usize {
+        prost::encoding::key_len(1)
+            + prost::encoding::encoded_len_varint(self.len() as u64)
+            + self.len()
+    }
+
+    fn clear(&mut self) {
+        self.truncate(0);
     }
 }
