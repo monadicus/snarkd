@@ -4,3 +4,16 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+tokio = { version = "1.0", features = ["full"] }
+anyhow = "1.0"
+lazy_static = "1.4"
+serde = { version = "1.0", features = ["derive"] }
+chrono = { version = "0.4", features = ["serde"] }
+arc-swap = "1.0"
+serde_yaml = "0.8"
+log = "0.4"
+env_logger = "0.9"
+clap = { version = "4.0", features = ["derive"] }
+
+snarkd_common = { path = "../snarkd_common" }
+snarkd_storage = { path = "../snarkd_storage" }
