@@ -94,15 +94,10 @@ mod tests {
         BinaryData, Function, Header, Input, Instruction, Program, SnarkVMVersion, Type, Value,
     };
 
-    #[test]
-    fn serde_test() {
-        let input = Program {
+    fn example_program() -> Program {
+        Program {
             header: Header {
-                version: SnarkVMVersion {
-                    major: 0,
-                    minor: 0,
-                    patch: 0,
-                },
+                version: SnarkVMVersion::default(),
                 main_inputs: vec![Input {
                     variable: 0,
                     name: "a".into(),
@@ -142,12 +137,14 @@ mod tests {
                     values: vec![Value::Ref(0), Value::Ref(1)],
                 })],
             }],
-        };
+        }
+    }
 
+    #[test]
+    fn serde_test() {
+        let input = example_program();
         let bytes = input.serialize().unwrap();
-
         let output = Program::deserialize(&bytes).unwrap();
-
         assert_eq!(input, output);
     }
 }
