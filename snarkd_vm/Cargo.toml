@@ -4,9 +4,11 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+anyhow = { workspace = true }
 num_enum = { workspace = true }
 serde = { workspace = true }
 prost = { workspace = true }
+indexmap = { workspace = true }
 
 [build-dependencies]
 prost-build = { workspace = true }

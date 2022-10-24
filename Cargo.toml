@@ -30,3 +30,4 @@ smallvec = "1.10"
 tokio = { version = "1.0", features = ["full"] }
 # we need a new release for rusqlite 0.28 support
 tokio-rusqlite = "0.3.0"
+indexmap = "1.9.1"

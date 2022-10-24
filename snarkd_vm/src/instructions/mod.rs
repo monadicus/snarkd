@@ -1,11 +1,16 @@
-use serde::{Deserialize, Serialize};
+use anyhow::{anyhow, Result};
+use serde::Serialize;
 
+mod code;
 mod op;
-use op::InstructionOp;
 
 use std::fmt;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+mod query;
+use crate::ir;
+pub use query::*;
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub enum Instruction {
     Abs(BinaryData),
     AbsWrapped(BinaryData),
@@ -69,25 +74,25 @@ fn decode_control_u32(operand: ir::Operand) -> Result<u32> {
     }
 }
 
-fn decode_control_bool(operand: ir::Operand) -> Result<bool> {
-    match operand {
-        ir::Operand {
-            boolean: Some(bool),
-            ..
-        } => Ok(bool.boolean),
-        _ => Err(anyhow!("illegal value for control operand: {:?}", operand)),
-    }
-}
+// fn decode_control_bool(operand: ir::Operand) -> Result<bool> {
+//     match operand {
+//         ir::Operand {
+//             boolean: Some(bool),
+//             ..
+//         } => Ok(bool.boolean),
+//         _ => Err(anyhow!("illegal value for control operand: {:?}", operand)),
+//     }
+// }
 
-fn decode_control_string(operand: ir::Operand) -> Result<String> {
-    match operand {
-        ir::Operand {
-            string: Some(string),
-            ..
-        } => Ok(string.string),
-        _ => Err(anyhow!("illegal value for control operand: {:?}", operand)),
-    }
-}
+// fn decode_control_string(operand: ir::Operand) -> Result<String> {
+//     match operand {
+//         ir::Operand {
+//             string: Some(string),
+//             ..
+//         } => Ok(string.string),
+//         _ => Err(anyhow!("illegal value for control operand: {:?}", operand)),
+//     }
+// }
 
 impl fmt::Display for Instruction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
