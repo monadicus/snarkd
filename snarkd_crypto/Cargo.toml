@@ -9,4 +9,5 @@ indexmap = "1.9"
 num-bigint = "0.4"
 rand = "0.8"
 rand_xorshift = "0.3"
+ruint = "1.5"
 snarkd_common = { path = "../snarkd_common" }
