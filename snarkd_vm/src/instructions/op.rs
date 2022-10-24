@@ -1,6 +1,8 @@
+use std::fmt;
+
 use num_enum::TryFromPrimitive;
 
-#[derive(TryFromPrimitive, Debug, Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(TryFromPrimitive, Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]
 pub enum InstructionOp {
     Abs = 0,
@@ -56,6 +58,67 @@ pub enum InstructionOp {
     SubWrapped,
     Ternary,
     Xor,
+}
+
+impl InstructionOp {
+    pub const fn mnemonic(&self) -> &'static str {
+        use InstructionOp::*;
+        match self {
+            Abs => "abs",
+            AbsWrapped => "abs.w",
+            Add => "add",
+            AddWrapped => "add.w",
+            And => "and",
+            AssertEq => "assert.eq",
+            AssertNeq => "assert.neq",
+            CommitBHP256 => "commit.bhp256",
+            CommitBHP512 => "commit.bhp512",
+            CommitBHP768 => "commit.bhp768",
+            CommitBHP1024 => "commit.bhp1024",
+            CommitPED64 => "commit.ped64",
+            CommitPED128 => "commit.ped128",
+            Div => "div",
+            DivWrapped => "div.wrapped",
+            Double => "double",
+            Gt => "gt",
+            Gte => "gte",
+            HashBHP256 => "hash.bhp256",
+            HashBHP512 => "hash.bhp512",
+            HashBHP768 => "hash.bhp768",
+            HashBHP1024 => "hash.bhp1024",
+            HashPED64 => "hash.ped64",
+            HashPED128 => "hash.ped128",
+            HashPSD2 => "hash.psd2",
+            HashPSD4 => "hash.psd4",
+            HashPSD8 => "hash.psd8",
+            Inv => "inv",
+            IsEq => "is.eq",
+            Lt => "lt",
+            Lte => "lte",
+            Mod => "mod",
+            Mul => "mul",
+            MulWrapped => "mul.w",
+            Nand => "nand",
+            Neg => "neg",
+            Nor => "nor",
+            Not => "not",
+            Or => "or",
+            Pow => "pow",
+            PowWrapped => "pow.w",
+            Rem => "rem",
+            RemWrapped => "rem.w",
+            Shl => "shl",
+            ShlWrapped => "shl.w",
+            Shr => "shr",
+            ShrWrapped => "shr.w",
+            Sqrt => "sqrt",
+            Square => "square",
+            Sub => "sub",
+            SubWrapped => "sub.w",
+            Ternary => "ternary",
+            Xor => "xor",
+        }
+    }
 }
 
 impl fmt::Display for InstructionOp {
