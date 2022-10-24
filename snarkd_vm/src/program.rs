@@ -87,3 +87,67 @@ impl fmt::Display for Program {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        BinaryData, Function, Header, Input, Instruction, Program, SnarkVMVersion, Type, Value,
+    };
+
+    #[test]
+    fn serde_test() {
+        let input = Program {
+            header: Header {
+                version: SnarkVMVersion {
+                    major: 0,
+                    minor: 0,
+                    patch: 0,
+                },
+                main_inputs: vec![Input {
+                    variable: 0,
+                    name: "a".into(),
+                    type_: Type::U8,
+                }],
+                constant_inputs: vec![Input {
+                    variable: 1,
+                    name: "b".into(),
+                    type_: Type::U8,
+                }],
+                register_inputs: vec![Input {
+                    variable: 2,
+                    name: "c".into(),
+                    type_: Type::U8,
+                }],
+                public_states: vec![Input {
+                    variable: 3,
+                    name: "d".into(),
+                    type_: Type::U8,
+                }],
+                private_record_states: vec![Input {
+                    variable: 4,
+                    name: "e".into(),
+                    type_: Type::U8,
+                }],
+                private_leaf_states: vec![Input {
+                    variable: 5,
+                    name: "f".into(),
+                    type_: Type::U8,
+                }],
+                inline_limit: 1,
+            },
+            functions: vec![Function {
+                argument_start_variable: 0,
+                instructions: vec![Instruction::Add(BinaryData {
+                    destination: 2,
+                    values: vec![Value::Ref(0), Value::Ref(1)],
+                })],
+            }],
+        };
+
+        let bytes = input.serialize().unwrap();
+
+        let output = Program::deserialize(&bytes).unwrap();
+
+        assert_eq!(input, output);
+    }
+}
