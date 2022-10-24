@@ -4,13 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-tokio-rusqlite = "0.3.0"
-rusqlite = { version = "0.28", features = ["bundled"] }
-tokio = { version = "1.0", features = ["full"] }
+tokio-rusqlite = { workspace = true }
+rusqlite = { workspace = true }
+tokio = { workspace = true }
 # we need a new release for rusqlite 0.28 support
-refinery = { version = "0.8.6", features = ["rusqlite-bundled"], git = "https://github.com/rust-db/refinery.git" }
-anyhow = "1.0"
-serde = { version = "1.0", features = ["derive"] }
-chrono = { version = "0.4", features = ["serde"] }
-
+refinery = { workspace = true }
+anyhow = { workspace = true }
+serde = { workspace = true }
+chrono = { workspace = true }
 snarkd_common = { path = "../snarkd_common" }

@@ -1,0 +1,65 @@
+use num_enum::TryFromPrimitive;
+
+#[derive(TryFromPrimitive, Debug, Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(u32)]
+pub enum InstructionOp {
+    Abs = 0,
+    AbsWrapped,
+    Add,
+    AddWrapped,
+    And,
+    AssertEq,
+    AssertNeq,
+    CommitBHP256,
+    CommitBHP512,
+    CommitBHP768,
+    CommitBHP1024,
+    CommitPED64,
+    CommitPED128,
+    Div,
+    DivWrapped,
+    Double,
+    Gt,
+    Gte,
+    HashBHP256,
+    HashBHP512,
+    HashBHP768,
+    HashBHP1024,
+    HashPED64,
+    HashPED128,
+    HashPSD2,
+    HashPSD4,
+    HashPSD8,
+    Inv,
+    IsEq,
+    Lt,
+    Lte,
+    Mod,
+    Mul,
+    MulWrapped,
+    Nand,
+    Neg,
+    Nor,
+    Not,
+    Or,
+    Pow,
+    PowWrapped,
+    Rem,
+    RemWrapped,
+    Shl,
+    ShlWrapped,
+    Shr,
+    ShrWrapped,
+    Sqrt,
+    Square,
+    Sub,
+    SubWrapped,
+    Ternary,
+    Xor,
+}
+
+impl fmt::Display for InstructionOp {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.mnemonic())
+    }
+}
