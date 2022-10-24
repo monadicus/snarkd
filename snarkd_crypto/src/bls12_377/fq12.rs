@@ -1,9 +1,10 @@
-use snarkvm_fields::{field, Fp12, Fp12Parameters};
-use snarkvm_utilities::biginteger::BigInteger384 as BigInteger;
-
 use crate::bls12_377::{Fq, Fq2, Fq6Parameters};
+use snarkvm_fields::{field, Fp12, Fp12Parameters};
 
-pub type Fq12 = Fp12<Fq12Parameters>;
+pub struct Fq12 {
+    pub c0: Fq6,
+    pub c1: Fq6,
+}
 
 const FROBENIUS_COEFF_FP12_C1: [Fq2; 12] = [
     // Fp2::NONRESIDUE^(((q^0) - 1) / 6)

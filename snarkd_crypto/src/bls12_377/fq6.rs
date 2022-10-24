@@ -4,7 +4,6 @@ use snarkvm_fields::{
     fp6_3over2::{Fp6, Fp6Parameters},
     Fp2Parameters,
 };
-use snarkvm_utilities::biginteger::BigInteger384;
 
 pub struct Fq6 {
     pub c0: Fq2,

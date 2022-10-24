@@ -2,7 +2,6 @@ use crate::bls12_377::Fq;
 use ruint::{uint, Uint};
 use serde::{Deserialize, Serialize};
 use snarkvm_fields::{field, Field, Fp2, Fp2Parameters};
-use snarkvm_utilities::biginteger::BigInteger384 as BigInteger;
 
 pub struct Fq2 {
     pub c0: Fq,
