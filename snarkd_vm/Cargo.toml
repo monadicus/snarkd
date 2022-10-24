@@ -1,0 +1,12 @@
+[package]
+name = "snarkd_vm"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+num_enum = { workspace = true }
+serde = { workspace = true }
+prost = { workspace = true }
+
+[build-dependencies]
+prost-build = { workspace = true }
