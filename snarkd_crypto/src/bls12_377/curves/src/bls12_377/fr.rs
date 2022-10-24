@@ -1,8 +1,5 @@
 use ruint::{uint, Uint};
-use snarkvm_fields::{
-    FftParameters, FieldParameters, Fp256, Fp256Parameters, PoseidonDefaultParameters,
-    PoseidonDefaultParametersEntry,
-};
+use snarkvm_fields::{Fp256, PoseidonDefaultParameters, PoseidonDefaultParametersEntry};
 
 /// BLS12-377 scalar field.
 ///
@@ -116,7 +113,6 @@ const R2: Uint<256, 4> =
 
 const REPR_SHAVE_BITS: u32 = 3;
 
-// T and T_MINUS_ONE_DIV_TWO, where r - 1 = 2^s * t
 /// t = (r - 1) / 2^s =
 /// 60001509534603559531609739528203892656505753216962260608619555
 const T: Uint256<256, 4> =
@@ -142,16 +138,13 @@ impl PoseidonDefaultParameters for FrParameters {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use snarkvm_fields::{Field, PrimeField};
 
     #[test]
     fn test_powers_of_g() {
         let two = Fr::from(2u8);
 
         // Compute the expected powers of G.
-        let g = Fr::from_repr(FrParameters::GENERATOR)
-            .unwrap()
-            .pow(FrParameters::T);
+        let g = Fr::from_repr(GENERATOR).unwrap().pow(T);
         let powers = (0..FrParameters::TWO_ADICITY - 1)
             .map(|i| {
                 g.pow(two.pow(Fr::from(i as u64).to_repr()).to_repr())
@@ -160,14 +153,11 @@ mod tests {
             .collect::<Vec<_>>();
 
         // Ensure the correct number of powers of G are present.
-        assert_eq!(
-            FrParameters::POWERS_OF_G.len() as u64,
-            (FrParameters::TWO_ADICITY - 1) as u64
-        );
-        assert_eq!(FrParameters::POWERS_OF_G.len(), powers.len());
+        assert_eq!(POWERS_OF_G.len() as u64, (TWO_ADICITY - 1) as u64);
+        assert_eq!(POWERS_OF_G.len(), powers.len());
 
         // Ensure the expected and candidate powers match.
-        for (expected, candidate) in powers.iter().zip(FrParameters::POWERS_OF_G.iter()) {
+        for (expected, candidate) in powers.iter().zip(POWERS_OF_G.iter()) {
             println!("{:?} =?= {:?}", expected, candidate);
             assert_eq!(expected, candidate);
         }
