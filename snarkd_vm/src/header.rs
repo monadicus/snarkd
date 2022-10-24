@@ -4,13 +4,13 @@ use anyhow::*;
 use serde::Serialize;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
-pub struct SnarkVMVersion {
+pub struct SnarkdVersion {
     pub major: u32,
     pub minor: u32,
     pub patch: u32,
 }
 
-impl Default for SnarkVMVersion {
+impl Default for SnarkdVersion {
     fn default() -> Self {
         Self {
             major: env!("CARGO_PKG_VERSION_MAJOR")
@@ -26,7 +26,7 @@ impl Default for SnarkVMVersion {
     }
 }
 
-impl SnarkVMVersion {
+impl SnarkdVersion {
     pub fn check_compatible(&self) -> bool {
         self == &Self::default()
     }
@@ -34,7 +34,7 @@ impl SnarkVMVersion {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Header {
-    pub version: SnarkVMVersion,
+    pub version: SnarkdVersion,
     pub main_inputs: Vec<Input>,
     pub constant_inputs: Vec<Input>,
     pub register_inputs: Vec<Input>,
@@ -47,10 +47,10 @@ pub struct Header {
 impl Header {
     pub(crate) fn decode(header: ir::Header) -> Result<Self> {
         Ok(Self {
-            version: SnarkVMVersion {
-                major: header.snarkvm_major,
-                minor: header.snarkvm_minor,
-                patch: header.snarkvm_patch,
+            version: SnarkdVersion {
+                major: header.snarkd_major,
+                minor: header.snarkd_minor,
+                patch: header.snarkd_patch,
             },
             main_inputs: header
                 .main_inputs
@@ -88,9 +88,9 @@ impl Header {
 
     pub(crate) fn encode(&self) -> ir::Header {
         ir::Header {
-            snarkvm_major: self.version.major,
-            snarkvm_minor: self.version.minor,
-            snarkvm_patch: self.version.patch,
+            snarkd_major: self.version.major,
+            snarkd_minor: self.version.minor,
+            snarkd_patch: self.version.patch,
             main_inputs: self.main_inputs.iter().map(|x| x.encode()).collect(),
             constant_inputs: self.constant_inputs.iter().map(|x| x.encode()).collect(),
             register_inputs: self.register_inputs.iter().map(|x| x.encode()).collect(),
