@@ -91,13 +91,13 @@ impl fmt::Display for Program {
 #[cfg(test)]
 mod tests {
     use crate::{
-        BinaryData, Function, Header, Input, Instruction, Program, SnarkVMVersion, Type, Value,
+        BinaryData, Function, Header, Input, Instruction, Program, SnarkdVersion, Type, Value,
     };
 
     fn example_program() -> Program {
         Program {
             header: Header {
-                version: SnarkVMVersion::default(),
+                version: SnarkdVersion::default(),
                 main_inputs: vec![Input {
                     variable: 0,
                     name: "a".into(),

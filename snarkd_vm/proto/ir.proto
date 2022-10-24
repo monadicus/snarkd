@@ -172,9 +172,9 @@ enum TypeClass {
 }
 
 message Header {
-    uint32 snarkvm_major = 2;
-    uint32 snarkvm_minor = 3;
-    uint32 snarkvm_patch = 4;
+    uint32 snarkd_major = 2;
+    uint32 snarkd_minor = 3;
+    uint32 snarkd_patch = 4;
     repeated Input main_inputs = 5;
     repeated Input constant_inputs = 6;
     repeated Input register_inputs = 7;
