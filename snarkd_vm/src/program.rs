@@ -141,7 +141,7 @@ mod tests {
     }
 
     #[test]
-    fn serde_test() {
+    fn encode_decode_test() {
         let input = example_program();
         let bytes = input.serialize().unwrap();
         let output = Program::deserialize(&bytes).unwrap();
