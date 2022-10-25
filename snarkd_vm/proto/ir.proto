@@ -76,10 +76,6 @@ message VariableRef {
     uint32 variable_ref = 1;
 }
 
-message String {
-    string string = 1;
-}
-
 message Field {
     bool negate = 1;
     repeated fixed64 values = 2;
@@ -101,8 +97,7 @@ message Operand {
     I32 i32 = 13;
     I64 i64 = 14;
     I128 i128 = 15;
-    String string = 16;
-    VariableRef variable_ref = 17;
+    VariableRef variable_ref = 16;
 }
 
 message Type {

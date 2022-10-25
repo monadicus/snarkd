@@ -71,8 +71,7 @@ pub enum Value {
     Field(Field),
     Group(Group),
     Integer(Integer),
-    Str(String), // not a language level string -- used for logs & core call ids
-    Ref(u32),    // reference to a variable
+    Ref(u32), // reference to a variable
 }
 
 impl fmt::Display for Value {
@@ -88,7 +87,6 @@ impl fmt::Display for Value {
             Value::Field(field) => write!(f, "{}", field),
             Value::Group(group) => group.fmt(f),
             Value::Integer(x) => write!(f, "{}", x),
-            Value::Str(s) => write!(f, "\"{}\"", s),
             Value::Ref(x) => write!(f, "v{}", x),
         }
     }
@@ -111,7 +109,6 @@ impl Value {
             | (Value::Integer(Integer::U32(_)), Type::U32)
             | (Value::Integer(Integer::U64(_)), Type::U64)
             | (Value::Integer(Integer::U128(_)), Type::U128) => true,
-            (Value::Str(_), _) => panic!("illegal str type in input type"),
             (Value::Ref(_), _) => panic!("illegal ref in input type"),
             (_, _) => false,
         }
@@ -253,12 +250,6 @@ impl Value {
             Value::Ref(variable_ref) => ir::Operand {
                 variable_ref: Some(ir::VariableRef {
                     variable_ref: *variable_ref,
-                }),
-                ..Default::default()
-            },
-            Value::Str(str) => ir::Operand {
-                string: Some(ir::String {
-                    string: str.clone(),
                 }),
                 ..Default::default()
             },
