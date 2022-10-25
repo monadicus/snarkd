@@ -68,11 +68,8 @@ pub enum Value {
     Address(Vec<u8>),
     Boolean(bool),
     Field(Field),
-    Char(u32),
     Group(Group),
     Integer(Integer),
-    Array(Vec<Value>),
-    Tuple(Vec<Value>),
     Str(String), // not a language level string -- used for logs & core call ids
     Ref(u32),    // reference to a variable
 }
@@ -83,39 +80,8 @@ impl fmt::Display for Value {
             Value::Address(_) => unimplemented!("handle addresses bech32"),
             Value::Boolean(x) => write!(f, "{}", x),
             Value::Field(field) => write!(f, "{}", field),
-            Value::Char(c) => write!(
-                f,
-                "'{}'",
-                std::char::from_u32(*c)
-                    .unwrap_or(std::char::REPLACEMENT_CHARACTER)
-                    .escape_default()
-            ),
             Value::Group(group) => group.fmt(f),
             Value::Integer(x) => write!(f, "{}", x),
-            Value::Array(items) => {
-                write!(f, "[")?;
-                for (i, item) in items.iter().enumerate() {
-                    write!(
-                        f,
-                        "{}{}",
-                        item,
-                        if i == items.len() - 1 { "" } else { ", " }
-                    )?;
-                }
-                write!(f, "]")
-            }
-            Value::Tuple(items) => {
-                write!(f, "(")?;
-                for (i, item) in items.iter().enumerate() {
-                    write!(
-                        f,
-                        "{}{}",
-                        item,
-                        if i == items.len() - 1 { "" } else { ", " }
-                    )?;
-                }
-                write!(f, ")")
-            }
             Value::Str(s) => write!(f, "\"{}\"", s),
             Value::Ref(x) => write!(f, "v{}", x),
         }
@@ -128,7 +94,6 @@ impl Value {
             (Value::Address(_), Type::Address)
             | (Value::Boolean(_), Type::Boolean)
             | (Value::Field(_), Type::Field)
-            | (Value::Char(_), Type::Char)
             | (Value::Group(_), Type::Group)
             | (Value::Integer(Integer::I8(_)), Type::I8)
             | (Value::Integer(Integer::I16(_)), Type::I16)
@@ -140,24 +105,6 @@ impl Value {
             | (Value::Integer(Integer::U32(_)), Type::U32)
             | (Value::Integer(Integer::U64(_)), Type::U64)
             | (Value::Integer(Integer::U128(_)), Type::U128) => true,
-            (Value::Array(inner), Type::Array(inner_type, len)) => {
-                let len_match = match len {
-                    Some(l) => inner.len() == *l as usize,
-                    None => true,
-                };
-                len_match
-                    && inner
-                        .iter()
-                        .all(|inner| inner.matches_input_type(&**inner_type))
-            }
-            (Value::Tuple(values), Type::Tuple(types)) => values
-                .iter()
-                .zip(types.iter())
-                .all(|(value, type_)| value.matches_input_type(type_)),
-            (Value::Tuple(values), Type::Circuit(members)) => values
-                .iter()
-                .zip(members.iter())
-                .all(|(value, (_, type_))| value.matches_input_type(type_)),
             (Value::Str(_), _) => panic!("illegal str type in input type"),
             (Value::Ref(_), _) => panic!("illegal ref in input type"),
             (_, _) => false,
@@ -177,9 +124,6 @@ impl Value {
             ir::Operand {
                 field: Some(field), ..
             } => Value::Field(Field::decode(field)),
-            ir::Operand {
-                char: Some(char), ..
-            } => Value::Char(char.char),
             ir::Operand {
                 group_single: Some(group_single),
                 ..
@@ -220,31 +164,9 @@ impl Value {
                 Value::Integer(Integer::I128(i128::from_le_bytes(raw)))
             }
             ir::Operand {
-                array: Some(array), ..
-            } => Value::Array(
-                array
-                    .array
-                    .into_iter()
-                    .map(Value::decode)
-                    .collect::<Result<Vec<_>>>()?,
-            ),
-            ir::Operand {
-                tuple: Some(tuple), ..
-            } => Value::Tuple(
-                tuple
-                    .tuple
-                    .into_iter()
-                    .map(Value::decode)
-                    .collect::<Result<Vec<_>>>()?,
-            ),
-            ir::Operand {
                 variable_ref: Some(variable_ref),
                 ..
             } => Value::Ref(variable_ref.variable_ref),
-            ir::Operand {
-                string: Some(string),
-                ..
-            } => Value::Str(string.string),
             x => return Err(anyhow!("illegal value data: {:?}", x)),
         })
     }
@@ -263,10 +185,6 @@ impl Value {
             },
             Value::Field(field) => ir::Operand {
                 field: Some(field.encode()),
-                ..Default::default()
-            },
-            Value::Char(char) => ir::Operand {
-                char: Some(ir::Char { char: *char }),
                 ..Default::default()
             },
             Value::Group(Group::Single(inner)) => ir::Operand {
@@ -325,18 +243,6 @@ impl Value {
                     }),
                     ..Default::default()
                 },
-            },
-            Value::Array(items) => ir::Operand {
-                array: Some(ir::Array {
-                    array: items.iter().map(|x| x.encode()).collect(),
-                }),
-                ..Default::default()
-            },
-            Value::Tuple(items) => ir::Operand {
-                tuple: Some(ir::Tuple {
-                    tuple: items.iter().map(|x| x.encode()).collect(),
-                }),
-                ..Default::default()
             },
             Value::Ref(variable_ref) => ir::Operand {
                 variable_ref: Some(ir::VariableRef {
