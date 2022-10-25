@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 use serde::Serialize;
 
 mod code;
-mod op;
+pub mod op;
 
 use std::fmt;
 
