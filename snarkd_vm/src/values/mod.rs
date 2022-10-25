@@ -3,6 +3,7 @@ use std::{convert::TryFrom, fmt};
 use crate::{ir, Type};
 
 use anyhow::*;
+use bech32::ToBase32;
 use serde::Serialize;
 
 mod field;
@@ -77,7 +78,12 @@ pub enum Value {
 impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Value::Address(_) => unimplemented!("handle addresses bech32"),
+            Value::Address(bytes) => write!(
+                f,
+                "{}",
+                bech32::encode("aleo", bytes.to_vec().to_base32(), bech32::Variant::Bech32)
+                    .unwrap_or_default()
+            ),
             Value::Boolean(x) => write!(f, "{}", x),
             Value::Field(field) => write!(f, "{}", field),
             Value::Group(group) => group.fmt(f),
