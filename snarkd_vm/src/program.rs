@@ -91,45 +91,48 @@ impl fmt::Display for Program {
 #[cfg(test)]
 mod tests {
     use crate::{
-        BinaryData, Function, Header, Input, Instruction, Program, SnarkdVersion, Type, Value,
+        AssertData, BinaryData, Function, Header, Input, Instruction, Program, Type, Value,
     };
+
+    fn example_header() -> Header {
+        Header {
+            main_inputs: vec![Input {
+                variable: 0,
+                name: "a".into(),
+                type_: Type::U8,
+            }],
+            constant_inputs: vec![Input {
+                variable: 1,
+                name: "b".into(),
+                type_: Type::U8,
+            }],
+            register_inputs: vec![Input {
+                variable: 2,
+                name: "c".into(),
+                type_: Type::U8,
+            }],
+            public_states: vec![Input {
+                variable: 3,
+                name: "d".into(),
+                type_: Type::U8,
+            }],
+            private_record_states: vec![Input {
+                variable: 4,
+                name: "e".into(),
+                type_: Type::U8,
+            }],
+            private_leaf_states: vec![Input {
+                variable: 5,
+                name: "f".into(),
+                type_: Type::U8,
+            }],
+            ..Default::default()
+        }
+    }
 
     fn example_program() -> Program {
         Program {
-            header: Header {
-                version: SnarkdVersion::default(),
-                main_inputs: vec![Input {
-                    variable: 0,
-                    name: "a".into(),
-                    type_: Type::U8,
-                }],
-                constant_inputs: vec![Input {
-                    variable: 1,
-                    name: "b".into(),
-                    type_: Type::U8,
-                }],
-                register_inputs: vec![Input {
-                    variable: 2,
-                    name: "c".into(),
-                    type_: Type::U8,
-                }],
-                public_states: vec![Input {
-                    variable: 3,
-                    name: "d".into(),
-                    type_: Type::U8,
-                }],
-                private_record_states: vec![Input {
-                    variable: 4,
-                    name: "e".into(),
-                    type_: Type::U8,
-                }],
-                private_leaf_states: vec![Input {
-                    variable: 5,
-                    name: "f".into(),
-                    type_: Type::U8,
-                }],
-                inline_limit: 1,
-            },
+            header: example_header(),
             functions: vec![Function {
                 argument_start_variable: 0,
                 instructions: vec![Instruction::Add(BinaryData {
@@ -140,11 +143,38 @@ mod tests {
         }
     }
 
-    #[test]
-    fn encode_decode_test() {
-        let input = example_program();
+    fn struct_program() -> Program {
+        Program {
+            header: Header {
+                main_inputs: vec![Input {
+                    variable: 0,
+                    name: "a".into(),
+                    type_: Type::Struct(vec![("hello".into(), Type::Boolean)]),
+                }],
+                ..Default::default()
+            },
+            functions: vec![Function {
+                argument_start_variable: 0,
+                instructions: vec![Instruction::AssertEq(AssertData {
+                    values: vec![Value::Struct(vec![Value::Boolean(false)]), Value::Ref(0)],
+                })],
+            }],
+        }
+    }
+
+    fn test_program(input: Program) {
         let bytes = input.serialize().unwrap();
         let output = Program::deserialize(&bytes).unwrap();
         assert_eq!(input, output);
+    }
+
+    #[test]
+    fn encode_decode_test() {
+        test_program(example_program())
+    }
+
+    #[test]
+    fn struct_test() {
+        test_program(struct_program())
     }
 }
