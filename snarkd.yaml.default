@@ -1,0 +1,5 @@
+# one of none, error, warn, info, debug, trace
+# overridden by RUST_LOG present in ENV
+verbosity: info
+# path to database, when not present
+database: ./snarkd.db
