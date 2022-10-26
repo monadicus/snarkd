@@ -89,6 +89,10 @@ message String {
     string string = 1;
 }
 
+message Struct {
+    repeated Operand values = 2;
+}
+
 message Record {
 
 }
@@ -114,6 +118,7 @@ message Operand {
     Scalar scalar = 17;
     String string = 18;
     Record record = 19;
+    Struct structure = 20;
 }
 
 message Type {

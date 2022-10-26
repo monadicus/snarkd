@@ -6,7 +6,7 @@ pub mod op;
 mod predicate;
 mod query;
 
-use self::predicate::AssertData;
+pub use self::predicate::AssertData;
 use crate::ir;
 pub use query::{BinaryData, TernaryData, UnaryData};
 use std::fmt;
