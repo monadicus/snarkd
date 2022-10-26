@@ -11,7 +11,8 @@ use std::{
 };
 
 use dashmap::DashMap;
-use log::{error, trace, warn};
+use log::{error, warn};
+use snarkd_errors::{ConvertError, NetworkError};
 use tokio::{
     io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt},
     net::{TcpListener, TcpStream, ToSocketAddrs},
@@ -23,9 +24,8 @@ use tokio::{
 
 use crate::{
     proto::{packet::PacketBody, CommandId, Packet, ResponseCode},
-    RequestHandler, ResponseHandle, ResponseHandleOwned,
+    RequestHandler, ResponseHandle, ResponseHandleOwned, Result,
 };
-use anyhow::{bail, Result};
 use prost::Message;
 
 pub struct Connection {
@@ -40,9 +40,12 @@ const MAX_PACKET_LENGTH: u64 = 1024 * 1024 * 10;
 const CHANNEL_DEPTH: usize = 10;
 
 async fn read_packet(mut input: impl AsyncRead + Unpin) -> Result<Packet> {
-    let length: u64 = input.read_u64().await?;
+    let length: u64 = input
+        .read_u64()
+        .await
+        .apply(NetworkError::read_packet_error)?;
     if length > MAX_PACKET_LENGTH {
-        bail!("length of inbound packet is too high: {length} > {MAX_PACKET_LENGTH}");
+        todo!("length of inbound packet is too high: {length} > {MAX_PACKET_LENGTH}");
     }
     let length: usize = length.try_into().expect("u64 too big for usize");
     let mut bytes: Vec<u8> = Vec::with_capacity(length);
@@ -51,24 +54,24 @@ async fn read_packet(mut input: impl AsyncRead + Unpin) -> Result<Packet> {
         // we use an extra scope to enforce bytes_target is not used again
         let bytes_target: &mut [u8] =
             unsafe { std::mem::transmute(&mut bytes.spare_capacity_mut()[..length]) };
-        let total_read = input.read_exact(bytes_target).await?;
+        let total_read = input.read_exact(bytes_target).await.unwrap();
         assert_eq!(total_read, length);
 
         unsafe { bytes.set_len(length) };
     }
-    Ok(Packet::decode(&bytes[..])?)
+    Ok(Packet::decode(&bytes[..]).unwrap())
 }
 
 async fn write_packet(mut output: impl AsyncWrite + Unpin, packet: Packet) -> Result<()> {
     let encoded = packet.encode_to_vec();
     if encoded.len() as u64 > MAX_PACKET_LENGTH {
-        bail!(
+        todo!(
             "length of outbound packet is too high: {} > {MAX_PACKET_LENGTH}",
             encoded.len()
         );
     }
-    output.write_u64(encoded.len() as u64).await?;
-    output.write_all(&encoded[..]).await?;
+    output.write_u64(encoded.len() as u64).await.unwrap();
+    output.write_all(&encoded[..]).await.unwrap();
     Ok(())
 }
 
@@ -169,8 +172,8 @@ impl Connection {
         target: A,
         handler: impl RequestHandler,
     ) -> Result<Self> {
-        let stream = TcpStream::connect(target).await?;
-        let remote = stream.peer_addr()?;
+        let stream = TcpStream::connect(target).await.unwrap();
+        let remote = stream.peer_addr().unwrap();
         let (reader, writer) = stream.into_split();
         Ok(Self::accept(reader, writer, remote, handler))
     }

@@ -9,3 +9,5 @@ mod connection;
 pub use connection::*;
 
 mod util;
+
+use snarkd_errors::*;
