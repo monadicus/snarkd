@@ -190,6 +190,26 @@ impl Value {
                 variable_ref: Some(variable_ref),
                 ..
             } => Value::Ref(variable_ref.variable_ref),
+            ir::Operand {
+                structure: Some(structure),
+                ..
+            } => Value::Struct(
+                structure
+                    .values
+                    .into_iter()
+                    .map(Value::decode)
+                    .collect::<Result<Vec<_>>>()?,
+            ),
+            ir::Operand {
+                scalar: Some(scalar),
+                ..
+            } => Value::Scalar(scalar.values),
+            ir::Operand {
+                string: Some(str), ..
+            } => Value::Str(str.string),
+            ir::Operand {
+                record: Some(_), ..
+            } => todo!(),
             x => return Err(anyhow!("illegal value data: {:?}", x)),
         })
     }

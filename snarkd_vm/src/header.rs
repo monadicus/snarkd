@@ -32,7 +32,7 @@ impl SnarkdVersion {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Default)]
 pub struct Header {
     pub version: SnarkdVersion,
     pub main_inputs: Vec<Input>,
@@ -41,7 +41,6 @@ pub struct Header {
     pub public_states: Vec<Input>,
     pub private_record_states: Vec<Input>,
     pub private_leaf_states: Vec<Input>,
-    pub inline_limit: u32,
 }
 
 impl Header {
@@ -82,7 +81,6 @@ impl Header {
                 .into_iter()
                 .map(Input::decode)
                 .collect::<Result<Vec<Input>>>()?,
-            inline_limit: header.inline_limit,
         })
     }
 
@@ -105,7 +103,6 @@ impl Header {
                 .iter()
                 .map(|x| x.encode())
                 .collect(),
-            inline_limit: self.inline_limit,
         }
     }
 }
