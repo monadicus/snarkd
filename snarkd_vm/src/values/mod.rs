@@ -49,16 +49,16 @@ impl TryFrom<Integer> for u32 {
 impl fmt::Display for Integer {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Integer::U8(x) => write!(f, "{}", x),
-            Integer::U16(x) => write!(f, "{}", x),
-            Integer::U32(x) => write!(f, "{}", x),
-            Integer::U64(x) => write!(f, "{}", x),
-            Integer::U128(x) => write!(f, "{}", x),
-            Integer::I8(x) => write!(f, "{}", x),
-            Integer::I16(x) => write!(f, "{}", x),
-            Integer::I32(x) => write!(f, "{}", x),
-            Integer::I64(x) => write!(f, "{}", x),
-            Integer::I128(x) => write!(f, "{}", x),
+            Integer::U8(x) => write!(f, "{x}"),
+            Integer::U16(x) => write!(f, "{x}"),
+            Integer::U32(x) => write!(f, "{x}"),
+            Integer::U64(x) => write!(f, "{x}"),
+            Integer::U128(x) => write!(f, "{x}"),
+            Integer::I8(x) => write!(f, "{x}"),
+            Integer::I16(x) => write!(f, "{x}"),
+            Integer::I32(x) => write!(f, "{x}"),
+            Integer::I64(x) => write!(f, "{x}"),
+            Integer::I128(x) => write!(f, "{x}"),
         }
     }
 }
@@ -71,7 +71,12 @@ pub enum Value {
     Field(Field),
     Group(Group),
     Integer(Integer),
+    Struct(Vec<Value>),
+    Str(String),
     Ref(u32), // reference to a variable
+    Scalar(Vec<u64>),
+    // TODO
+    Record,
 }
 
 impl fmt::Display for Value {
@@ -83,11 +88,26 @@ impl fmt::Display for Value {
                 bech32::encode("aleo", bytes.to_vec().to_base32(), bech32::Variant::Bech32)
                     .unwrap_or_default()
             ),
-            Value::Boolean(x) => write!(f, "{}", x),
+            Value::Boolean(x) => write!(f, "{x}"),
             Value::Field(field) => write!(f, "{}", field),
             Value::Group(group) => group.fmt(f),
-            Value::Integer(x) => write!(f, "{}", x),
-            Value::Ref(x) => write!(f, "v{}", x),
+            Value::Integer(x) => write!(f, "{x}"),
+            Value::Struct(items) => {
+                write!(f, "(")?;
+                for (i, item) in items.iter().enumerate() {
+                    write!(
+                        f,
+                        "{}{}",
+                        item,
+                        if i == items.len() - 1 { "" } else { ", " }
+                    )?;
+                }
+                write!(f, ")")
+            }
+            Value::Str(s) => write!(f, "\"{s}\""),
+            Value::Ref(x) => write!(f, "{x}"),
+            Value::Scalar(x) => write!(f, "scalar{x:?}"),
+            Value::Record => todo!(),
         }
     }
 }
@@ -253,6 +273,25 @@ impl Value {
                 }),
                 ..Default::default()
             },
+            Value::Struct(items) => ir::Operand {
+                structure: Some(ir::Struct {
+                    values: items.iter().map(|x| x.encode()).collect(),
+                }),
+                ..Default::default()
+            },
+            Value::Str(str) => ir::Operand {
+                string: Some(ir::String {
+                    string: str.clone(),
+                }),
+                ..Default::default()
+            },
+            Value::Scalar(items) => ir::Operand {
+                scalar: Some(ir::Scalar {
+                    values: items.clone(),
+                }),
+                ..Default::default()
+            },
+            Value::Record => todo!(),
         }
     }
 }
