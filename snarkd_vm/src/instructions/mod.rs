@@ -3,22 +3,23 @@ use serde::Serialize;
 
 mod code;
 pub mod op;
-
-use std::fmt;
-
+mod predicate;
 mod query;
+
+use self::predicate::AssertData;
 use crate::ir;
-pub use query::*;
+pub use query::{BinaryData, TernaryData, UnaryData};
+use std::fmt;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub enum Instruction {
-    Abs(BinaryData),
-    AbsWrapped(BinaryData),
+    Abs(UnaryData),
+    AbsWrapped(UnaryData),
     Add(BinaryData),
     AddWrapped(BinaryData),
     And(BinaryData),
-    AssertEq(BinaryData),
-    AssertNeq(BinaryData),
+    AssertEq(AssertData),
+    AssertNeq(AssertData),
     CommitBHP256(BinaryData),
     CommitBHP512(BinaryData),
     CommitBHP768(BinaryData),
@@ -27,29 +28,30 @@ pub enum Instruction {
     CommitPED128(BinaryData),
     Div(BinaryData),
     DivWrapped(BinaryData),
-    Double(BinaryData),
+    Double(UnaryData),
     Gt(BinaryData),
     Gte(BinaryData),
-    HashBHP256(BinaryData),
-    HashBHP512(BinaryData),
-    HashBHP768(BinaryData),
-    HashBHP1024(BinaryData),
-    HashPED64(BinaryData),
-    HashPED128(BinaryData),
-    HashPSD2(BinaryData),
-    HashPSD4(BinaryData),
-    HashPSD8(BinaryData),
-    Inv(BinaryData),
+    HashBHP256(UnaryData),
+    HashBHP512(UnaryData),
+    HashBHP768(UnaryData),
+    HashBHP1024(UnaryData),
+    HashPED64(UnaryData),
+    HashPED128(UnaryData),
+    HashPSD2(UnaryData),
+    HashPSD4(UnaryData),
+    HashPSD8(UnaryData),
+    Inv(UnaryData),
     IsEq(BinaryData),
+    IsNeq(BinaryData),
     Lt(BinaryData),
     Lte(BinaryData),
     Mod(BinaryData),
     Mul(BinaryData),
     MulWrapped(BinaryData),
     Nand(BinaryData),
-    Neg(BinaryData),
+    Neg(UnaryData),
     Nor(BinaryData),
-    Not(BinaryData),
+    Not(UnaryData),
     Or(BinaryData),
     Pow(BinaryData),
     PowWrapped(BinaryData),
@@ -59,11 +61,11 @@ pub enum Instruction {
     ShlWrapped(BinaryData),
     Shr(BinaryData),
     ShrWrapped(BinaryData),
-    Sqrt(BinaryData),
-    Square(BinaryData),
+    Sqrt(UnaryData),
+    Square(UnaryData),
     Sub(BinaryData),
     SubWrapped(BinaryData),
-    Ternary(BinaryData),
+    Ternary(TernaryData),
     Xor(BinaryData),
 }
 
@@ -128,6 +130,7 @@ impl fmt::Display for Instruction {
             HashPSD8(x) => x.fmt(f),
             Inv(x) => x.fmt(f),
             IsEq(x) => x.fmt(f),
+            IsNeq(x) => x.fmt(f),
             Lt(x) => x.fmt(f),
             Lte(x) => x.fmt(f),
             Mod(x) => x.fmt(f),
