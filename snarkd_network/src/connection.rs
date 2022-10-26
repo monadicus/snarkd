@@ -12,7 +12,7 @@ use std::{
 
 use dashmap::DashMap;
 use log::{error, warn};
-use snarkd_errors::{ConvertError, NetworkError};
+use snarkd_errors::{IntoSnarkError, NetworkError};
 use tokio::{
     io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt},
     net::{TcpListener, TcpStream, ToSocketAddrs},
@@ -43,7 +43,7 @@ async fn read_packet(mut input: impl AsyncRead + Unpin) -> Result<Packet> {
     let length: u64 = input
         .read_u64()
         .await
-        .apply(NetworkError::read_packet_error)?;
+        .to_error(NetworkError::read_packet_error)?;
     if length > MAX_PACKET_LENGTH {
         todo!("length of inbound packet is too high: {length} > {MAX_PACKET_LENGTH}");
     }
