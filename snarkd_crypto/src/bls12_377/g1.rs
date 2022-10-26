@@ -25,74 +25,30 @@ impl ShortWeierstrassParameters for Bls12_377G1Parameters {
     /// AFFINE_GENERATOR_COEFFS = (G1_GENERATOR_X, G1_GENERATOR_Y)
     const AFFINE_GENERATOR_COEFFS: (Self::BaseField, Self::BaseField) =
         (G1_GENERATOR_X, G1_GENERATOR_Y);
+
     /// B1 = x^2 - 1
-    const B1: Fr = field!(
-        Fr,
-        BigInteger256([
-            12574070832645531618,
-            10005695704657941814,
-            1564543351912391449,
-            657300228442948690
-        ])
-    );
+    const B1: Fr = uint!(91893752504881257701523279626832445440_U256);
+
     /// B2 = x^2
-    const B2: Fr = field!(
-        Fr,
-        BigInteger256([
-            2417046298041509844,
-            11783911742408086824,
-            14689097366802547462,
-            270119112518072728
-        ])
-    );
+    const B2: Fr = uint!(91893752504881257701523279626832445441_U256);
+
     /// COFACTOR = (x - 1)^2 / 3  = 30631250834960419227450344600217059328
     const COFACTOR: &'static [u64] = &[0x0, 0x170b5d4430000000];
+
     /// COFACTOR_INV = COFACTOR^{-1} mod r
     ///              = 5285428838741532253824584287042945485047145357130994810877
-    const COFACTOR_INV: Fr = field!(
-        Fr,
-        BigInteger256([
-            2013239619100046060,
-            4201184776506987597,
-            2526766393982337036,
-            1114629510922847535,
-        ])
-    );
-    const PHI: Fq = field!(
-        Fq,
-        BigInteger384([
-            0xdacd106da5847973,
-            0xd8fe2454bac2a79a,
-            0x1ada4fd6fd832edc,
-            0xfb9868449d150908,
-            0xd63eb8aeea32285e,
-            0x167d6a36f873fd0,
-        ])
-    );
+    const COFACTOR_INV: Fr = uint!(5285428838741532253824584287042945485047145357130994810877_U256);
+
+    const PHI: Fq = uint!(258664426012969093929703085429980814127835149614277183275038967946009968870203535512256352201271898244626862047231_U384);
+
     /// R128 = 2^128 - 1
-    const R128: Fr = field!(
-        Fr,
-        BigInteger256([
-            13717662654766427599,
-            14709524173037165000,
-            15342848074630952979,
-            736762107895475646
-        ])
-    );
+    const R128: Fr = uint!(340282366920938463463374607431768211455_U256);
+
     /// WEIERSTRASS_A = 0
-    const WEIERSTRASS_A: Fq = field!(Fq, BigInteger384([0x0, 0x0, 0x0, 0x0, 0x0, 0x0]));
+    const WEIERSTRASS_A: Fq = uint!(0_U384);
+
     /// WEIERSTRASS_B = 1
-    const WEIERSTRASS_B: Fq = field!(
-        Fq,
-        BigInteger384([
-            0x2cdffffffffff68,
-            0x51409f837fffffb1,
-            0x9f7db3a98a7d3ff2,
-            0x7b4e97b76e7c6305,
-            0x4cf495bf803c84e8,
-            0x8d6661e2fdf49a,
-        ])
-    );
+    const WEIERSTRASS_B: Fq = uint!(1_U384);
 
     #[inline(always)]
     fn mul_by_a(_: &Self::BaseField) -> Self::BaseField {
@@ -254,17 +210,7 @@ impl ShortWeierstrassParameters for Bls12_377G1Parameters {
 ///
 /// See `snarkvm_algorithms::hash_to_curve::tests::bls12_377` for tests.
 ///
-pub const G1_GENERATOR_X: Fq = field!(
-    Fq,
-    BigInteger384::new([
-        1171681672315280277,
-        6528257384425852712,
-        7514971432460253787,
-        2032708395764262463,
-        12876543207309632302,
-        107509843840671767
-    ])
-);
+pub const G1_GENERATOR_X: Fq = uint!(89363714989903307245735717098563574705733591463163614225748337416674727625843187853442697973404985688481508350822_U384);
 
 ///
 /// G1_GENERATOR_Y =
@@ -272,17 +218,7 @@ pub const G1_GENERATOR_X: Fq = field!(
 ///
 /// See `snarkvm_algorithms::hash_to_curve::tests::bls12_377` for tests.
 ///
-pub const G1_GENERATOR_Y: Fq = field!(
-    Fq,
-    BigInteger384::new([
-        13572190014569192121,
-        15344828677741220784,
-        17067903700058808083,
-        10342263224753415805,
-        1083990386877464092,
-        21335464879237822
-    ])
-);
+pub const G1_GENERATOR_Y: Fq = uint!(3702177272937190650578065972808860481433820514072818216637796320125658674906330993856598323293086021583822603349_U384);
 
 #[cfg(test)]
 mod tests {

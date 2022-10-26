@@ -1,15 +1,10 @@
-use snarkvm_fields::{field, Field, PrimeField, Zero};
-use snarkvm_utilities::{
-    biginteger::{BigInteger256, BigInteger384},
-    BigInteger, BitIteratorBE,
-};
-
 use crate::{
     bls12_377::{g1::Bls12_377G1Parameters, Fq, Fq2, Fr},
     traits::{ModelParameters, ShortWeierstrassParameters},
     AffineCurve, ProjectiveCurve,
 };
-
+use ruint::{uint, Uint};
+use snarkvm_fields::{field, Field, PrimeField, Zero};
 use std::ops::Neg;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
@@ -24,26 +19,13 @@ impl ShortWeierstrassParameters for Bls12_377G2Parameters {
     /// AFFINE_GENERATOR_COEFFS = (G2_GENERATOR_X, G2_GENERATOR_Y)
     const AFFINE_GENERATOR_COEFFS: (Self::BaseField, Self::BaseField) =
         (G2_GENERATOR_X, G2_GENERATOR_Y);
+
     /// B1 = x^2 - 1
-    const B1: Fr = field!(
-        Fr,
-        BigInteger256([
-            12574070832645531618,
-            10005695704657941814,
-            1564543351912391449,
-            657300228442948690
-        ])
-    );
+    const B1: Fr = uint!(91893752504881257701523279626832445440_U256);
+
     /// B2 = x^2
-    const B2: Fr = field!(
-        Fr,
-        BigInteger256([
-            2417046298041509844,
-            11783911742408086824,
-            14689097366802547462,
-            270119112518072728
-        ])
-    );
+    const B2: Fr = uint!(91893752504881257701523279626832445441_U256);
+
     /// COFACTOR =
     /// 7923214915284317143930293550643874566881017850177945424769256759165301436616933228209277966774092486467289478618404761412630691835764674559376407658497
     const COFACTOR: &'static [u64] = &[
@@ -56,69 +38,36 @@ impl ShortWeierstrassParameters for Bls12_377G2Parameters {
         0xddd88d99a6f6a829,
         0x26ba558ae9562a,
     ];
+
     /// COFACTOR_INV = COFACTOR^{-1} mod r
     ///              = 6764900296503390671038341982857278410319949526107311149686707033187604810669
-    const COFACTOR_INV: Fr = field!(
-        Fr,
-        BigInteger256([
-            15499857013495546999,
-            4613531467548868169,
-            14546778081091178013,
-            549402535258503313,
-        ])
-    );
-    const PHI: Fq2 = field!(
-        Fq2,
-        field!(Fq, BigInteger384([0, 0, 0, 0, 0, 0])),
-        field!(
-            Fq,
-            BigInteger384([
-                0x2c766f925a7b8727,
-                0x03d7f6b0253d58b5,
-                0x838ec0deec122131,
-                0xbd5eb3e9f658bb10,
-                0x6942bd126ed3e52e,
-                0x01673786dd04ed6a,
-            ])
-        ),
-    );
+    const COFACTOR_INV: Fr =
+        uint!(6764900296503390671038341982857278410319949526107311149686707033187604810669_U256);
+
+    const PHI: Fq2 = Fq2 {
+        c0: uint!(0_U384),
+        c1: uint!(258664426012969093929703085429980814127835149614277183275038967946009968870203535512256352201271898244626862047231_U384),
+    };
+
     /// R128 = 2^128 - 1
-    const R128: Fr = field!(
-        Fr,
-        BigInteger256([
-            13717662654766427599,
-            14709524173037165000,
-            15342848074630952979,
-            736762107895475646
-        ])
-    );
+    const R128: Fr = uint!(340282366920938463463374607431768211455_U256);
+
     /// WEIERSTRASS_A = [0, 0]
-    const WEIERSTRASS_A: Fq2 = field!(
-        Fq2,
-        Bls12_377G1Parameters::WEIERSTRASS_A,
-        Bls12_377G1Parameters::WEIERSTRASS_A,
-    );
+    const WEIERSTRASS_A: Fq2 = Fq2 {
+        c0: Bls12_377G1Parameters::WEIERSTRASS_A,
+        c1: Bls12_377G1Parameters::WEIERSTRASS_A,
+    };
+
     // As per https://eprint.iacr.org/2012/072.pdf,
     // this curve has b' = b/i, where b is the COEFF_B of G1, and x^6 -i is
     // the irreducible poly used to extend from Fp2 to Fp12.
     // In our case, i = u (App A.3, T_6).
     /// WEIERSTRASS_B = [0,
     /// 155198655607781456406391640216936120121836107652948796323930557600032281009004493664981332883744016074664192874906]
-    const WEIERSTRASS_B: Fq2 = field!(
-        Fq2,
-        field!(Fq, BigInteger384([0, 0, 0, 0, 0, 0])),
-        field!(
-            Fq,
-            BigInteger384([
-                9255502405446297221,
-                10229180150694123945,
-                9215585410771530959,
-                13357015519562362907,
-                5437107869987383107,
-                16259554076827459,
-            ])
-        ),
-    );
+    const WEIERSTRASS_B: Fq2 = Fq2 {
+        co: uint!(0_U384),
+        c1: uint!(155198655607781456406391640216936120121836107652948796323930557600032281009004493664981332883744016074664192874906_U384),
+    };
 
     #[inline(always)]
     fn mul_by_a(_: &Self::BaseField) -> Self::BaseField {
@@ -268,8 +217,14 @@ impl ShortWeierstrassParameters for Bls12_377G2Parameters {
     }
 }
 
-pub const G2_GENERATOR_X: Fq2 = field!(Fq2, G2_GENERATOR_X_C0, G2_GENERATOR_X_C1);
-pub const G2_GENERATOR_Y: Fq2 = field!(Fq2, G2_GENERATOR_Y_C0, G2_GENERATOR_Y_C1);
+pub const G2_GENERATOR_X: Fq2 = Fq2 {
+    c0: G2_GENERATOR_X_C0,
+    c1: G2_GENERATOR_X_C1,
+};
+pub const G2_GENERATOR_Y: Fq2 = Fq2 {
+    c0: G2_GENERATOR_Y_C0,
+    c1: G2_GENERATOR_Y_C1,
+};
 
 ///
 /// G2_GENERATOR_X_C0 =
@@ -277,17 +232,7 @@ pub const G2_GENERATOR_Y: Fq2 = field!(Fq2, G2_GENERATOR_Y_C0, G2_GENERATOR_Y_C1
 ///
 /// See `snarkvm_algorithms::hash_to_curve::tests::bls12_377` for tests.
 ///
-pub const G2_GENERATOR_X_C0: Fq = field!(
-    Fq,
-    BigInteger384::new([
-        1394603105513884269,
-        11069732150289508451,
-        4261960060090787184,
-        13457254148541472797,
-        3177258746859163322,
-        82258727112085846
-    ])
-);
+pub const G2_GENERATOR_X_C0: Fq = uint!(170590608266080109581922461902299092015242589883741236963254737235977648828052995125541529645051927918098146183295_U384);
 
 ///
 /// G2_GENERATOR_X_C1 =
@@ -295,17 +240,7 @@ pub const G2_GENERATOR_X_C0: Fq = field!(
 ///
 /// See `snarkvm_algorithms::hash_to_curve::tests::bls12_377` for tests.
 ///
-pub const G2_GENERATOR_X_C1: Fq = field!(
-    Fq,
-    BigInteger384::new([
-        12672065269715576738,
-        3451530808602826578,
-        9486610028138952262,
-        5031487885431614078,
-        9858745210421513581,
-        63301617551232910
-    ])
-);
+pub const G2_GENERATOR_X_C1: Fq = uint!(83407003718128594709087171351153471074446327721872642659202721143408712182996929763094113874399921859453255070254_U384);
 
 ///
 /// G2_GENERATOR_Y_C0 =
@@ -313,17 +248,7 @@ pub const G2_GENERATOR_X_C1: Fq = field!(
 ///
 /// See `snarkvm_algorithms::hash_to_curve::tests::bls12_377` for tests.
 ///
-pub const G2_GENERATOR_Y_C0: Fq = field!(
-    Fq,
-    BigInteger384::new([
-        1855632670224768760,
-        2989378521406112342,
-        9748867374972564648,
-        3204895972998458874,
-        16520689795595505429,
-        61918742406142643
-    ])
-);
+pub const G2_GENERATOR_Y_C0: Fq = uint!(1843833842842620867708835993770650838640642469700861403869757682057607397502738488921663703124647238454792872005_U384);
 
 ///
 /// G2_GENERATOR_Y_C1 =
@@ -331,14 +256,4 @@ pub const G2_GENERATOR_Y_C0: Fq = field!(
 ///
 /// See `snarkvm_algorithms::hash_to_curve::tests::bls12_377` for tests.
 ///
-pub const G2_GENERATOR_Y_C1: Fq = field!(
-    Fq,
-    BigInteger384::new([
-        1532128906028652860,
-        14539073382194201855,
-        10828918286556702479,
-        14664598863867299115,
-        483199896405477997,
-        73741830940675480
-    ])
-);
+pub const G2_GENERATOR_Y_C1: Fq = uint!(33145532013610981697337930729788870077912093258611421158732879580766461459275194744385880708057348608045241477209_U384);
