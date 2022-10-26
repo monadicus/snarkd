@@ -81,6 +81,19 @@ message Field {
     repeated fixed64 values = 2;
 }
 
+message Scalar {
+    repeated fixed64 values = 1;
+}
+
+message String {
+    string string = 1;
+}
+
+message Record {
+
+}
+
+
 message Operand {
     Address address = 1;
     Bool boolean = 2;
@@ -98,10 +111,15 @@ message Operand {
     I64 i64 = 14;
     I128 i128 = 15;
     VariableRef variable_ref = 16;
+    Scalar scalar = 17;
+    String string = 18;
+    Record record = 19;
 }
 
 message Type {
     TypeClass class = 1;
+    repeated Type subtypes = 2;
+    repeated string subtype_names = 3;
 }
 
 message Input {
@@ -140,6 +158,11 @@ enum TypeClass {
     TypeI32 = 11;
     TypeI64 = 12;
     TypeI128 = 13;
+
+    TypeScalar = 14;
+    TypeString = 15;
+    TypeStruct = 16;
+    TypeRecord = 17;
 }
 
 message Header {

@@ -7,6 +7,10 @@ use serde::Serialize;
 
 use super::decode_control_u32;
 
+pub type UnaryData = QueryData<1>;
+pub type BinaryData = QueryData<2>;
+pub type TernaryData = QueryData<3>;
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct QueryData<const N: usize> {
     pub destination: u32,
@@ -22,9 +26,6 @@ impl<const N: usize> fmt::Display for QueryData<N> {
         Ok(())
     }
 }
-
-pub type UnaryData = QueryData<1>;
-pub type BinaryData = QueryData<2>;
 
 impl<const N: usize> QueryData<N> {
     pub(crate) fn decode(operands: Vec<ir::Operand>) -> Result<Self> {

@@ -1,6 +1,6 @@
 use num_enum::TryFromPrimitive;
 
-use super::{op::InstructionOp, *};
+use super::{op::InstructionOp, query::QueryData, *};
 
 impl Instruction {
     pub(crate) fn opcode(&self) -> InstructionOp {
@@ -34,6 +34,7 @@ impl Instruction {
             Self::HashPSD8(_) => InstructionOp::HashPSD8,
             Self::Inv(_) => InstructionOp::Inv,
             Self::IsEq(_) => InstructionOp::IsEq,
+            Self::IsNeq(_) => InstructionOp::IsNeq,
             Self::Lt(_) => InstructionOp::Lt,
             Self::Lte(_) => InstructionOp::Lte,
             Self::Mod(_) => InstructionOp::Mod,
@@ -92,6 +93,7 @@ impl Instruction {
             Self::HashPSD8(x) => x.encode(),
             Self::Inv(x) => x.encode(),
             Self::IsEq(x) => x.encode(),
+            Self::IsNeq(x) => x.encode(),
             Self::Lt(x) => x.encode(),
             Self::Lte(x) => x.encode(),
             Self::Mod(x) => x.encode(),
@@ -140,9 +142,11 @@ impl Instruction {
                     Self::AddWrapped(QueryData::decode(instruction.operands)?)
                 }
                 InstructionOp::And => Self::And(QueryData::decode(instruction.operands)?),
-                InstructionOp::AssertEq => Self::AssertEq(QueryData::decode(instruction.operands)?),
+                InstructionOp::AssertEq => {
+                    Self::AssertEq(AssertData::decode(instruction.operands)?)
+                }
                 InstructionOp::AssertNeq => {
-                    Self::AssertNeq(QueryData::decode(instruction.operands)?)
+                    Self::AssertNeq(AssertData::decode(instruction.operands)?)
                 }
                 InstructionOp::CommitBHP256 => {
                     Self::CommitBHP256(QueryData::decode(instruction.operands)?)
@@ -192,6 +196,7 @@ impl Instruction {
                 InstructionOp::HashPSD8 => Self::HashPSD8(QueryData::decode(instruction.operands)?),
                 InstructionOp::Inv => Self::Inv(QueryData::decode(instruction.operands)?),
                 InstructionOp::IsEq => Self::IsEq(QueryData::decode(instruction.operands)?),
+                InstructionOp::IsNeq => Self::IsNeq(QueryData::decode(instruction.operands)?),
                 InstructionOp::Lt => Self::Lt(QueryData::decode(instruction.operands)?),
                 InstructionOp::Lte => Self::Lte(QueryData::decode(instruction.operands)?),
                 InstructionOp::Mod => Self::Mod(QueryData::decode(instruction.operands)?),
