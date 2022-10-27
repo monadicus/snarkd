@@ -18,6 +18,7 @@ clap = { version = "4.0", features = ["derive"] }
 dashmap = "5.4"
 env_logger = "0.9"
 hex = "0.4"
+indexmap = { version = "1.9.1", features = ["serde"]}
 lazy_static = "1.4"
 log = "0.4"
 num_enum = "0.5.7"
@@ -33,4 +34,3 @@ smallvec = "1.10"
 tokio = { version = "1.0", features = ["full"] }
 # we need a new release for rusqlite 0.28 support
 tokio-rusqlite = "0.3.0"
-indexmap = "1.9.1"

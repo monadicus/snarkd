@@ -3,13 +3,16 @@ use std::{convert::TryFrom, fmt};
 use crate::{ir, Type};
 
 use anyhow::*;
-use bech32::ToBase32;
 use serde::Serialize;
 
+mod address;
 mod field;
+mod record;
 pub use field::*;
 mod group;
+pub use address::Address;
 pub use group::*;
+pub use record::*;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 pub enum Integer {
@@ -26,9 +29,6 @@ pub enum Integer {
     I128(i128),
 }
 
-// Used to natively convert array range index values in Leo only.
-// Do not attempt to call this function from another context.
-// https://github.com/AleoHQ/leo/blob/ir/compiler/src/statement/assign/assignee/array_range_index.rs
 impl TryFrom<Integer> for u32 {
     type Error = anyhow::Error;
 
@@ -66,7 +66,7 @@ impl fmt::Display for Integer {
 /// A constant value in IR representation or variable reference
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub enum Value {
-    Address(Vec<u8>),
+    Address(Address),
     Boolean(bool),
     Field(Field),
     Group(Group),
@@ -75,25 +75,19 @@ pub enum Value {
     Str(String),
     Ref(u32), // reference to a variable
     Scalar(Vec<u64>),
-    // TODO
-    Record,
+    Record(Box<Record>),
 }
 
 impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Value::Address(bytes) => write!(
-                f,
-                "{}",
-                bech32::encode("aleo", bytes.to_vec().to_base32(), bech32::Variant::Bech32)
-                    .unwrap_or_default()
-            ),
+            Value::Address(address) => write!(f, "{address}"),
             Value::Boolean(x) => write!(f, "{x}"),
-            Value::Field(field) => write!(f, "{}", field),
-            Value::Group(group) => group.fmt(f),
+            Value::Field(field) => write!(f, "{field}"),
+            Value::Group(group) => write!(f, "{group}"),
             Value::Integer(x) => write!(f, "{x}"),
             Value::Struct(items) => {
-                write!(f, "(")?;
+                write!(f, "struct(")?;
                 for (i, item) in items.iter().enumerate() {
                     write!(
                         f,
@@ -107,7 +101,7 @@ impl fmt::Display for Value {
             Value::Str(s) => write!(f, "\"{s}\""),
             Value::Ref(x) => write!(f, "{x}"),
             Value::Scalar(x) => write!(f, "scalar{x:?}"),
-            Value::Record => todo!(),
+            Value::Record(record) => write!(f, "{}", record),
         }
     }
 }
@@ -129,6 +123,22 @@ impl Value {
             | (Value::Integer(Integer::U32(_)), Type::U32)
             | (Value::Integer(Integer::U64(_)), Type::U64)
             | (Value::Integer(Integer::U128(_)), Type::U128) => true,
+            (Value::Struct(values), Type::Struct(types)) => values
+                .iter()
+                .zip(types.iter())
+                .all(|(value, (_, type_))| value.matches_input_type(type_)),
+            (Value::Record(values), Type::Record(types)) => {
+                values
+                    .data
+                    .iter()
+                    .zip(types.data.iter())
+                    .all(|(data, (_, type_, vis))| {
+                        data.value.matches_input_type(type_) && data.visibility == *vis
+                    })
+                    && values.owner.visibility == types.owner
+                    && values.gates.visibility == types.gates
+                    && values.nonce.visibility == types.nonce
+            }
             (Value::Ref(_), _) => panic!("illegal ref in input type"),
             (_, _) => false,
         }
@@ -139,7 +149,7 @@ impl Value {
             ir::Operand {
                 address: Some(address),
                 ..
-            } if !address.address.is_empty() => Value::Address(address.address),
+            } => Value::Address(Address::decode(address)?),
             ir::Operand {
                 boolean: Some(boolean),
                 ..
@@ -208,8 +218,9 @@ impl Value {
                 string: Some(str), ..
             } => Value::Str(str.string),
             ir::Operand {
-                record: Some(_), ..
-            } => todo!(),
+                record: Some(record),
+                ..
+            } => Value::Record(Record::decode(*record)?),
             x => return Err(anyhow!("illegal value data: {:?}", x)),
         })
     }
@@ -217,9 +228,7 @@ impl Value {
     pub(crate) fn encode(&self) -> ir::Operand {
         match self {
             Value::Address(address) => ir::Operand {
-                address: Some(ir::Address {
-                    address: address.clone(),
-                }),
+                address: Some(address.encode()),
                 ..Default::default()
             },
             Value::Boolean(value) => ir::Operand {
@@ -311,7 +320,10 @@ impl Value {
                 }),
                 ..Default::default()
             },
-            Value::Record => todo!(),
+            Value::Record(record) => ir::Operand {
+                record: Some(record.encode()),
+                ..Default::default()
+            },
         }
     }
 }

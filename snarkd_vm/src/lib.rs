@@ -1,3 +1,5 @@
+#![warn(clippy::todo, clippy::use_debug)]
+
 mod function;
 pub use function::*;
 
@@ -20,3 +22,13 @@ pub use types::*;
 
 mod values;
 pub use values::*;
+
+mod visibility;
+pub use visibility::*;
+#[path = ""]
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    mod program_test;
+}
