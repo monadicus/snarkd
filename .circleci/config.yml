@@ -25,13 +25,13 @@ jobs:
     docker:
       - image: cimg/rust:1.64.0
     steps:
+      - protobuf/install
       - checkout
       - rust/test
 
 workflows:
   lint_and_test:
     jobs:
-      - protobuf/install
       - format
       - lint
       - test
