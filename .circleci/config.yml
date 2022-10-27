@@ -1,0 +1,37 @@
+version: 2.1
+
+orbs:
+  protobuf: izumin5210/protobuf@0.1.0
+  rust: circleci/rust@1.6.0
+
+jobs:
+  format:
+    docker:
+      - image: cimg/rust:1.64.0
+    steps:
+      - checkout
+      - rust/format
+
+  lint:
+    docker:
+      - image: cimg/rust:1.64.0
+    steps:
+      - checkout
+      - rust/clippy
+
+  test:
+    environment:
+      RUST_BACKTRACE: 1
+    docker:
+      - image: cimg/rust:1.64.0
+    steps:
+      - checkout
+      - rust/test
+
+workflows:
+  lint_and_test:
+    jobs:
+      - protobuf/install
+      - format
+      - lint
+      - test
