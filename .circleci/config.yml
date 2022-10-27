@@ -9,25 +9,8 @@ orbs:
   # provides rustfmt, clippy, cargo
   rust: circleci/rust@1.6.0
 
-jobs:
-  # runs rustfmt
-  format:
-    docker:
-      - image: cimg/rust:1.64.0
-    steps:
-      - checkout
-      - rust/format
-
-  # runs clippy
-  lint:
-    docker:
-      - image: cimg/rust:1.64.0
-    steps:
-      - checkout
-      - rust/clippy
-
-  # runs cargo test
-  test:
+  lint_and_test:
+    description: Runs rustfmt, clippy, and cargo test
     environment:
       RUST_BACKTRACE: 1
     docker:
@@ -35,11 +18,23 @@ jobs:
     steps:
       - protobuf/install
       - checkout
-      - rust/test
+      - rust/format:
+          with_cache: false
+      - rust/clippy:
+          with_cache: false
+      - rust/test:
+          with_cache: false
+      - save_cache:
+            key: 'cargo-<<parameters.cache_version>>-{{ checksum "Cargo.lock" }}'
+            paths:
+              - ~/.cargo
+    parameters:
+      cache_version:
+        default: v1
+        description: Cache version to use - increment this to build a fresh cache.
+        type: string
 
 workflows:
   lint_and_test:
     jobs:
-      - format
-      - lint
-      - test
+      - lint_and_test
