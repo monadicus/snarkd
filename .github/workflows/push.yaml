@@ -1,0 +1,17 @@
+name: Lint and Test
+on: [push]
+env:
+  RUST_BACKTRACE: 1
+jobs:
+  lint_and_test:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v1
+      - name: Lint
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          components: rustfmt, clippy
+      - name: Test
+        run: cargo test --all
