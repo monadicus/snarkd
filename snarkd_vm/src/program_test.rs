@@ -65,37 +65,37 @@ fn example_basic_record_program() -> Program {
                 destination: 2,
                 values: vec![
                     Value::Record(Record {
-                        owner: Data {
+                        owner: VisibleData {
                             value: Box::new(Value::Address(Address { address: vec![0] })),
                             visibility: Visibility::Constant,
                         },
-                        gates: Data {
+                        gates: VisibleData {
                             value: Box::new(Value::Integer(Integer::U64(0))),
                             visibility: Visibility::Constant,
                         },
-                        data: vec![Data {
+                        data: vec![VisibleData {
                             value: Box::new(Value::Boolean(false)),
                             visibility: Visibility::Constant,
                         }],
-                        nonce: Data {
+                        nonce: VisibleData {
                             value: Box::new(zero_group()),
                             visibility: Visibility::Constant,
                         },
                     }),
                     Value::Record(Record {
-                        owner: Data {
+                        owner: VisibleData {
                             value: Box::new(Value::Address(Address { address: vec![0] })),
                             visibility: Visibility::Constant,
                         },
-                        gates: Data {
+                        gates: VisibleData {
                             value: Box::new(Value::Integer(Integer::U64(0))),
                             visibility: Visibility::Constant,
                         },
-                        data: vec![Data {
+                        data: vec![VisibleData {
                             value: Box::new(Value::Boolean(false)),
                             visibility: Visibility::Constant,
                         }],
-                        nonce: Data {
+                        nonce: VisibleData {
                             value: Box::new(zero_group()),
                             visibility: Visibility::Constant,
                         },
@@ -115,31 +115,31 @@ fn incorrect_record_owner_type() -> Program {
                 destination: 2,
                 values: vec![
                     Value::Record(Record {
-                        owner: Data {
+                        owner: VisibleData {
                             value: Box::new(zero_group()),
                             visibility: Visibility::Constant,
                         },
-                        gates: Data {
+                        gates: VisibleData {
                             value: Box::new(Value::Integer(Integer::U64(0))),
                             visibility: Visibility::Constant,
                         },
                         data: Vec::new(),
-                        nonce: Data {
+                        nonce: VisibleData {
                             value: Box::new(zero_group()),
                             visibility: Visibility::Constant,
                         },
                     }),
                     Value::Record(Record {
-                        owner: Data {
+                        owner: VisibleData {
                             value: Box::new(Value::Address(Address { address: vec![0] })),
                             visibility: Visibility::Constant,
                         },
-                        gates: Data {
+                        gates: VisibleData {
                             value: Box::new(Value::Integer(Integer::U64(0))),
                             visibility: Visibility::Constant,
                         },
                         data: Vec::new(),
-                        nonce: Data {
+                        nonce: VisibleData {
                             value: Box::new(zero_group()),
                             visibility: Visibility::Constant,
                         },
