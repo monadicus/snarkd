@@ -12,38 +12,53 @@ orbs:
 commands:
   setup:
     description: Sets up the environment for building snarkd
+    parameters:
+      protoc:
+        default: false
+        description: Whether to install protoc during setup
+        type: boolean
     steps:
-      - protobuf/install
+      - when:
+          condition: <<parameters.protoc>>
+          steps:
+            - protobuf/install
       - setup_remote_docker:
           docker_layer_caching: true
 
 jobs:
-  lint_and_test:
-    description: Runs rustfmt, clippy, and cargo test
-    environment:
-      RUST_BACKTRACE: 1
+  # runs rustfmt
+  format:
     docker:
       - image: cimg/rust:1.64.0
     steps:
       - setup
       - checkout
-      - rust/format:
-          with_cache: false
-      - rust/clippy:
-          with_cache: false
-      - rust/test:
-          with_cache: false
-      - save_cache:
-            key: 'cargo-<<parameters.cache_version>>-{{ checksum "Cargo.lock" }}'
-            paths:
-              - ~/.cargo
-    parameters:
-      cache_version:
-        default: v1
-        description: Cache version to use - increment this to build a fresh cache.
-        type: string
+      - rust/format
+
+  # runs clippy
+  lint:
+    docker:
+      - image: cimg/rust:1.64.0
+    steps:
+      - setup
+      - checkout
+      - rust/clippy
+
+  # runs cargo test
+  test:
+    environment:
+      RUST_BACKTRACE: 1
+    docker:
+      - image: cimg/rust:1.64.0
+    steps:
+      - setup:
+         protoc: true
+      - checkout
+      - rust/test
 
 workflows:
   lint_and_test:
     jobs:
-      - lint_and_test
+      - format
+      - lint
+      - test
