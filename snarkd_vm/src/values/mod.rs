@@ -75,7 +75,7 @@ pub enum Value {
     Str(String),
     Ref(u32), // reference to a variable
     Scalar(Vec<u64>),
-    Record(Box<Record>),
+    Record(Record),
 }
 
 impl fmt::Display for Value {

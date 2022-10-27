@@ -64,42 +64,42 @@ fn example_basic_record_program() -> Program {
             instructions: vec![Instruction::IsEq(BinaryData {
                 destination: 2,
                 values: vec![
-                    Value::Record(Box::new(Record {
+                    Value::Record(Record {
                         owner: Data {
-                            value: Value::Address(Address { address: vec![0] }),
+                            value: Box::new(Value::Address(Address { address: vec![0] })),
                             visibility: Visibility::Constant,
                         },
                         gates: Data {
-                            value: Value::Integer(Integer::U64(0)),
+                            value: Box::new(Value::Integer(Integer::U64(0))),
                             visibility: Visibility::Constant,
                         },
                         data: vec![Data {
-                            value: Value::Boolean(false),
+                            value: Box::new(Value::Boolean(false)),
                             visibility: Visibility::Constant,
                         }],
                         nonce: Data {
-                            value: zero_group(),
+                            value: Box::new(zero_group()),
                             visibility: Visibility::Constant,
                         },
-                    })),
-                    Value::Record(Box::new(Record {
+                    }),
+                    Value::Record(Record {
                         owner: Data {
-                            value: Value::Address(Address { address: vec![0] }),
+                            value: Box::new(Value::Address(Address { address: vec![0] })),
                             visibility: Visibility::Constant,
                         },
                         gates: Data {
-                            value: Value::Integer(Integer::U64(0)),
+                            value: Box::new(Value::Integer(Integer::U64(0))),
                             visibility: Visibility::Constant,
                         },
                         data: vec![Data {
-                            value: Value::Boolean(false),
+                            value: Box::new(Value::Boolean(false)),
                             visibility: Visibility::Constant,
                         }],
                         nonce: Data {
-                            value: zero_group(),
+                            value: Box::new(zero_group()),
                             visibility: Visibility::Constant,
                         },
-                    })),
+                    }),
                 ],
             })],
         }],
@@ -114,36 +114,36 @@ fn incorrect_record_owner_type() -> Program {
             instructions: vec![Instruction::IsEq(BinaryData {
                 destination: 2,
                 values: vec![
-                    Value::Record(Box::new(Record {
+                    Value::Record(Record {
                         owner: Data {
-                            value: zero_group(),
+                            value: Box::new(zero_group()),
                             visibility: Visibility::Constant,
                         },
                         gates: Data {
-                            value: Value::Integer(Integer::U64(0)),
+                            value: Box::new(Value::Integer(Integer::U64(0))),
                             visibility: Visibility::Constant,
                         },
                         data: Vec::new(),
                         nonce: Data {
-                            value: zero_group(),
+                            value: Box::new(zero_group()),
                             visibility: Visibility::Constant,
                         },
-                    })),
-                    Value::Record(Box::new(Record {
+                    }),
+                    Value::Record(Record {
                         owner: Data {
-                            value: Value::Address(Address { address: vec![0] }),
+                            value: Box::new(Value::Address(Address { address: vec![0] })),
                             visibility: Visibility::Constant,
                         },
                         gates: Data {
-                            value: Value::Integer(Integer::U64(0)),
+                            value: Box::new(Value::Integer(Integer::U64(0))),
                             visibility: Visibility::Constant,
                         },
                         data: Vec::new(),
                         nonce: Data {
-                            value: zero_group(),
+                            value: Box::new(zero_group()),
                             visibility: Visibility::Constant,
                         },
-                    })),
+                    }),
                 ],
             })],
         }],
