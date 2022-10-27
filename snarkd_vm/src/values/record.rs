@@ -6,12 +6,12 @@ use serde::Serialize;
 use crate::{ir, visibility::Visibility, Integer, Value};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-pub struct Data {
+pub struct VisibleData {
     pub value: Box<Value>,
     pub visibility: Visibility,
 }
 
-impl Data {
+impl VisibleData {
     pub fn decode(from: ir::Data) -> Result<Self> {
         Ok(Self {
             visibility: Visibility::decode(from.visibility())?,
@@ -29,7 +29,7 @@ impl Data {
     }
 }
 
-impl fmt::Display for Data {
+impl fmt::Display for VisibleData {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}.{}", self.value, self.visibility)
     }
@@ -38,28 +38,28 @@ impl fmt::Display for Data {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct Record {
     /// address
-    pub owner: Data,
+    pub owner: VisibleData,
     /// u64
-    pub gates: Data,
-    /// any
-    pub data: Vec<Data>,
-    /// u64
-    pub nonce: Data,
+    pub gates: VisibleData,
+    /// any type
+    pub data: Vec<VisibleData>,
+    /// group
+    pub nonce: VisibleData,
 }
 
 impl Record {
     pub fn decode(from: ir::Record) -> Result<Self> {
-        let owner = Data::decode(*from.owner.ok_or_else(|| anyhow!("no value specified"))?)?;
+        let owner = VisibleData::decode(*from.owner.ok_or_else(|| anyhow!("no value specified"))?)?;
         if !matches!(*owner.value, Value::Address(_)) {
             bail!("owner must be an address");
         }
-        let gates = Data::decode(*from.gates.ok_or_else(|| anyhow!("no value specified"))?)?;
+        let gates = VisibleData::decode(*from.gates.ok_or_else(|| anyhow!("no value specified"))?)?;
         if !matches!(*gates.value, Value::Integer(Integer::U64(_))) {
-            bail!("owner must be an address");
+            bail!("gates must be a u64");
         }
-        let nonce = Data::decode(*from.nonce.ok_or_else(|| anyhow!("no value specified"))?)?;
+        let nonce = VisibleData::decode(*from.nonce.ok_or_else(|| anyhow!("no value specified"))?)?;
         if !matches!(*nonce.value, Value::Group(_)) {
-            bail!("owner must be an address");
+            bail!("nonce must be a group");
         }
 
         Ok(Self {
@@ -68,7 +68,7 @@ impl Record {
             data: from
                 .data
                 .into_iter()
-                .map(Data::decode)
+                .map(VisibleData::decode)
                 .collect::<Result<Vec<_>>>()?,
             nonce,
         })
