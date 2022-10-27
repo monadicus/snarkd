@@ -1,9 +1,60 @@
 use std::fmt;
 
-use crate::ir;
+use crate::{ir, visibility::Visibility};
 
 use anyhow::*;
 use serde::Serialize;
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct RecordType {
+    pub owner: Visibility,
+    pub gates: Visibility,
+    pub data: Vec<(String, Type, Visibility)>,
+    pub nonce: Visibility,
+}
+
+impl RecordType {
+    pub fn decode(ir: ir::Type) -> Result<Self> {
+        if ir.visibilities.len() < 3 {
+            return Err(anyhow!("invalid visibilities for record"));
+        }
+        Ok(Self {
+            owner: ir.visibilities[0].try_into()?,
+            gates: ir.visibilities[1].try_into()?,
+            nonce: ir.visibilities[2].try_into()?,
+            data: ir
+                .visibilities
+                .into_iter()
+                .skip(3)
+                .zip(ir.subtype_names.into_iter())
+                .zip(ir.subtypes.into_iter())
+                .map(|((vis, name), ty)| Ok((name, Type::decode(ty)?, Visibility::try_from(vis)?)))
+                .collect::<Result<_>>()?,
+        })
+    }
+
+    pub fn visibilities(&self) -> Vec<i32> {
+        let mut v = vec![self.owner as i32, self.gates as i32, self.nonce as i32];
+        v.extend(self.data.iter().map(|(_, _, v)| *v as i32));
+        v
+    }
+}
+
+impl fmt::Display for RecordType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "record{{owner: address.{}, gates: u64.{}, ",
+            // these are just the visibilities... not the values
+            self.owner,
+            self.gates
+        )?;
+        for item in &self.data {
+            write!(f, "{}: {}.{}, ", item.0, item.1, item.2,)?;
+        }
+        write!(f, "nonce: {}}}", self.nonce)
+    }
+}
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub enum Type {
@@ -27,7 +78,7 @@ pub enum Type {
 
     String,
     Struct(Vec<(String, Type)>),
-    Record,
+    Record(RecordType),
 }
 
 impl Type {
@@ -49,7 +100,7 @@ impl Type {
             x if x == ir::TypeClass::TypeI64 as i32 => Type::I64,
             x if x == ir::TypeClass::TypeI128 as i32 => Type::I128,
             x if x == ir::TypeClass::TypeString as i32 => Type::String,
-            x if x == ir::TypeClass::TypeRecord as i32 => Type::Record,
+            x if x == ir::TypeClass::TypeRecord as i32 => Type::Record(RecordType::decode(type_)?),
             x if x == ir::TypeClass::TypeStruct as i32 => Type::Struct(
                 type_
                     .subtypes
@@ -82,14 +133,24 @@ impl Type {
                 Type::I128 => ir::TypeClass::TypeI128 as i32,
                 Type::String => ir::TypeClass::TypeString as i32,
                 Type::Struct(_) => ir::TypeClass::TypeStruct as i32,
-                Type::Record => ir::TypeClass::TypeRecord as i32,
+                Type::Record(_) => ir::TypeClass::TypeRecord as i32,
             },
             subtypes: match self {
                 Type::Struct(items) => items.iter().map(|(_, x)| x.encode()).collect(),
+                Type::Record(RecordType { data, .. }) => {
+                    data.iter().map(|(_, x, _)| x.encode()).collect()
+                }
                 _ => Vec::new(),
             },
             subtype_names: match self {
                 Type::Struct(items) => items.iter().map(|(x, _)| x.clone()).collect(),
+                Type::Record(RecordType { data, .. }) => {
+                    data.iter().map(|(x, _, _)| x.clone()).collect()
+                }
+                _ => Vec::new(),
+            },
+            visibilities: match self {
+                Type::Record(record) => record.visibilities(),
                 _ => Vec::new(),
             },
         }
@@ -116,13 +177,13 @@ impl fmt::Display for Type {
             Type::I128 => write!(f, "i128"),
             Type::String => write!(f, "string"),
             Type::Struct(inner) => {
-                write!(f, "{{")?;
+                write!(f, "struct{{")?;
                 for (i, (name, type_)) in inner.iter().enumerate() {
                     write!(f, "{}{}: {}", if i != 0 { ", " } else { "" }, name, type_)?;
                 }
                 write!(f, "}}")
             }
-            Type::Record => write!(f, "Record"),
+            Type::Record(inner) => write!(f, "{inner}"),
         }
     }
 }

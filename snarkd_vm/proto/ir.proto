@@ -90,13 +90,26 @@ message String {
 }
 
 message Struct {
-    repeated Operand values = 2;
+    repeated Operand values = 1;
+}
+
+enum Visibility {
+   Constant = 0;
+   Private = 1;
+   Public = 2;
+}
+
+message Data {
+    Operand value = 1;
+    Visibility visibility = 2;
 }
 
 message Record {
-
+    Data owner = 1;
+    Data gates = 2;
+    repeated Data data = 3;
+    optional Data nonce = 4;
 }
-
 
 message Operand {
     Address address = 1;
@@ -125,6 +138,7 @@ message Type {
     TypeClass class = 1;
     repeated Type subtypes = 2;
     repeated string subtype_names = 3;
+    repeated Visibility visibilities = 4;
 }
 
 message Input {
@@ -171,15 +185,15 @@ enum TypeClass {
 }
 
 message Header {
-    uint32 snarkd_major = 2;
-    uint32 snarkd_minor = 3;
-    uint32 snarkd_patch = 4;
-    repeated Input main_inputs = 5;
-    repeated Input constant_inputs = 6;
-    repeated Input register_inputs = 7;
-    repeated Input public_states = 8;
-    repeated Input private_record_states = 9;
-    repeated Input private_leaf_states = 10;
+    uint32 snarkd_major = 1;
+    uint32 snarkd_minor = 2;
+    uint32 snarkd_patch = 3;
+    repeated Input main_inputs = 4;
+    repeated Input constant_inputs = 5;
+    repeated Input register_inputs = 6;
+    repeated Input public_states = 7;
+    repeated Input private_record_states = 8;
+    repeated Input private_leaf_states = 9;
 }
 
 message Function {
