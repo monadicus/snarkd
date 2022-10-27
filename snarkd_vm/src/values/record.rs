@@ -7,7 +7,7 @@ use crate::{ir, visibility::Visibility, Integer, Value};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct Data {
-    pub value: Value,
+    pub value: Box<Value>,
     pub visibility: Visibility,
 }
 
@@ -15,7 +15,9 @@ impl Data {
     pub fn decode(from: ir::Data) -> Result<Self> {
         Ok(Self {
             visibility: Visibility::decode(from.visibility())?,
-            value: Value::decode(*from.value.ok_or_else(|| anyhow!("no value specified"))?)?,
+            value: Box::new(Value::decode(
+                *from.value.ok_or_else(|| anyhow!("no value specified"))?,
+            )?),
         })
     }
 
@@ -46,21 +48,21 @@ pub struct Record {
 }
 
 impl Record {
-    pub fn decode(from: ir::Record) -> Result<Box<Self>> {
+    pub fn decode(from: ir::Record) -> Result<Self> {
         let owner = Data::decode(*from.owner.ok_or_else(|| anyhow!("no value specified"))?)?;
-        if !matches!(owner.value, Value::Address(_)) {
+        if !matches!(*owner.value, Value::Address(_)) {
             bail!("owner must be an address");
         }
         let gates = Data::decode(*from.gates.ok_or_else(|| anyhow!("no value specified"))?)?;
-        if !matches!(gates.value, Value::Integer(Integer::U64(_))) {
+        if !matches!(*gates.value, Value::Integer(Integer::U64(_))) {
             bail!("owner must be an address");
         }
         let nonce = Data::decode(*from.nonce.ok_or_else(|| anyhow!("no value specified"))?)?;
-        if !matches!(nonce.value, Value::Group(_)) {
+        if !matches!(*nonce.value, Value::Group(_)) {
             bail!("owner must be an address");
         }
 
-        Ok(Box::new(Self {
+        Ok(Self {
             owner,
             gates,
             data: from
@@ -69,7 +71,7 @@ impl Record {
                 .map(Data::decode)
                 .collect::<Result<Vec<_>>>()?,
             nonce,
-        }))
+        })
     }
 
     pub fn encode(&self) -> Box<ir::Record> {
