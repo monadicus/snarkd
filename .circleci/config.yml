@@ -13,9 +13,7 @@ commands:
   setup:
     description: Sets up the environment for building snarkd
     steps:
-      - run:
-          name: Install protoc
-          command: protobuf/install
+      - protobuf/install
       - setup_remote_docker:
           docker_layer_caching: true
 
