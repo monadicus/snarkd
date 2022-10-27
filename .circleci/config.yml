@@ -9,6 +9,17 @@ orbs:
   # provides rustfmt, clippy, cargo
   rust: circleci/rust@1.6.0
 
+commands:
+  setup:
+    description: Sets up the environment for building snarkd
+    steps:
+      - run:
+          name: Install protoc
+          command: protobuf/install
+      - setup_remote_docker:
+          docker_layer_caching: true
+
+jobs:
   lint_and_test:
     description: Runs rustfmt, clippy, and cargo test
     environment:
@@ -16,7 +27,7 @@ orbs:
     docker:
       - image: cimg/rust:1.64.0
     steps:
-      - protobuf/install
+      - setup
       - checkout
       - rust/format:
           with_cache: false
