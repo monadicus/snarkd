@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "snarkd_common",
     "snarkd_eval",
+    "snarkd_crypto",
     "snarkd_ir",
     "snarkd_network",
     "snarkd_node",
