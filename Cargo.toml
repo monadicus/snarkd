@@ -3,7 +3,35 @@ resolver = "2"
 members = [
     "snarkd_common",
     "snarkd_crypto",
+    "snarkd_ir",
+    "snarkd_network",
     "snarkd_node",
     "snarkd_storage",
-    "snarkd_network",
 ]
+
+[workspace.dependencies]
+anyhow = "1.0"
+arc-swap = "1.0"
+async-trait = "0.1"
+bech32 = "0.9.1"
+chrono = { version = "0.4", features = ["serde"] }
+clap = { version = "4.0", features = ["derive"] }
+dashmap = "5.4"
+env_logger = "0.9"
+hex = "0.4"
+indexmap = { version = "1.9.1", features = ["serde"] }
+lazy_static = "1.4"
+log = "0.4"
+num_enum = "0.5.7"
+prost = "0.11.0"
+prost-build = "0.11.1"
+refinery = { version = "0.8.6", features = [
+    "rusqlite-bundled",
+], git = "https://github.com/rust-db/refinery.git" }
+rusqlite = { version = "0.28", features = ["bundled"] }
+serde = { version = "1.0.147", features = ["derive"] }
+serde_yaml = "0.9.14"
+smallvec = "1.10"
+tokio = { version = "1.0", features = ["full"] }
+# we need a new release for rusqlite 0.28 support
+tokio-rusqlite = "0.3.0"
