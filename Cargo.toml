@@ -2,10 +2,10 @@
 resolver = "2"
 members = [
     "snarkd_common",
+    "snarkd_ir",
+    "snarkd_network",
     "snarkd_node",
     "snarkd_storage",
-    "snarkd_network",
-    "snarkd_vm",
 ]
 
 [workspace.dependencies]
