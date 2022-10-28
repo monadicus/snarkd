@@ -11,8 +11,8 @@ log = { workspace = true }
 prost = { workspace = true }
 tokio = { workspace = true }
 
-snarkd_common = { path = "../snarkd_common" }
-# snarkd_errors = { workspace = true }
+snarkd_common = { workspace = true }
+snarkd_errors = { workspace = true }
 
 [build-dependencies]
 prost-build = { workspace = true }
