@@ -3,10 +3,10 @@ resolver = "2"
 members = [
     "snarkd_common",
     "snarkd_crypto",
+    "snarkd_ir",
+    "snarkd_network",
     "snarkd_node",
     "snarkd_storage",
-    "snarkd_network",
-    "snarkd_vm",
 ]
 
 [workspace.dependencies]
@@ -19,7 +19,7 @@ clap = { version = "4.0", features = ["derive"] }
 dashmap = "5.4"
 env_logger = "0.9"
 hex = "0.4"
-indexmap = { version = "1.9.1", features = ["serde"]}
+indexmap = { version = "1.9.1", features = ["serde"] }
 lazy_static = "1.4"
 log = "0.4"
 num_enum = "0.5.7"
