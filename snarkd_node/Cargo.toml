@@ -17,3 +17,4 @@ clap = { version = "4.0", features = ["derive"] }
 
 snarkd_common = { path = "../snarkd_common" }
 snarkd_storage = { path = "../snarkd_storage" }
+snarkd_peer = { path = "../snarkd_peer" }

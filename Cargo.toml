@@ -5,4 +5,5 @@ members = [
     "snarkd_node",
     "snarkd_storage",
     "snarkd_network",
+    "snarkd_peer",
 ]

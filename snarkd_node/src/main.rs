@@ -1,6 +1,7 @@
 use clap::Parser;
 use config::{Verbosity, CONFIG};
 use log::{error, warn, LevelFilter};
+use snarkd_peer::{config::PeerConfig, tracker::http_client};
 use snarkd_storage::Database;
 
 mod config;
@@ -62,6 +63,16 @@ async fn main() {
     //TODO: spawn RPC
 
     //TODO: start miner
+
+    let conf: PeerConfig = serde_yaml::from_str("{}").unwrap();
+    conf.print();
+
+    http_client(
+        &conf,
+        "http://tracker.opentrackr.org:1337/announce".to_string(),
+    )
+    .await
+    .unwrap();
 
     std::future::pending::<()>().await;
 }
