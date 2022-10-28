@@ -1,4 +1,4 @@
-use crate::ir;
+use crate::ir::{self, ProtoBuf};
 use anyhow::{anyhow, Error, Result};
 use serde::Serialize;
 use std::fmt;
@@ -11,8 +11,10 @@ pub enum Visibility {
     Public,
 }
 
-impl Visibility {
-    pub fn decode(from: ir::Visibility) -> Result<Self> {
+impl ProtoBuf for Visibility {
+    type Target = ir::Visibility;
+
+    fn decode(from: ir::Visibility) -> Result<Self> {
         Ok(match from {
             ir::Visibility::Constant => Self::Constant,
             ir::Visibility::Private => Self::Private,
@@ -20,7 +22,7 @@ impl Visibility {
         })
     }
 
-    pub fn encode(&self) -> ir::Visibility {
+    fn encode(&self) -> ir::Visibility {
         match self {
             Self::Constant => ir::Visibility::Constant,
             Self::Private => ir::Visibility::Private,

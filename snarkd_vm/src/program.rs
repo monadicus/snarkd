@@ -6,7 +6,10 @@ use std::{
 
 use prost::Message;
 
-use crate::{ir, Function, Header};
+use crate::{
+    ir::{self, ProtoBuf},
+    Function, Header,
+};
 
 use anyhow::{anyhow, Result};
 use serde::Serialize;
@@ -18,28 +21,6 @@ pub struct Program {
 }
 
 impl Program {
-    pub(crate) fn encode(&self) -> ir::Program {
-        ir::Program {
-            header: Some(self.header.encode()),
-            functions: self.functions.iter().map(|x| x.encode()).collect(),
-        }
-    }
-
-    pub(crate) fn decode(program: ir::Program) -> Result<Self> {
-        Ok(Self {
-            header: Header::decode(
-                program
-                    .header
-                    .ok_or_else(|| anyhow!("missing header for program"))?,
-            )?,
-            functions: program
-                .functions
-                .into_iter()
-                .map(Function::decode)
-                .collect::<Result<Vec<Function>>>()?,
-        })
-    }
-
     pub fn serialize(&self) -> Result<Vec<u8>> {
         let mut out = vec![];
         self.encode().encode(&mut out)?;
@@ -76,14 +57,35 @@ impl Program {
 
 impl fmt::Display for Program {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for (i, function) in self.functions.iter().enumerate() {
-            writeln!(f, "decl f{}: <{}>", i, function.argument_start_variable)?;
-            for (i, instruction) in function.instructions.iter().enumerate() {
-                write!(f, "{i}: ")?;
-                instruction.fmt(f)?;
-                writeln!(f)?;
-            }
+        for function in &self.functions {
+            writeln!(f, "{function}")?;
         }
         Ok(())
+    }
+}
+
+impl ProtoBuf for Program {
+    type Target = ir::Program;
+
+    fn encode(&self) -> Self::Target {
+        ir::Program {
+            header: Some(self.header.encode()),
+            functions: self.functions.iter().map(|x| x.encode()).collect(),
+        }
+    }
+
+    fn decode(program: Self::Target) -> Result<Self> {
+        Ok(Self {
+            header: Header::decode(
+                program
+                    .header
+                    .ok_or_else(|| anyhow!("missing header for program"))?,
+            )?,
+            functions: program
+                .functions
+                .into_iter()
+                .map(Function::decode)
+                .collect::<Result<Vec<Function>>>()?,
+        })
     }
 }

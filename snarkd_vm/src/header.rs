@@ -1,4 +1,9 @@
-use crate::{ir, Input};
+use std::fmt;
+
+use crate::{
+    ir::{self, ProtoBuf},
+    Input,
+};
 
 use anyhow::*;
 use serde::Serialize;
@@ -43,8 +48,10 @@ pub struct Header {
     pub private_leaf_states: Vec<Input>,
 }
 
-impl Header {
-    pub(crate) fn decode(header: ir::Header) -> Result<Self> {
+impl ProtoBuf for Header {
+    type Target = ir::Header;
+
+    fn decode(header: Self::Target) -> Result<Self> {
         Ok(Self {
             version: SnarkdVersion {
                 major: header.snarkd_major,
@@ -84,8 +91,8 @@ impl Header {
         })
     }
 
-    pub(crate) fn encode(&self) -> ir::Header {
-        ir::Header {
+    fn encode(&self) -> Self::Target {
+        Self::Target {
             snarkd_major: self.version.major,
             snarkd_minor: self.version.minor,
             snarkd_patch: self.version.patch,
@@ -104,5 +111,11 @@ impl Header {
                 .map(|x| x.encode())
                 .collect(),
         }
+    }
+}
+
+impl fmt::Display for Header {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "{self:?}")
     }
 }

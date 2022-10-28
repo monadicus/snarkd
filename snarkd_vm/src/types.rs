@@ -1,6 +1,9 @@
 use std::fmt;
 
-use crate::{ir, visibility::Visibility};
+use crate::{
+    ir::{self, ProtoBuf},
+    visibility::Visibility,
+};
 
 use anyhow::*;
 use serde::Serialize;
@@ -14,7 +17,21 @@ pub struct RecordType {
 }
 
 impl RecordType {
-    pub fn decode(ir: ir::Type) -> Result<Self> {
+    pub fn visibilities(&self) -> Vec<i32> {
+        let mut v = vec![self.owner as i32, self.gates as i32, self.nonce as i32];
+        v.extend(self.data.iter().map(|(_, _, v)| *v as i32));
+        v
+    }
+}
+
+impl ProtoBuf for RecordType {
+    type Target = ir::Type;
+
+    fn encode(&self) -> Self::Target {
+        unimplemented!()
+    }
+
+    fn decode(ir: Self::Target) -> Result<Self> {
         if ir.visibilities.len() < 3 {
             return Err(anyhow!("invalid visibilities for record"));
         }
@@ -31,12 +48,6 @@ impl RecordType {
                 .map(|((vis, name), ty)| Ok((name, Type::decode(ty)?, Visibility::try_from(vis)?)))
                 .collect::<Result<_>>()?,
         })
-    }
-
-    pub fn visibilities(&self) -> Vec<i32> {
-        let mut v = vec![self.owner as i32, self.gates as i32, self.nonce as i32];
-        v.extend(self.data.iter().map(|(_, _, v)| *v as i32));
-        v
     }
 }
 
@@ -81,39 +92,10 @@ pub enum Type {
     Record(RecordType),
 }
 
-impl Type {
-    pub(crate) fn decode(type_: ir::Type) -> Result<Self> {
-        Ok(match type_.class {
-            x if x == ir::TypeClass::TypeAddress as i32 => Type::Address,
-            x if x == ir::TypeClass::TypeBoolean as i32 => Type::Boolean,
-            x if x == ir::TypeClass::TypeField as i32 => Type::Field,
-            x if x == ir::TypeClass::TypeGroup as i32 => Type::Group,
-            x if x == ir::TypeClass::TypeScalar as i32 => Type::Scalar,
-            x if x == ir::TypeClass::TypeU8 as i32 => Type::U8,
-            x if x == ir::TypeClass::TypeU16 as i32 => Type::U16,
-            x if x == ir::TypeClass::TypeU32 as i32 => Type::U32,
-            x if x == ir::TypeClass::TypeU64 as i32 => Type::U64,
-            x if x == ir::TypeClass::TypeU128 as i32 => Type::U128,
-            x if x == ir::TypeClass::TypeI8 as i32 => Type::I8,
-            x if x == ir::TypeClass::TypeI16 as i32 => Type::I16,
-            x if x == ir::TypeClass::TypeI32 as i32 => Type::I32,
-            x if x == ir::TypeClass::TypeI64 as i32 => Type::I64,
-            x if x == ir::TypeClass::TypeI128 as i32 => Type::I128,
-            x if x == ir::TypeClass::TypeString as i32 => Type::String,
-            x if x == ir::TypeClass::TypeRecord as i32 => Type::Record(RecordType::decode(type_)?),
-            x if x == ir::TypeClass::TypeStruct as i32 => Type::Struct(
-                type_
-                    .subtypes
-                    .into_iter()
-                    .zip(type_.subtype_names.into_iter())
-                    .map(|(x, s)| Ok((s, Type::decode(x)?)))
-                    .collect::<Result<Vec<_>>>()?,
-            ),
-            x => return Err(anyhow!("unknown type enum: {}", x)),
-        })
-    }
+impl ProtoBuf for Type {
+    type Target = ir::Type;
 
-    pub(crate) fn encode(&self) -> ir::Type {
+    fn encode(&self) -> Self::Target {
         ir::Type {
             class: match self {
                 Type::Address => ir::TypeClass::TypeAddress as i32,
@@ -154,6 +136,40 @@ impl Type {
                 _ => Vec::new(),
             },
         }
+    }
+
+    fn decode(target: Self::Target) -> Result<Self>
+    where
+        Self: Sized,
+    {
+        Ok(match target.class {
+            x if x == ir::TypeClass::TypeAddress as i32 => Type::Address,
+            x if x == ir::TypeClass::TypeBoolean as i32 => Type::Boolean,
+            x if x == ir::TypeClass::TypeField as i32 => Type::Field,
+            x if x == ir::TypeClass::TypeGroup as i32 => Type::Group,
+            x if x == ir::TypeClass::TypeScalar as i32 => Type::Scalar,
+            x if x == ir::TypeClass::TypeU8 as i32 => Type::U8,
+            x if x == ir::TypeClass::TypeU16 as i32 => Type::U16,
+            x if x == ir::TypeClass::TypeU32 as i32 => Type::U32,
+            x if x == ir::TypeClass::TypeU64 as i32 => Type::U64,
+            x if x == ir::TypeClass::TypeU128 as i32 => Type::U128,
+            x if x == ir::TypeClass::TypeI8 as i32 => Type::I8,
+            x if x == ir::TypeClass::TypeI16 as i32 => Type::I16,
+            x if x == ir::TypeClass::TypeI32 as i32 => Type::I32,
+            x if x == ir::TypeClass::TypeI64 as i32 => Type::I64,
+            x if x == ir::TypeClass::TypeI128 as i32 => Type::I128,
+            x if x == ir::TypeClass::TypeString as i32 => Type::String,
+            x if x == ir::TypeClass::TypeRecord as i32 => Type::Record(RecordType::decode(target)?),
+            x if x == ir::TypeClass::TypeStruct as i32 => Type::Struct(
+                target
+                    .subtypes
+                    .into_iter()
+                    .zip(target.subtype_names.into_iter())
+                    .map(|(x, s)| Ok((s, Type::decode(x)?)))
+                    .collect::<Result<Vec<_>>>()?,
+            ),
+            x => return Err(anyhow!("unknown type enum: {}", x)),
+        })
     }
 }
 

@@ -3,7 +3,6 @@ use std::fmt;
 
 include!(concat!(env!("OUT_DIR"), "/snarkd.ir.rs"));
 
-/// TODO use this instead
 pub trait ProtoBuf: fmt::Display {
     type Target;
 

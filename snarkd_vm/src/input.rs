@@ -1,4 +1,9 @@
-use crate::{ir, Type, Value};
+use std::fmt;
+
+use crate::{
+    ir::{self, ProtoBuf},
+    Type, Value,
+};
 
 use anyhow::*;
 use indexmap::IndexMap;
@@ -12,8 +17,10 @@ pub struct Input {
     pub type_: Type,
 }
 
-impl Input {
-    pub(crate) fn decode(input: ir::Input) -> Result<Self> {
+impl ProtoBuf for Input {
+    type Target = ir::Input;
+
+    fn decode(input: Self::Target) -> Result<Self> {
         Ok(Self {
             variable: input.variable,
             name: input.name,
@@ -25,12 +32,18 @@ impl Input {
         })
     }
 
-    pub(crate) fn encode(&self) -> ir::Input {
+    fn encode(&self) -> Self::Target {
         ir::Input {
             variable: self.variable,
             name: self.name.clone(),
             r#type: Some(self.type_.encode()),
         }
+    }
+}
+
+impl fmt::Display for Input {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}, {}: {}", self.variable, self.name, self.type_)
     }
 }
 

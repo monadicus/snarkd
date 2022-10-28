@@ -1,5 +1,7 @@
 use num_enum::TryFromPrimitive;
 
+use crate::ir::ProtoBuf;
+
 use super::{op::InstructionOp, query::QueryData, *};
 
 impl Instruction {
@@ -120,15 +122,19 @@ impl Instruction {
             Self::Xor(x) => x.encode(),
         }
     }
+}
 
-    pub(crate) fn encode(&self) -> ir::Instruction {
+impl ProtoBuf for Instruction {
+    type Target = ir::Instruction;
+
+    fn encode(&self) -> Self::Target {
         ir::Instruction {
             opcode: self.opcode() as u32,
             operands: self.encode_operands(),
         }
     }
 
-    pub(crate) fn decode(instruction: ir::Instruction) -> Result<Self> {
+    fn decode(instruction: Self::Target) -> Result<Self> {
         Ok(
             match InstructionOp::try_from_primitive(instruction.opcode)
                 .map_err(|_| anyhow!("unknown instruction opcode: {}", instruction.opcode))?

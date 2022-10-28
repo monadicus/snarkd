@@ -1,6 +1,9 @@
 use std::{convert::TryFrom, fmt};
 
-use crate::{ir, Type};
+use crate::{
+    ir::{self, ProtoBuf},
+    Type,
+};
 
 use anyhow::*;
 use serde::Serialize;
@@ -78,34 +81,6 @@ pub enum Value {
     Record(Record),
 }
 
-impl fmt::Display for Value {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Value::Address(address) => write!(f, "{address}"),
-            Value::Boolean(x) => write!(f, "{x}"),
-            Value::Field(field) => write!(f, "{field}"),
-            Value::Group(group) => write!(f, "{group}"),
-            Value::Integer(x) => write!(f, "{x}"),
-            Value::Struct(items) => {
-                write!(f, "struct(")?;
-                for (i, item) in items.iter().enumerate() {
-                    write!(
-                        f,
-                        "{}{}",
-                        item,
-                        if i == items.len() - 1 { "" } else { ", " }
-                    )?;
-                }
-                write!(f, ")")
-            }
-            Value::Str(s) => write!(f, "\"{s}\""),
-            Value::Ref(x) => write!(f, "{x}"),
-            Value::Scalar(x) => write!(f, "scalar{x:?}"),
-            Value::Record(record) => write!(f, "{}", record),
-        }
-    }
-}
-
 impl Value {
     pub fn matches_input_type(&self, type_: &Type) -> bool {
         match (self, type_) {
@@ -143,89 +118,12 @@ impl Value {
             (_, _) => false,
         }
     }
+}
 
-    pub(crate) fn decode(from: ir::Operand) -> Result<Value> {
-        Ok(match from {
-            ir::Operand {
-                address: Some(address),
-                ..
-            } => Value::Address(Address::decode(address)?),
-            ir::Operand {
-                boolean: Some(boolean),
-                ..
-            } => Value::Boolean(boolean.boolean),
-            ir::Operand {
-                field: Some(field), ..
-            } => Value::Field(Field::decode(field)),
-            ir::Operand {
-                group_single: Some(group_single),
-                ..
-            } => Value::Group(Group::Single(Field::decode(group_single))),
-            ir::Operand {
-                group_tuple:
-                    Some(ir::Group {
-                        left: Some(left),
-                        right: Some(right),
-                    }),
-                ..
-            } => Value::Group(Group::Tuple(
-                GroupCoordinate::decode(left)?,
-                GroupCoordinate::decode(right)?,
-            )),
-            ir::Operand { u8: Some(u8), .. } => Value::Integer(Integer::U8(u8.u8 as u8)),
-            ir::Operand { u16: Some(u16), .. } => Value::Integer(Integer::U16(u16.u16 as u16)),
-            ir::Operand { u32: Some(u32), .. } => Value::Integer(Integer::U32(u32.u32)),
-            ir::Operand { u64: Some(u64), .. } => Value::Integer(Integer::U64(u64.u64)),
-            ir::Operand {
-                u128: Some(u128), ..
-            } => {
-                let mut raw = [0u8; 16];
-                let len = u128.u128.len().min(16);
-                raw[..len].copy_from_slice(&u128.u128[..len]);
-                Value::Integer(Integer::U128(u128::from_le_bytes(raw)))
-            }
-            ir::Operand { i8: Some(i8), .. } => Value::Integer(Integer::I8(i8.i8 as i8)),
-            ir::Operand { i16: Some(i16), .. } => Value::Integer(Integer::I16(i16.i16 as i16)),
-            ir::Operand { i32: Some(i32), .. } => Value::Integer(Integer::I32(i32.i32)),
-            ir::Operand { i64: Some(i64), .. } => Value::Integer(Integer::I64(i64.i64)),
-            ir::Operand {
-                i128: Some(i128), ..
-            } => {
-                let mut raw = [0u8; 16];
-                let len = i128.i128.len().min(16);
-                raw[..len].copy_from_slice(&i128.i128[..len]);
-                Value::Integer(Integer::I128(i128::from_le_bytes(raw)))
-            }
-            ir::Operand {
-                variable_ref: Some(variable_ref),
-                ..
-            } => Value::Ref(variable_ref.variable_ref),
-            ir::Operand {
-                structure: Some(structure),
-                ..
-            } => Value::Struct(
-                structure
-                    .values
-                    .into_iter()
-                    .map(Value::decode)
-                    .collect::<Result<Vec<_>>>()?,
-            ),
-            ir::Operand {
-                scalar: Some(scalar),
-                ..
-            } => Value::Scalar(scalar.values),
-            ir::Operand {
-                string: Some(str), ..
-            } => Value::Str(str.string),
-            ir::Operand {
-                record: Some(record),
-                ..
-            } => Value::Record(Record::decode(*record)?),
-            x => return Err(anyhow!("illegal value data: {:?}", x)),
-        })
-    }
+impl ProtoBuf for Value {
+    type Target = ir::Operand;
 
-    pub(crate) fn encode(&self) -> ir::Operand {
+    fn encode(&self) -> Self::Target {
         match self {
             Value::Address(address) => ir::Operand {
                 address: Some(address.encode()),
@@ -321,9 +219,121 @@ impl Value {
                 ..Default::default()
             },
             Value::Record(record) => ir::Operand {
-                record: Some(record.encode()),
+                record: Some(Box::new(record.encode())),
                 ..Default::default()
             },
+        }
+    }
+
+    fn decode(target: Self::Target) -> Result<Self>
+    where
+        Self: Sized,
+    {
+        Ok(match target {
+            ir::Operand {
+                address: Some(address),
+                ..
+            } => Value::Address(Address::decode(address)?),
+            ir::Operand {
+                boolean: Some(boolean),
+                ..
+            } => Value::Boolean(boolean.boolean),
+            ir::Operand {
+                field: Some(field), ..
+            } => Value::Field(Field::decode(field)?),
+            ir::Operand {
+                group_single: Some(group_single),
+                ..
+            } => Value::Group(Group::Single(Field::decode(group_single)?)),
+            ir::Operand {
+                group_tuple:
+                    Some(ir::Group {
+                        left: Some(left),
+                        right: Some(right),
+                    }),
+                ..
+            } => Value::Group(Group::Tuple(
+                GroupCoordinate::decode(left)?,
+                GroupCoordinate::decode(right)?,
+            )),
+            ir::Operand { u8: Some(u8), .. } => Value::Integer(Integer::U8(u8.u8 as u8)),
+            ir::Operand { u16: Some(u16), .. } => Value::Integer(Integer::U16(u16.u16 as u16)),
+            ir::Operand { u32: Some(u32), .. } => Value::Integer(Integer::U32(u32.u32)),
+            ir::Operand { u64: Some(u64), .. } => Value::Integer(Integer::U64(u64.u64)),
+            ir::Operand {
+                u128: Some(u128), ..
+            } => {
+                let mut raw = [0u8; 16];
+                let len = u128.u128.len().min(16);
+                raw[..len].copy_from_slice(&u128.u128[..len]);
+                Value::Integer(Integer::U128(u128::from_le_bytes(raw)))
+            }
+            ir::Operand { i8: Some(i8), .. } => Value::Integer(Integer::I8(i8.i8 as i8)),
+            ir::Operand { i16: Some(i16), .. } => Value::Integer(Integer::I16(i16.i16 as i16)),
+            ir::Operand { i32: Some(i32), .. } => Value::Integer(Integer::I32(i32.i32)),
+            ir::Operand { i64: Some(i64), .. } => Value::Integer(Integer::I64(i64.i64)),
+            ir::Operand {
+                i128: Some(i128), ..
+            } => {
+                let mut raw = [0u8; 16];
+                let len = i128.i128.len().min(16);
+                raw[..len].copy_from_slice(&i128.i128[..len]);
+                Value::Integer(Integer::I128(i128::from_le_bytes(raw)))
+            }
+            ir::Operand {
+                variable_ref: Some(variable_ref),
+                ..
+            } => Value::Ref(variable_ref.variable_ref),
+            ir::Operand {
+                structure: Some(structure),
+                ..
+            } => Value::Struct(
+                structure
+                    .values
+                    .into_iter()
+                    .map(Value::decode)
+                    .collect::<Result<Vec<_>>>()?,
+            ),
+            ir::Operand {
+                scalar: Some(scalar),
+                ..
+            } => Value::Scalar(scalar.values),
+            ir::Operand {
+                string: Some(str), ..
+            } => Value::Str(str.string),
+            ir::Operand {
+                record: Some(record),
+                ..
+            } => Value::Record(Record::decode(*record)?),
+            x => return Err(anyhow!("illegal value data: {:?}", x)),
+        })
+    }
+}
+
+impl fmt::Display for Value {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Value::Address(address) => write!(f, "{address}"),
+            Value::Boolean(x) => write!(f, "{x}"),
+            Value::Field(field) => write!(f, "{field}"),
+            Value::Group(group) => write!(f, "{group}"),
+            Value::Integer(x) => write!(f, "{x}"),
+            Value::Struct(items) => {
+                write!(f, "struct(")?;
+                for (i, item) in items.iter().enumerate() {
+                    write!(
+                        f,
+                        "{}{}",
+                        item,
+                        if i == items.len() - 1 { "" } else { ", " }
+                    )?;
+                }
+                write!(f, ")")
+            }
+            Value::Str(s) => write!(f, "\"{s}\""),
+            Value::Ref(x) => write!(f, "{x}"),
+            Value::Scalar(x) => write!(f, "scalar{x:?}"),
+            Value::Record(record) => write!(f, "{}", record),
         }
     }
 }
