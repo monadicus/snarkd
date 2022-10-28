@@ -1,6 +1,9 @@
 use std::fmt;
 
-use crate::{ir, Value};
+use crate::{
+    ir::{self, ProtoBuf},
+    Value,
+};
 
 use anyhow::{anyhow, Result};
 use serde::Serialize;
@@ -27,8 +30,10 @@ impl<const N: usize> fmt::Display for QueryData<N> {
     }
 }
 
-impl<const N: usize> QueryData<N> {
-    pub(crate) fn decode(operands: Vec<ir::Operand>) -> Result<Self> {
+impl<const N: usize> ProtoBuf for QueryData<N> {
+    type Target = Vec<ir::Operand>;
+
+    fn decode(operands: Self::Target) -> Result<Self> {
         if operands.len() != N + 1 {
             return Err(anyhow!(
                 "illegal operand count for VarData: {}",
@@ -46,7 +51,7 @@ impl<const N: usize> QueryData<N> {
         })
     }
 
-    pub(crate) fn encode(&self) -> Vec<ir::Operand> {
+    fn encode(&self) -> Self::Target {
         let mut operands = vec![];
         operands.push(ir::Operand {
             u32: Some(ir::U32 {

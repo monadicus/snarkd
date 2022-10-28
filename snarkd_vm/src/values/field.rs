@@ -1,6 +1,7 @@
 use std::fmt;
 
-use crate::ir;
+use crate::ir::{self, ProtoBuf};
+use anyhow::Result;
 
 use serde::Serialize;
 
@@ -18,16 +19,18 @@ impl fmt::Display for Field {
     }
 }
 
-impl Field {
-    pub(crate) fn decode(from: ir::Field) -> Self {
-        Self {
+impl ProtoBuf for Field {
+    type Target = ir::Field;
+
+    fn decode(from: Self::Target) -> Result<Self> {
+        Ok(Self {
             negate: from.negate,
             values: from.values,
-        }
+        })
     }
 
-    pub(crate) fn encode(&self) -> ir::Field {
-        ir::Field {
+    fn encode(&self) -> Self::Target {
+        Self::Target {
             negate: self.negate,
             values: self.values.clone(),
         }

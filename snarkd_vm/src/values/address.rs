@@ -4,15 +4,17 @@ use anyhow::{anyhow, Result};
 use bech32::ToBase32;
 use serde::Serialize;
 
-use crate::ir;
+use crate::ir::{self, ProtoBuf};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct Address {
     pub address: Vec<u8>,
 }
 
-impl Address {
-    pub fn decode(address: ir::Address) -> Result<Self> {
+impl ProtoBuf for Address {
+    type Target = ir::Address;
+
+    fn decode(address: Self::Target) -> Result<Self> {
         if address.address.is_empty() {
             Err(anyhow!("address can't be empty: {:?}", address))
         } else {
@@ -22,7 +24,7 @@ impl Address {
         }
     }
 
-    pub fn encode(&self) -> ir::Address {
+    fn encode(&self) -> Self::Target {
         ir::Address {
             address: self.address.clone(),
         }

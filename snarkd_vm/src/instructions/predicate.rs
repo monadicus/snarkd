@@ -1,6 +1,9 @@
 use std::fmt;
 
-use crate::{ir, Value};
+use crate::{
+    ir::{self, ProtoBuf},
+    Value,
+};
 
 use anyhow::{anyhow, Result};
 use serde::Serialize;
@@ -24,8 +27,10 @@ impl<const N: usize> fmt::Display for PredicateData<N> {
     }
 }
 
-impl<const N: usize> PredicateData<N> {
-    pub(crate) fn decode(operands: Vec<ir::Operand>) -> Result<Self> {
+impl<const N: usize> ProtoBuf for PredicateData<N> {
+    type Target = Vec<ir::Operand>;
+
+    fn decode(operands: Self::Target) -> Result<Self> {
         if operands.len() != N {
             return Err(anyhow!(
                 "illegal operand count for PredicateData: {}",
@@ -40,7 +45,7 @@ impl<const N: usize> PredicateData<N> {
         })
     }
 
-    pub(crate) fn encode(&self) -> Vec<ir::Operand> {
+    fn encode(&self) -> Self::Target {
         self.values.iter().map(|x| x.encode()).collect()
     }
 }

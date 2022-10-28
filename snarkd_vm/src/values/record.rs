@@ -3,7 +3,11 @@ use std::fmt;
 use anyhow::{anyhow, bail, Result};
 use serde::Serialize;
 
-use crate::{ir, visibility::Visibility, Integer, Value};
+use crate::{
+    ir::{self, ProtoBuf},
+    visibility::Visibility,
+    Integer, Value,
+};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct VisibleData {
@@ -11,8 +15,10 @@ pub struct VisibleData {
     pub visibility: Visibility,
 }
 
-impl VisibleData {
-    pub fn decode(from: ir::Data) -> Result<Self> {
+impl ProtoBuf for VisibleData {
+    type Target = ir::Data;
+
+    fn decode(from: Self::Target) -> Result<Self> {
         Ok(Self {
             visibility: Visibility::decode(from.visibility())?,
             value: Box::new(Value::decode(
@@ -21,8 +27,8 @@ impl VisibleData {
         })
     }
 
-    pub fn encode(&self) -> ir::Data {
-        ir::Data {
+    fn encode(&self) -> Self::Target {
+        Self::Target {
             value: Some(Box::new(self.value.encode())),
             visibility: self.visibility.encode() as i32,
         }
@@ -47,8 +53,10 @@ pub struct Record {
     pub nonce: VisibleData,
 }
 
-impl Record {
-    pub fn decode(from: ir::Record) -> Result<Self> {
+impl ProtoBuf for Record {
+    type Target = ir::Record;
+
+    fn decode(from: ir::Record) -> Result<Self> {
         let owner = VisibleData::decode(*from.owner.ok_or_else(|| anyhow!("no value specified"))?)?;
         if !matches!(*owner.value, Value::Address(_)) {
             bail!("owner must be an address");
@@ -74,19 +82,19 @@ impl Record {
         })
     }
 
-    pub fn encode(&self) -> Box<ir::Record> {
+    fn encode(&self) -> ir::Record {
         let data = self
             .data
             .clone()
             .into_iter()
             .map(|d| d.encode())
             .collect::<Vec<_>>();
-        Box::new(ir::Record {
+        ir::Record {
             owner: Some(Box::new(self.owner.encode())),
             gates: Some(Box::new(self.gates.encode())),
             data,
             nonce: Some(Box::new(self.nonce.encode())),
-        })
+        }
     }
 }
 

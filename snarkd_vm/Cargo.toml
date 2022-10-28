@@ -6,10 +6,10 @@ edition = "2021"
 [dependencies]
 anyhow = { workspace = true }
 bech32 = { workspace = true }
+indexmap = { workspace = true }
 num_enum = { workspace = true }
 serde = { workspace = true }
 prost = { workspace = true }
-indexmap = { workspace = true }
 
 [build-dependencies]
 prost-build = { workspace = true }

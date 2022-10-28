@@ -1,6 +1,9 @@
 use std::fmt;
 
-use crate::{ir, Field};
+use crate::{
+    ir::{self, ProtoBuf},
+    Field,
+};
 
 use anyhow::*;
 use serde::Serialize;
@@ -24,12 +27,14 @@ impl fmt::Display for GroupCoordinate {
     }
 }
 
-impl GroupCoordinate {
-    pub(crate) fn decode(from: ir::GroupCoordinate) -> Result<GroupCoordinate> {
+impl ProtoBuf for GroupCoordinate {
+    type Target = ir::GroupCoordinate;
+
+    fn decode(from: Self::Target) -> Result<GroupCoordinate> {
         match from.coordinate_type {
-            x if x == ir::GroupCoordinateType::GroupField as i32 => Ok(GroupCoordinate::Field(Field::decode(
-                from.field.ok_or_else(|| anyhow!("missing field value"))?,
-            ))),
+            x if x == ir::GroupCoordinateType::GroupField as i32 => Ok(GroupCoordinate::Field(
+                Field::decode(from.field.ok_or_else(|| anyhow!("missing field value"))?)?,
+            )),
             x if x == ir::GroupCoordinateType::SignHigh as i32 => Ok(GroupCoordinate::SignHigh),
             x if x == ir::GroupCoordinateType::SignLow as i32 => Ok(GroupCoordinate::SignLow),
             x if x == ir::GroupCoordinateType::Inferred as i32 => Ok(GroupCoordinate::Inferred),
@@ -37,8 +42,8 @@ impl GroupCoordinate {
         }
     }
 
-    pub(crate) fn encode(&self) -> ir::GroupCoordinate {
-        ir::GroupCoordinate {
+    fn encode(&self) -> Self::Target {
+        Self::Target {
             coordinate_type: match self {
                 GroupCoordinate::Field(_) => ir::GroupCoordinateType::GroupField as i32,
                 GroupCoordinate::SignHigh => ir::GroupCoordinateType::SignHigh as i32,
