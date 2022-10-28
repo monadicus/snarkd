@@ -8,9 +8,12 @@ use bip_utracker::{
 };
 use tokio_core::reactor::Core; */
 
-use bip_bencode::{BDecodeOpt, BRefAccess, BencodeRef, BencodeRefKind};
+use serde_json::json;
 
-use crate::config::PeerConfig;
+use crate::{
+    config::PeerConfig,
+    torrent::{AnnounceRequest, Tracker, TrackerHTTP},
+};
 
 /* pub fn wip_bip_client(peer_id: String, info_hash: String, tracker: std::net::SocketAddr) {
     let mut core = Core::new().unwrap();
@@ -49,74 +52,29 @@ use crate::config::PeerConfig;
         .unwrap();
 }
  */
-pub async fn http_client(
+pub async fn test_http_client(
     conf: &PeerConfig,
     tracker: String,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let mut u: url::Url = tracker.parse().unwrap();
-    u.set_query(Some(&format!(
-        "info_hash={}&peer_id={}&port={}",
-        conf.info_hash
-            .as_bytes()
-            .chunks(2)
-            .map(|chunk| format!("%{}", std::str::from_utf8(chunk).unwrap()))
-            .collect::<Vec<String>>()
-            .join(""),
-        conf.peer_id,
-        4333,
-    )));
-    println!("Announce Query {}", u.to_string());
-    let resp = reqwest::get(u.to_string()).await?;
-    let resp_bytes = resp.bytes().await?;
-    let decoded = BencodeRef::decode(&resp_bytes, BDecodeOpt::default()).unwrap();
-    println!("{}", bencoded_to_json(&decoded));
+    let u: url::Url = tracker.parse().unwrap();
 
-    u.set_path("/scrape");
-    u.set_query(Some(&format!(
-        "info_hash={}",
-        conf.info_hash
-            .as_bytes()
-            .chunks(2)
-            .map(|chunk| format!("%{}", std::str::from_utf8(chunk).unwrap()))
-            .collect::<Vec<String>>()
-            .join(""),
-    )));
-    println!("Scrape Query {}", u.to_string());
-    let resp = reqwest::get(u.to_string()).await?;
-    let resp_bytes = resp.bytes().await?;
-    let decoded = BencodeRef::decode(&resp_bytes, BDecodeOpt::default()).unwrap();
-    println!("{}", bencoded_to_json(&decoded));
+    let tracker = TrackerHTTP::new(u);
+    let scraped = tracker.scrape(vec![conf.info_hash.clone()]).await?;
+    println!("scraped: {}", json!(scraped));
+
+    let announce = tracker
+        .announce(AnnounceRequest {
+            peer_id: conf.peer_id.clone(),
+            info_hash: conf.info_hash.clone(),
+            port: 4333,
+            ..Default::default()
+        })
+        .await?;
+
+    println!("announce: interval: {}, min_interval: {}, complete: {}, incomplete: {}, downloaded: {}\npeers: {}",
+        announce.interval, announce.min_interval, announce.complete, announce.incomplete, announce.downloaded,
+        announce.peer_addrs().iter().map(|a| a.to_string()).collect::<Vec<String>>().join(", ")
+);
+
     Ok(())
-}
-
-fn bencoded_to_json(decoded: &BencodeRef) -> String {
-    match decoded.kind() {
-        BencodeRefKind::Int(n) => format!("{}", n),
-        BencodeRefKind::Bytes(n) => format!(
-            "[{}]",
-            n.iter()
-                .map(|c| format!("{}", c))
-                .collect::<Vec<String>>()
-                .join(",")
-        ),
-        BencodeRefKind::List(n) => format!(
-            "[{}]",
-            n.into_iter()
-                .map(|r| bencoded_to_json(r))
-                .collect::<Vec<String>>()
-                .join(",")
-        ),
-        BencodeRefKind::Dict(n) => format!(
-            "{{{}}}",
-            n.to_list()
-                .iter()
-                .map(|(&k, v)| format!(
-                    "\"{}\": {}",
-                    std::str::from_utf8(k).unwrap_or(&hex::encode_upper(k)),
-                    bencoded_to_json(v)
-                ))
-                .collect::<Vec<String>>()
-                .join(",")
-        ),
-    }
 }
