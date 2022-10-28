@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
-use url::Host;
 
 #[derive(Serialize, Deserialize, Default, Debug)]
 pub struct PeerConfig {
@@ -26,7 +25,7 @@ pub struct PeerConfig {
 
 /// Peer ids are generated at random
 fn generate_peer_id() -> String {
-    let bytes = hex::encode((0..6).map(|_| rand::random::<u8>()).collect::<Vec<u8>>());
+    let bytes = hex::encode_upper((0..6).map(|_| rand::random::<u8>()).collect::<Vec<u8>>());
     format!("-MD0001-{bytes}")
 }
 
@@ -53,15 +52,15 @@ pub enum PeerConfigError {
 fn validate_tracker(tracker: &url::Url) -> Result<(), String> {
     match tracker.scheme() {
         "http" => (),
-        proto => return Err(format!("Unsupported protocol '{proto}'")),
+        proto => return Err(format!("unsupported protocol '{proto}'")),
     };
 
     if !tracker.has_host() {
-        return Err("Url is missing a host".to_string());
+        return Err("url is missing a host".to_string());
     }
 
     if tracker.port_or_known_default().is_none() {
-        return Err("Url is missing a port".to_string());
+        return Err("url is missing a port".to_string());
     }
 
     Ok(())
@@ -70,15 +69,15 @@ fn validate_tracker(tracker: &url::Url) -> Result<(), String> {
 fn validate_hash(hash: &str) -> Result<(), String> {
     // info_hash validation
     if !hash.is_ascii() {
-        return Err("Hash is not ascii".to_string());
+        return Err("hash is not ascii".to_string());
     }
 
     if hash.len() != 40 {
-        return Err("Hash is too short (Must be 40 hex characters)".to_string());
+        return Err("hash is too short (Must be 40 hex characters)".to_string());
     }
 
     if hex::decode(hash).is_err() {
-        return Err("Hash is not hex digits".to_string());
+        return Err("hash is not hex digits".to_string());
     }
 
     Ok(())
@@ -92,13 +91,13 @@ impl PeerConfig {
     pub fn validate(&self) -> Result<(), PeerConfigError> {
         // info_hash validation
         if let Err(err) = validate_hash(&self.info_hash) {
-            return Err(PeerConfigError::InvalidInfoHash(format!("Info {err}")));
+            return Err(PeerConfigError::InvalidInfoHash(format!("info {err}")));
         }
 
         // peer id validation
         if self.peer_id.len() != 20 {
             return Err(PeerConfigError::InvalidPeerId(
-                "Peer ID is too short".to_string(),
+                "peer ID is too short".to_string(),
             ));
         }
 
@@ -111,7 +110,7 @@ impl PeerConfig {
             }
         }) {
             return Err(PeerConfigError::InvalidInfoHash(format!(
-                "Invalid tracker {tracker}: {err}"
+                "invalid tracker {tracker}: {err}"
             )));
         }
 

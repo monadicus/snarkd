@@ -8,6 +8,8 @@ use bip_utracker::{
 };
 use tokio_core::reactor::Core; */
 
+use bip_bencode::{BDecodeOpt, BRefAccess, BencodeRef, BencodeRefKind};
+
 use crate::config::PeerConfig;
 
 /* pub fn wip_bip_client(peer_id: String, info_hash: String, tracker: std::net::SocketAddr) {
@@ -64,8 +66,10 @@ pub async fn http_client(
         4333,
     )));
     println!("Announce Query {}", u.to_string());
-    let resp = reqwest::get(u.to_string()).await?.text().await?;
-    println!("{:#?}", resp);
+    let resp = reqwest::get(u.to_string()).await?;
+    let resp_bytes = resp.bytes().await?;
+    let decoded = BencodeRef::decode(&resp_bytes, BDecodeOpt::default()).unwrap();
+    println!("{}", bencoded_to_json(&decoded));
 
     u.set_path("/scrape");
     u.set_query(Some(&format!(
@@ -78,7 +82,41 @@ pub async fn http_client(
             .join(""),
     )));
     println!("Scrape Query {}", u.to_string());
-    let resp = reqwest::get(u.to_string()).await?.text().await?;
-    println!("{:#?}", resp);
+    let resp = reqwest::get(u.to_string()).await?;
+    let resp_bytes = resp.bytes().await?;
+    let decoded = BencodeRef::decode(&resp_bytes, BDecodeOpt::default()).unwrap();
+    println!("{}", bencoded_to_json(&decoded));
     Ok(())
+}
+
+fn bencoded_to_json(decoded: &BencodeRef) -> String {
+    match decoded.kind() {
+        BencodeRefKind::Int(n) => format!("{}", n),
+        BencodeRefKind::Bytes(n) => format!(
+            "[{}]",
+            n.iter()
+                .map(|c| format!("{}", c))
+                .collect::<Vec<String>>()
+                .join(",")
+        ),
+        BencodeRefKind::List(n) => format!(
+            "[{}]",
+            n.into_iter()
+                .map(|r| bencoded_to_json(r))
+                .collect::<Vec<String>>()
+                .join(",")
+        ),
+        BencodeRefKind::Dict(n) => format!(
+            "{{{}}}",
+            n.to_list()
+                .iter()
+                .map(|(&k, v)| format!(
+                    "\"{}\": {}",
+                    std::str::from_utf8(k).unwrap_or(&hex::encode_upper(k)),
+                    bencoded_to_json(v)
+                ))
+                .collect::<Vec<String>>()
+                .join(",")
+        ),
+    }
 }
