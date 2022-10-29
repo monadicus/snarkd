@@ -109,4 +109,11 @@ impl Peer {
         // warn!("Peer {} has a low quality score; disconnecting.", self.address);
         self.recent_failures() >= FAILURE_THRESHOLD || self.is_inactive()
     }
+
+    pub fn connection(&self) -> Option<&Connection> {
+        match &self.connection {
+            ConnectionState::Connected(c) => Some(c),
+            _ => None,
+        }
+    }
 }

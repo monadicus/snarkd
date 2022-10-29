@@ -14,14 +14,20 @@ use itertools::Itertools;
 use log::{debug, error, info, trace, warn};
 use rand::seq::IteratorRandom;
 use rand::thread_rng;
-use snarkd_storage::{Database, PeerData};
+use snarkd_storage::{Database, PeerData, PeerDirection};
 
-#[derive(Default, Clone)]
+#[derive(Clone)]
 pub struct PeerBook {
     peers: Arc<DashMap<SocketAddr, Peer>>,
 }
 
 impl PeerBook {
+    pub fn new() -> Self {
+        Self {
+            peers: Default::default(),
+        }
+    }
+
     pub async fn load_saved_peers(&self, db: &Database) -> Result<()> {
         for peer_data in PeerData::load_all(db).await? {
             let mut peer = self
@@ -142,6 +148,7 @@ impl PeerBook {
                                 warn!("peer {target_peer} was already connected during peer connection, they must have connected to us first");
                                 return;
                             }
+                            peer.data.last_peer_direction = PeerDirection::Outbound;
                             peer.register_connection(connection);
                         }
                     }

@@ -21,7 +21,8 @@ clap = { workspace = true }
 dashmap = { workspace = true }
 itertools = { workspace = true }
 async-trait = { workspace = true }
-rand = "0.8"
+rand = { workspace = true }
+uuid = { workspace = true }
 
 snarkd_common = { path = "../snarkd_common" }
 snarkd_storage = { path = "../snarkd_storage" }

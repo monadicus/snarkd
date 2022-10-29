@@ -10,7 +10,7 @@ use log::{error, info, warn, LevelFilter};
 use peer_book::PeerBook;
 use snarkd_network::Connection;
 use snarkd_peer::announcer::AnnouncerConsumer;
-use snarkd_storage::Database;
+use snarkd_storage::{Database, PeerDirection};
 
 use crate::inbound_handler::InboundHandler;
 
@@ -70,7 +70,7 @@ async fn main() {
     };
     let database = Arc::new(database);
 
-    let peer_book = PeerBook::default();
+    let peer_book = PeerBook::new();
 
     // spawn network listener
     {
@@ -97,7 +97,11 @@ async fn main() {
                             return;
                         }
                         if let Some(mut peer) = peer_book.peer_mut(&connection.remote_addr()) {
+                            peer.data.last_peer_direction = PeerDirection::Inbound;
                             peer.register_connection(connection);
+                            if let Err(e) = peer.data.save(&*database).await {
+                                error!("failed to save received peer: {e:?}");
+                            }
                         }
                     });
                 },
@@ -133,7 +137,7 @@ async fn main() {
     if config.enable_tracker_announce {
         info!("preparing tracker announce...");
         let peer_config = config.tracker.clone();
-        let inbound_port = config.inbound_port;
+        let inbound_port = config.inbound_port.unwrap_or(config.listen_port);
         let maximum_peers = config.maximum_connection_count;
         let peer_book = peer_book.clone();
         let database = database.clone();
@@ -179,7 +183,13 @@ async fn main() {
         });
     }
 
-    //TODO: load sync
+    //TODO: peer introduction send/recv
+
+    //TODO: peer blacklisting (including blacklisting ourselves)
+
+    //TODO: spawn peer pinger
+
+    //TODO: spawn peer syncer
 
     //TODO: spawn RPC
 

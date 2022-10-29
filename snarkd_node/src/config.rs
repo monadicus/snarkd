@@ -6,6 +6,7 @@ use std::{
 use arc_swap::ArcSwap;
 use serde::{Deserialize, Serialize};
 use snarkd_peer::config::PeerConfig;
+use uuid::Uuid;
 
 #[derive(Serialize, Deserialize, Default, Clone, Copy)]
 #[serde(rename_all = "snake_case")]
@@ -57,8 +58,7 @@ pub struct Config {
     #[serde(default = "default_u16::<5423>")]
     pub listen_port: u16,
     /// Port that we are receiving connections on. Generally the same as `listen_port` but a port rewrite firewall rule might change that.
-    #[serde(default = "default_u16::<5423>")]
-    pub inbound_port: u16,
+    pub inbound_port: Option<u16>,
 }
 
 const CONFIG_ENV_VAR: &str = "SNARKD_CONFIG";
@@ -99,4 +99,6 @@ lazy_static::lazy_static! {
             }
         }
     };
+    /// unique node id, used to avoid cyclic connections
+    pub static ref NODE_ID: Uuid = Uuid::new_v4();
 }

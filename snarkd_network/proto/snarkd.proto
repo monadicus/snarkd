@@ -82,7 +82,7 @@ message Transactions {
 message Introduction {
     string target_address = 1;
     string version = 2;
-    string instance_id = 3;
+    bytes instance_id = 3;
 }
 
 message Packet {
