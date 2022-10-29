@@ -5,6 +5,7 @@ use std::{
 
 use arc_swap::ArcSwap;
 use serde::{Deserialize, Serialize};
+use snarkd_peer::config::PeerConfig;
 
 #[derive(Serialize, Deserialize, Default, Clone, Copy)]
 #[serde(rename_all = "snake_case")]
@@ -18,6 +19,10 @@ pub enum Verbosity {
     Trace,
 }
 
+fn default_usize<const D: usize>() -> usize {
+    D
+}
+
 #[derive(Serialize, Deserialize, Default)]
 pub struct Config {
     #[serde(default)]
@@ -26,9 +31,13 @@ pub struct Config {
     /// If not specified, an in-memory database is used
     pub database_file: Option<String>,
     /// At least this number of connections will be maintained
+    #[serde(default = "default_usize::<20>")]
     pub minimum_connection_count: usize,
     /// No more than this number of connections will be maintained
+    #[serde(default = "default_usize::<50>")]
     pub maximum_connection_count: usize,
+    #[serde(default)]
+    pub tracker: PeerConfig,
 }
 
 const CONFIG_ENV_VAR: &str = "SNARKD_CONFIG";

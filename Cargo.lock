@@ -1457,6 +1457,7 @@ dependencies = [
  "serde_yaml",
  "snarkd_common",
  "snarkd_network",
+ "snarkd_peer",
  "snarkd_storage",
  "tokio",
 ]
