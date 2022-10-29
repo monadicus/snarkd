@@ -24,7 +24,11 @@ pub struct Config {
     /// Log level verbosity, defaults to `info`
     pub verbosity: Verbosity,
     /// If not specified, an in-memory database is used
-    pub database: Option<String>,
+    pub database_file: Option<String>,
+    /// At least this number of connections will be maintained
+    pub minimum_connection_count: usize,
+    /// No more than this number of connections will be maintained
+    pub maximum_connection_count: usize,
 }
 
 const CONFIG_ENV_VAR: &str = "SNARKD_CONFIG";

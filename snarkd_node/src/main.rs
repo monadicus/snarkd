@@ -1,9 +1,15 @@
+use std::sync::Arc;
+
 use clap::Parser;
 use config::{Verbosity, CONFIG};
-use log::{error, warn, LevelFilter};
+use log::{error, info, warn, LevelFilter};
+use peering::PeerBook;
 use snarkd_storage::Database;
 
 mod config;
+mod inbound_handler;
+mod peer;
+mod peering;
 
 /// Snarkd Blockchain Node
 #[derive(Parser, Debug)]
@@ -35,7 +41,7 @@ async fn main() {
         }
     }
 
-    let database = match config.database.as_ref() {
+    let database = match config.database_file.as_ref() {
         Some(path) => match Database::open_file(path).await {
             Ok(x) => x,
             Err(e) => {
@@ -54,6 +60,12 @@ async fn main() {
             }
         }
     };
+
+    let peer_book = Arc::new(PeerBook::default());
+    info!("loading peers from database...");
+    if let Err(e) = peer_book.load_saved_peers(&database).await {
+        error!("failed to load peers from database: {e:?}");
+    }
 
     //TODO: load sync
 

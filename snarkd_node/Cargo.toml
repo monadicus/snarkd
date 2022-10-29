@@ -18,6 +18,11 @@ serde_yaml = { workspace = true }
 log = { workspace = true }
 env_logger = { workspace = true }
 clap = { workspace = true }
+dashmap = { workspace = true }
+itertools = { workspace = true }
+async-trait = { workspace = true }
+rand = "0.8"
 
 snarkd_common = { path = "../snarkd_common" }
 snarkd_storage = { path = "../snarkd_storage" }
+snarkd_network = { path = "../snarkd_network" }
