@@ -64,15 +64,5 @@ async fn main() {
 
     //TODO: start miner
 
-    let conf: PeerConfig = serde_yaml::from_str("{}").unwrap();
-    conf.print();
-
-    test_http_client(
-        &conf,
-        "http://tracker.opentrackr.org:1337/announce".to_string(),
-    )
-    .await
-    .unwrap();
-
     std::future::pending::<()>().await;
 }
