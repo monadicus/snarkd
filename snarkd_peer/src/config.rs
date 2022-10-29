@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct PeerConfig {
     /// Bittorrent Peer id, defaults to random 20 bytes
     #[serde(default = "generate_peer_id")]

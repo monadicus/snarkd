@@ -1466,9 +1466,11 @@ dependencies = [
 name = "snarkd_peer"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "async-trait",
  "bip_bencode",
  "hex",
+ "log",
  "rand",
  "reqwest",
  "serde",

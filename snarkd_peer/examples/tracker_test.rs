@@ -1,13 +1,11 @@
+use anyhow::Result;
 use serde_json::json;
 use snarkd_peer::{
     config::PeerConfig,
     torrent::{AnnounceRequest, Tracker, TrackerHTTP},
 };
 
-pub async fn announce_scrape_tracker(
-    conf: &PeerConfig,
-    tracker: String,
-) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn announce_scrape_tracker(conf: &PeerConfig, tracker: String) -> Result<()> {
     let u: url::Url = tracker.parse().unwrap();
 
     let tracker = TrackerHTTP::new(u);

@@ -23,7 +23,15 @@ fn default_usize<const D: usize>() -> usize {
     D
 }
 
-#[derive(Serialize, Deserialize, Default)]
+fn default_u16<const D: u16>() -> u16 {
+    D
+}
+
+fn default_bool<const D: bool>() -> bool {
+    D
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct Config {
     #[serde(default)]
     /// Log level verbosity, defaults to `info`
@@ -36,8 +44,21 @@ pub struct Config {
     /// No more than this number of connections will be maintained
     #[serde(default = "default_usize::<50>")]
     pub maximum_connection_count: usize,
+    /// configuration for talking to trackers. defaults should be fine.
     #[serde(default)]
     pub tracker: PeerConfig,
+    /// if true (default), then we announce our existence to the tracker
+    #[serde(default = "default_bool::<true>")]
+    pub enable_tracker_announce: bool,
+    /// Seconds between peer syncs. Default 1.
+    #[serde(default = "default_usize::<1>")]
+    pub peer_sync_interval: usize,
+    /// Port we are actually listening to
+    #[serde(default = "default_u16::<5423>")]
+    pub listen_port: u16,
+    /// Port that we are receiving connections on. Generally the same as `listen_port` but a port rewrite firewall rule might change that.
+    #[serde(default = "default_u16::<5423>")]
+    pub inbound_port: u16,
 }
 
 const CONFIG_ENV_VAR: &str = "SNARKD_CONFIG";

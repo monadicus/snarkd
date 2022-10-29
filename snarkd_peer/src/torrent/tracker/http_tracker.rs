@@ -3,15 +3,21 @@ use crate::torrent::{
     bencode_bytes_to_json, uri_encode_hash, AnnounceEvent, AnnounceRequest, AnnounceResponse,
     ScrapeResponse,
 };
+use anyhow::Result;
 use async_trait::async_trait;
+use url::Url;
 
 pub struct TrackerHTTP {
-    url: url::Url,
+    url: Url,
 }
 
 impl TrackerHTTP {
-    pub fn new(url: url::Url) -> Self {
+    pub fn new(url: Url) -> Self {
         Self { url }
+    }
+
+    pub fn url(&self) -> &Url {
+        &self.url
     }
 }
 
@@ -30,10 +36,7 @@ fn kv_to_query(kvs: Vec<(&str, Option<String>)>) -> String {
 
 #[async_trait]
 impl Tracker for TrackerHTTP {
-    async fn scrape(
-        &self,
-        info_hashes: Vec<String>,
-    ) -> Result<ScrapeResponse, Box<dyn std::error::Error>> {
+    async fn scrape(&self, info_hashes: Vec<String>) -> Result<ScrapeResponse> {
         let mut u = self.url.clone();
 
         // replace "announce" in path with "scrape" according to https://www.bittorrent.org/beps/bep_0048.html
@@ -51,10 +54,7 @@ impl Tracker for TrackerHTTP {
         Ok(serde_json::from_str(&blob)?)
     }
 
-    async fn announce(
-        &self,
-        req: AnnounceRequest,
-    ) -> Result<AnnounceResponse, Box<dyn std::error::Error>> {
+    async fn announce(&self, req: AnnounceRequest) -> Result<AnnounceResponse> {
         let mut u = self.url.clone();
 
         u.set_query(Some(&kv_to_query(vec![

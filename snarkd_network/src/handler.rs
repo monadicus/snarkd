@@ -63,7 +63,7 @@ impl ResponseHandleOwned {
 // This handles inbound request packets, this can block receiving future packets so should defer quickly.
 // All errors result in an error log and connection closure.
 #[async_trait::async_trait]
-pub trait RequestHandler {
+pub trait RequestHandler: Send + Sync + 'static {
     async fn on_introduction(
         &mut self,
         introduction: Introduction,

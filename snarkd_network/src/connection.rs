@@ -14,7 +14,7 @@ use dashmap::DashMap;
 use log::{error, warn};
 use tokio::{
     io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt},
-    net::{TcpStream, ToSocketAddrs},
+    net::{TcpListener, TcpStream, ToSocketAddrs},
     sync::{
         mpsc::{self, error::SendTimeoutError},
         oneshot,
@@ -166,20 +166,34 @@ pub enum RequestError {
 impl Connection {
     pub async fn connect<A: ToSocketAddrs>(
         target: A,
-        handler: impl RequestHandler + Send + Sync + 'static,
+        handler: impl RequestHandler,
     ) -> Result<Self> {
         let stream = TcpStream::connect(target).await?;
         let remote = stream.peer_addr()?;
         let (reader, writer) = stream.into_split();
-        Self::accept(reader, writer, remote, handler).await
+        Ok(Self::accept(reader, writer, remote, handler))
     }
 
-    pub async fn accept(
+    pub async fn listen<R: RequestHandler>(
+        bind: SocketAddr,
+        handler: impl Fn(SocketAddr) -> R + Send + Sync + 'static,
+        output: impl Fn(Self) + Send + Sync + 'static,
+    ) -> Result<()> {
+        let listener = TcpListener::bind(bind).await?;
+        loop {
+            let (stream, address) = listener.accept().await?;
+            let handler = handler(address);
+            let (reader, writer) = stream.into_split();
+            output(Self::accept(reader, writer, address, handler));
+        }
+    }
+
+    pub fn accept(
         mut reader: impl AsyncRead + Unpin + Send + Sync + 'static,
         mut writer: impl AsyncWrite + Unpin + Send + Sync + 'static,
         remote: SocketAddr,
-        mut handler: impl RequestHandler + Send + Sync + 'static,
-    ) -> Result<Self> {
+        mut handler: impl RequestHandler,
+    ) -> Self {
         let (inbound_sender, mut inbound_receiver) = mpsc::channel::<Packet>(CHANNEL_DEPTH);
         let (outbound_sender, mut outbound_receiver) = mpsc::channel::<Packet>(CHANNEL_DEPTH);
 
@@ -256,12 +270,12 @@ impl Connection {
             });
         }
 
-        Ok(Self {
+        Self {
             next_local_id: AtomicU64::new(0),
             socket_addr: remote,
             outbound_channel: outbound_sender,
             pending_responses,
-        })
+        }
     }
 
     /// Sends a request to the other end of this connection, returning `Ok(value)` when a response has been received.

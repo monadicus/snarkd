@@ -17,7 +17,7 @@ impl std::fmt::Display for AnnounceEvent {
     }
 }
 
-#[derive(Debug, Default, Serialize)]
+#[derive(Clone, Debug, Default, Serialize)]
 /// Announce request outlined in https://www.bittorrent.org/beps/bep_0015.html
 pub struct AnnounceRequest {
     pub info_hash: String,

@@ -1,8 +1,10 @@
-use bip_bencode::{BDecodeOpt, BRefAccess, BencodeParseError, BencodeRef, BencodeRefKind};
+use anyhow::Result;
+use bip_bencode::{BDecodeOpt, BRefAccess, BencodeRef, BencodeRefKind};
 
 /// Converts bencoded bytes to JSON string
-pub fn bencode_bytes_to_json(bytes: &[u8]) -> Result<String, BencodeParseError> {
-    let decoded = BencodeRef::decode(&bytes, BDecodeOpt::default())?;
+pub fn bencode_bytes_to_json(bytes: &[u8]) -> Result<String> {
+    let decoded =
+        BencodeRef::decode(&bytes, BDecodeOpt::default()).map_err(|e| anyhow::anyhow!("{e:?}"))?;
     Ok(bencode_to_json(&decoded))
 }
 

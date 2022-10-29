@@ -6,6 +6,7 @@ use dashmap::{
     mapref::{
         entry::Entry,
         multiple::{RefMulti, RefMutMulti},
+        one::{Ref, RefMut},
     },
     DashMap,
 };
@@ -15,7 +16,7 @@ use rand::seq::IteratorRandom;
 use rand::thread_rng;
 use snarkd_storage::{Database, PeerData};
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct PeerBook {
     peers: Arc<DashMap<SocketAddr, Peer>>,
 }
@@ -53,6 +54,14 @@ impl PeerBook {
         Ok(())
     }
 
+    pub fn peer(&self, address: &SocketAddr) -> Option<Ref<'_, SocketAddr, Peer>> {
+        self.peers.get(address)
+    }
+
+    pub fn peer_mut(&self, address: &SocketAddr) -> Option<RefMut<'_, SocketAddr, Peer>> {
+        self.peers.get_mut(address)
+    }
+
     fn connected_peers(&self) -> impl Iterator<Item = RefMulti<'_, SocketAddr, Peer>> {
         self.peers.iter().filter(|x| x.is_connected())
     }
@@ -65,7 +74,7 @@ impl PeerBook {
         self.peers.iter_mut().filter(|x| x.is_connected())
     }
 
-    fn connected_peer_count(&self) -> usize {
+    pub fn connected_peer_count(&self) -> usize {
         self.connected_peers().count()
     }
 

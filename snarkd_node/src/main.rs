@@ -1,15 +1,23 @@
-use std::sync::Arc;
+use std::{
+    net::{Ipv4Addr, SocketAddr, SocketAddrV4},
+    sync::Arc,
+    time::Duration,
+};
 
 use clap::Parser;
 use config::{Verbosity, CONFIG};
 use log::{error, info, warn, LevelFilter};
-use peering::PeerBook;
+use peer_book::PeerBook;
+use snarkd_network::Connection;
+use snarkd_peer::announcer::AnnouncerConsumer;
 use snarkd_storage::Database;
+
+use crate::inbound_handler::InboundHandler;
 
 mod config;
 mod inbound_handler;
 mod peer;
-mod peering;
+mod peer_book;
 
 /// Snarkd Blockchain Node
 #[derive(Parser, Debug)]
@@ -60,16 +68,118 @@ async fn main() {
             }
         }
     };
+    let database = Arc::new(database);
 
-    let peer_book = Arc::new(PeerBook::default());
+    let peer_book = PeerBook::default();
+
+    // spawn network listener
+    {
+        let listen_port = config.listen_port;
+        let peer_book = peer_book.clone();
+        let database = database.clone();
+        tokio::spawn(async move {
+            if let Err(e) = Connection::listen(
+                SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, listen_port)),
+                |address| InboundHandler { address },
+                move |connection| {
+                    info!("received connection from {}", connection.remote_addr());
+                    let peer_book = peer_book.clone();
+                    let database = database.clone();
+                    tokio::spawn(async move {
+                        if let Err(e) = peer_book
+                            .discovered_peers(&*database, [connection.remote_addr()])
+                            .await
+                        {
+                            error!(
+                                "failed to discover received peer {}: {e:?}",
+                                connection.remote_addr()
+                            );
+                            return;
+                        }
+                        if let Some(mut peer) = peer_book.peer_mut(&connection.remote_addr()) {
+                            peer.register_connection(connection);
+                        }
+                    });
+                },
+            )
+            .await
+            {
+                error!("failed to listen on port {listen_port}: {e:?}");
+            }
+        });
+    }
+
+    // load initial peers from database, if any
     info!("loading peers from database...");
     if let Err(e) = peer_book.load_saved_peers(&database).await {
         error!("failed to load peers from database: {e:?}");
     }
 
-    //TODO: load sync
+    // spawn peer connect/disconnect task
+    {
+        let peer_book = peer_book.clone();
+        let database = database.clone();
+        let mut timer =
+            tokio::time::interval(Duration::from_secs(config.peer_sync_interval as u64));
+        tokio::spawn(async move {
+            loop {
+                peer_book.update_peer_connections(&database).await;
+                timer.tick().await;
+            }
+        });
+    }
 
-    //TODO: spawn networking
+    // spawn announcer
+    if config.enable_tracker_announce {
+        info!("preparing tracker announce...");
+        let peer_config = config.tracker.clone();
+        let inbound_port = config.inbound_port;
+        let maximum_peers = config.maximum_connection_count;
+        let peer_book = peer_book.clone();
+        let database = database.clone();
+        tokio::spawn(async move {
+            #[derive(Clone)]
+            struct PeerReceiver {
+                peer_book: PeerBook,
+                database: Arc<Database>,
+                maximum_peers: usize,
+            }
+
+            impl AnnouncerConsumer for PeerReceiver {
+                fn peers_needed(&self) -> usize {
+                    (self.maximum_peers * 2).saturating_sub(self.peer_book.connected_peer_count())
+                }
+
+                fn receive_peers(&self, peers: Vec<SocketAddr>) {
+                    if peers.is_empty() {
+                        return;
+                    }
+
+                    let database = self.database.clone();
+                    let peer_book = self.peer_book.clone();
+
+                    tokio::spawn(async move {
+                        if let Err(e) = peer_book.discovered_peers(&*database, peers).await {
+                            error!("failed storing discovered peers: {e:?}");
+                        }
+                    });
+                }
+            }
+
+            snarkd_peer::announcer::run(
+                peer_config,
+                inbound_port,
+                PeerReceiver {
+                    peer_book,
+                    database,
+                    maximum_peers,
+                },
+            )
+            .await;
+        });
+    }
+
+    //TODO: load sync
 
     //TODO: spawn RPC
 
