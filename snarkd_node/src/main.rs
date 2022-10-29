@@ -1,7 +1,6 @@
 use clap::Parser;
 use config::{Verbosity, CONFIG};
 use log::{error, warn, LevelFilter};
-use snarkd_peer::{config::PeerConfig, tracker::test_http_client};
 use snarkd_storage::Database;
 
 mod config;

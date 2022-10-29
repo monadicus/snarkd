@@ -1,6 +1,7 @@
+use serde_json::json;
 use snarkd_peer::{
     config::PeerConfig,
-    torrent::{AnnounceRequest, TrackerHTTP},
+    torrent::{AnnounceRequest, Tracker, TrackerHTTP},
 };
 
 pub async fn announce_scrape_tracker(
@@ -36,9 +37,9 @@ pub async fn announce_scrape_tracker(
 }
 
 #[tokio::main]
-fn main() {
+async fn main() {
     // parse config from yaml
-    let conf: PeerConfig = serde_yaml::from_str("{}").unwrap();
+    let conf: PeerConfig = serde_json::from_str("{}").unwrap();
     conf.print();
 
     announce_scrape_tracker(
