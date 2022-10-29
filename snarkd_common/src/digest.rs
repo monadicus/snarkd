@@ -18,6 +18,11 @@ type InnerType = SmallVec<[u8; 64]>;
 #[derive(Clone, PartialEq, Eq, Hash, Default)]
 pub struct Digest(pub InnerType);
 
+pub type Digest16 = Digest;
+pub type Digest32 = Digest;
+pub type Digest48 = Digest;
+pub type Digest64 = Digest;
+
 impl fmt::Display for Digest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", hex::encode(&self.0[..]))
