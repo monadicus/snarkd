@@ -1,10 +1,11 @@
 use std::net::SocketAddr;
 
 use anyhow::Result;
-use log::info;
+use chrono::Utc;
+use log::{debug, info};
 use snarkd_common::Digest;
 use snarkd_network::{
-    proto::{Block, Introduction, ResponseCode, Transaction},
+    proto::{packet::PacketBody, Block, Introduction, Ping, ResponseCode, Transaction},
     RequestHandler, ResponseHandle,
 };
 use tokio::sync::oneshot;
@@ -104,12 +105,26 @@ impl RequestHandler for InboundHandler {
         todo!()
     }
 
-    async fn on_ping(
-        &mut self,
-        timestamp: u64,
-        response: Option<ResponseHandle<'_>>,
-    ) -> Result<()> {
-        todo!()
+    async fn on_ping(&mut self, ping: Ping, response: Option<ResponseHandle<'_>>) -> Result<()> {
+        if let Some(mut peer) = self.peer_book.peer_mut(&self.address) {
+            peer.data.block_height = ping.block_height;
+            peer.data.last_seen = Some(Utc::now());
+            peer.dirty = true;
+        }
+
+        if let Some(response) = response {
+            response
+                .send(
+                    ResponseCode::Ok,
+                    PacketBody::PingPong(Ping {
+                        timestamp: ping.timestamp,
+                        block_height: 0, //todo
+                    }),
+                )
+                .await;
+        }
+        debug!("inbound ping complete for {}", self.address);
+        Ok(())
     }
 
     async fn on_disconnect(&mut self) -> Result<()> {

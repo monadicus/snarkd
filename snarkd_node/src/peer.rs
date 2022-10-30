@@ -4,7 +4,7 @@ use anyhow::Result;
 use chrono::{DateTime, Utc};
 use log::{debug, error, info};
 use snarkd_network::{
-    proto::{packet::PacketBody, CommandId, Introduction},
+    proto::{packet::PacketBody, CommandId, Introduction, ResponseCode},
     Connection,
 };
 use snarkd_storage::{Database, PeerData, PeerDirection};
@@ -34,7 +34,8 @@ pub struct Peer {
 const FAILURE_EXPIRY_TIME: Duration = Duration::from_secs(15 * 60);
 const FAILURE_THRESHOLD: usize = 5;
 pub const MAX_PEER_INACTIVITY: Duration = Duration::from_secs(30);
-pub const PEER_TIMEOUT: Duration = Duration::from_secs(3);
+pub const PEER_TIMEOUT: Duration = Duration::from_secs(5);
+pub const PEER_PING_INTERVAL: Duration = Duration::from_secs(10);
 
 pub fn form_introduction(address: SocketAddr) -> PacketBody {
     let config = CONFIG.load();
@@ -158,10 +159,58 @@ impl Peer {
         self.recent_failures() >= FAILURE_THRESHOLD || self.is_inactive()
     }
 
-    pub fn connection(&self) -> Option<&Connection> {
+    pub fn connection(&self) -> Option<&Arc<Connection>> {
         match &self.connection {
             ConnectionState::Connected(c) => Some(c),
             _ => None,
         }
+    }
+
+    pub fn fail(&mut self) {
+        self.recent_failures.push(Utc::now());
+    }
+
+    pub fn start_ping(&self, peer_book: PeerBook) {
+        let connection = match self.connection() {
+            Some(x) => x.clone(),
+            None => return,
+        };
+        let address = self.address;
+        tokio::spawn(async move {
+            let response = connection
+                .request_with_response(
+                    CommandId::Ping,
+                    PacketBody::PingPong(snarkd_network::proto::Ping {
+                        block_height: 0, // todo
+                        timestamp: Utc::now().timestamp() as u64,
+                    }),
+                    PEER_TIMEOUT,
+                )
+                .await;
+            let mut self_ = match peer_book.peer_mut(&address) {
+                None => return,
+                Some(x) => x,
+            };
+            match response {
+                Ok(pong) => {
+                    self_.data.last_seen = Some(Utc::now());
+                    if !matches!(pong.response_code, ResponseCode::Ok) {
+                        self_.fail();
+                        self_.disconnect();
+                    }
+                    if let Some(pong) = pong.body.into_ping_pong() {
+                        self_.data.block_height = pong.block_height;
+                    } else {
+                        self_.fail();
+                        self_.disconnect();
+                    }
+                    debug!("outbound ping complete for {address}");
+                    self_.dirty = true;
+                }
+                Err(_) => {
+                    self_.disconnect();
+                }
+            }
+        });
     }
 }

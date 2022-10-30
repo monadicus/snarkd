@@ -107,8 +107,7 @@ pub trait RequestHandler: Send + Sync + 'static {
         response: Option<ResponseHandle<'_>>,
     ) -> Result<()>;
 
-    async fn on_ping(&mut self, timestamp: u64, response: Option<ResponseHandle<'_>>)
-        -> Result<()>;
+    async fn on_ping(&mut self, ping: Ping, response: Option<ResponseHandle<'_>>) -> Result<()>;
 
     async fn on_disconnect(&mut self) -> Result<()>;
 

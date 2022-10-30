@@ -68,7 +68,7 @@ impl PeerBook {
         self.peers.get_mut(address)
     }
 
-    fn connected_peers(&self) -> impl Iterator<Item = RefMulti<'_, SocketAddr, Peer>> {
+    pub fn connected_peers(&self) -> impl Iterator<Item = RefMulti<'_, SocketAddr, Peer>> {
         self.peers.iter().filter(|x| x.is_connected())
     }
 
@@ -76,7 +76,7 @@ impl PeerBook {
         self.peers.iter().filter(|x| !x.is_connected())
     }
 
-    fn connected_peers_mut(&self) -> impl Iterator<Item = RefMutMulti<'_, SocketAddr, Peer>> {
+    pub fn connected_peers_mut(&self) -> impl Iterator<Item = RefMutMulti<'_, SocketAddr, Peer>> {
         self.peers.iter_mut().filter(|x| x.is_connected())
     }
 
@@ -190,6 +190,10 @@ impl PeerBook {
         self.disconnect_from_peers(to_disconnect);
         self.connect_to_peers(to_connect);
 
+        self.save_peers(&database).await;
+    }
+
+    async fn save_peers(&self, database: &Database) {
         for mut peer in self.peers.iter_mut() {
             if peer.dirty {
                 if let Err(e) = peer.save(&database).await {

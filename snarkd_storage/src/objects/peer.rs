@@ -38,7 +38,7 @@ impl PeerData {
             address,
             last_peer_direction: PeerDirection::Unknown,
             block_height: 0,
-            first_seen: None,
+            first_seen: Some(Utc::now()),
             last_seen: None,
             last_connected: None,
             blocks_synced_to: 0,

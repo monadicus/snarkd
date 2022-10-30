@@ -24,7 +24,7 @@ impl PacketBody {
         }
     }
 
-    pub fn into_ping_pong(self) -> Option<u64> {
+    pub fn into_ping_pong(self) -> Option<Ping> {
         match self {
             PacketBody::PingPong(x) => Some(x),
             _ => None,

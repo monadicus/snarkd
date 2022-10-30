@@ -11,9 +11,9 @@ use peer_book::PeerBook;
 use snarkd_network::Connection;
 use snarkd_peer::announcer::AnnouncerConsumer;
 use snarkd_storage::{Database, PeerDirection};
-use tokio::{net::TcpListener, sync::oneshot};
+use tokio::{net::TcpListener, sync::oneshot, time::MissedTickBehavior};
 
-use crate::{config::NODE_ID, inbound_handler::InboundHandler};
+use crate::{config::NODE_ID, inbound_handler::InboundHandler, peer::PEER_PING_INTERVAL};
 
 mod config;
 mod inbound_handler;
@@ -255,11 +255,19 @@ async fn main() {
         error!("failed to add in raw tracker peers: {e:?}");
     }
 
-    //TODO: peer introduction send/recv
-
-    //TODO: peer blacklisting (including blacklisting ourselves)
-
-    //TODO: spawn peer pinger
+    {
+        let peer_book = peer_book.clone();
+        tokio::spawn(async move {
+            let mut interval = tokio::time::interval(PEER_PING_INTERVAL);
+            interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
+            loop {
+                for peer in peer_book.connected_peers() {
+                    peer.start_ping(peer_book.clone());
+                }
+                interval.tick().await;
+            }
+        });
+    }
 
     //TODO: spawn peer syncer
 
