@@ -5,9 +5,6 @@
 #![doc = include_str!("../documentation/the_aleo_curves/00_overview.md")]
 #![cfg_attr(nightly, doc = include_str!("../documentation/the_aleo_curves/02_bls12-377.md"))]
 
-#[macro_use]
-extern crate thiserror;
-
 pub mod edwards_bls12;
 
 pub mod errors;
@@ -15,9 +12,8 @@ pub use errors::*;
 
 pub mod templates;
 
-#[cfg_attr(test, macro_use)]
-pub mod traits;
-pub use traits::*;
+pub mod field;
+pub use field::*;
 
 pub mod fr;
 #[doc(inline)]

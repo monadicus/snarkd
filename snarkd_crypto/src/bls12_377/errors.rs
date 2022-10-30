@@ -1,3 +1,5 @@
+use thiserror::Error;
+
 #[derive(Debug, Error)]
 pub enum GroupError {
     #[error("{}: {}", _0, _1)]
