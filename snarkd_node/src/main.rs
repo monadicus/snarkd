@@ -6,13 +6,14 @@ use std::{
 
 use clap::Parser;
 use config::{Verbosity, CONFIG};
-use log::{error, info, warn, LevelFilter};
+use log::{debug, error, info, warn, LevelFilter};
 use peer_book::PeerBook;
 use snarkd_network::Connection;
 use snarkd_peer::announcer::AnnouncerConsumer;
 use snarkd_storage::{Database, PeerDirection};
+use tokio::{net::TcpListener, sync::oneshot};
 
-use crate::inbound_handler::InboundHandler;
+use crate::{config::NODE_ID, inbound_handler::InboundHandler};
 
 mod config;
 mod inbound_handler;
@@ -24,8 +25,7 @@ mod peer_book;
 #[command(author, version, about, long_about = None)]
 struct Args {}
 
-const ANNOUNCE: &str =
-r#"                            ,-▄▄██▄▄,,
+const ANNOUNCE: &str = r#"                            ,-▄▄██▄▄,,
                        ,▄██▀▀╙`      "╙▀█▓▄▄,
                       ▐█╙▀▀█▄▄,     ,▄██▀▀▀▌
                       ▐▌      "▀▓█▀▀`     ▐▌
@@ -116,37 +116,66 @@ async fn main() {
         let peer_book = peer_book.clone();
         let database = database.clone();
         tokio::spawn(async move {
-            if let Err(e) = Connection::listen(
-                SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, listen_port)),
-                |address| InboundHandler { address },
-                move |connection| {
-                    info!("received connection from {}", connection.remote_addr());
-                    let peer_book = peer_book.clone();
-                    let database = database.clone();
-                    tokio::spawn(async move {
-                        if let Err(e) = peer_book
-                            .discovered_peers(&*database, [connection.remote_addr()])
-                            .await
-                        {
-                            error!(
-                                "failed to discover received peer {}: {e:?}",
-                                connection.remote_addr()
-                            );
-                            return;
-                        }
-                        if let Some(mut peer) = peer_book.peer_mut(&connection.remote_addr()) {
-                            peer.data.last_peer_direction = PeerDirection::Inbound;
-                            peer.register_connection(connection);
-                            if let Err(e) = peer.data.save(&*database).await {
-                                error!("failed to save received peer: {e:?}");
-                            }
-                        }
-                    });
-                },
-            )
+            let listener = match TcpListener::bind(SocketAddr::V4(SocketAddrV4::new(
+                Ipv4Addr::UNSPECIFIED,
+                listen_port,
+            )))
             .await
             {
-                error!("failed to listen on port {listen_port}: {e:?}");
+                Ok(e) => e,
+                Err(e) => {
+                    error!("failed to bind for inbound connections: {e:?}");
+                    return;
+                }
+            };
+
+            loop {
+                let (stream, address) = match listener.accept().await {
+                    Ok(x) => x,
+                    Err(e) => {
+                        error!("failed to accept inbound connection {e:?}");
+                        continue;
+                    }
+                };
+                let (intro_sender, intro_receiver) =
+                    oneshot::channel::<snarkd_network::proto::Introduction>();
+                let handler = InboundHandler::new(address, peer_book.clone(), Some(intro_sender));
+                let (reader, writer) = stream.into_split();
+                let connection = Connection::accept(reader, writer, address, handler);
+
+                let peer_book = peer_book.clone();
+                let database = database.clone();
+                tokio::spawn(async move {
+                    let introduction = match intro_receiver.await {
+                        Ok(x) => x,
+                        Err(_) => {
+                            debug!("failed to receive introduction from inbound peer");
+                            return;
+                        }
+                    };
+                    if introduction.instance_id == NODE_ID.as_bytes() {
+                        debug!("self referential connection closing");
+                        drop(connection);
+                        return;
+                    }
+                    let mut remote_addr = connection.remote_addr();
+                    remote_addr.set_port(introduction.inbound_port as u16);
+                    info!("received connection from {}", remote_addr);
+
+                    if let Err(e) = peer_book.discovered_peers(&*database, [remote_addr]).await {
+                        error!(
+                            "failed to discover received peer {}: {e:?}",
+                            connection.remote_addr()
+                        );
+                        return;
+                    }
+                    if let Some(mut peer) = peer_book.peer_mut(&remote_addr) {
+                        peer.register_connection(PeerDirection::Inbound, connection);
+                        if let Err(e) = peer.save(&*database).await {
+                            error!("failed to save received peer: {e:?}");
+                        }
+                    }
+                });
             }
         });
     }
@@ -219,6 +248,11 @@ async fn main() {
             )
             .await;
         });
+    } else if let Err(e) = peer_book
+        .discovered_peers(&*database, config.tracker.peers.iter().copied())
+        .await
+    {
+        error!("failed to add in raw tracker peers: {e:?}");
     }
 
     //TODO: peer introduction send/recv

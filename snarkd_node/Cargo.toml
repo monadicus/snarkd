@@ -23,6 +23,7 @@ itertools = { workspace = true }
 async-trait = { workspace = true }
 rand = { workspace = true }
 uuid = { workspace = true }
+always_cell = { workspace = true }
 
 snarkd_common = { path = "../snarkd_common" }
 snarkd_storage = { path = "../snarkd_storage" }

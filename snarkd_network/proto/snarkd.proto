@@ -83,6 +83,7 @@ message Introduction {
     string target_address = 1;
     string version = 2;
     bytes instance_id = 3;
+    uint32 inbound_port = 4;
 }
 
 message Packet {

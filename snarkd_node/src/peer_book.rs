@@ -101,11 +101,36 @@ impl PeerBook {
         }
     }
 
+    fn connect_to_known_peer(&self, address: SocketAddr) {
+        let peers = self.peers.clone();
+        // this doesnt deadlock in DashMap because there is a tokio::spawn deferring the actual connection
+        let mut peer = match self.peers.get_mut(&address) {
+            Some(peer) => peer,
+            None => return,
+        };
+
+        peer.connect(self.clone(), move |connection| {
+            if let Some(mut peer) = peers.get_mut(&address) {
+                match connection {
+                    None => peer.register_failed_connection(),
+                    Some(connection) => {
+                        if peer.is_connected() {
+                            warn!("peer {address} was already connected during peer connection, they must have connected to us first");
+                            return;
+                        }
+                        peer.register_connection(PeerDirection::Outbound, connection);
+                        info!("connected to peer {}", peer.address);
+                    }
+                }
+            }
+        });
+    }
+
     pub fn connect_to_peers(&self, count: usize) {
         if count <= 0 {
             return;
         }
-        info!("Looking for {count} new peer connections");
+        debug!("Looking for {count} new peer connections");
 
         let target_peers = {
             // Floored if count is odd.
@@ -132,28 +157,7 @@ impl PeerBook {
         }
 
         for target_peer in target_peers {
-            let peers = self.peers.clone();
-            // this doesnt deadlock in DashMap because there is a tokio::spawn deferring the actual connection
-            let mut peer = match self.peers.get_mut(&target_peer) {
-                Some(peer) => peer,
-                None => continue,
-            };
-
-            peer.connect(move |connection| {
-                if let Some(mut peer) = peers.get_mut(&target_peer) {
-                    match connection {
-                        None => peer.register_failed_connection(),
-                        Some(connection) => {
-                            if peer.is_connected() {
-                                warn!("peer {target_peer} was already connected during peer connection, they must have connected to us first");
-                                return;
-                            }
-                            peer.data.last_peer_direction = PeerDirection::Outbound;
-                            peer.register_connection(connection);
-                        }
-                    }
-                }
-            });
+            self.connect_to_known_peer(target_peer);
         }
     }
 
@@ -162,7 +166,7 @@ impl PeerBook {
     pub async fn update_peer_connections(&self, database: &Database) {
         //todo: do we need connecting_peers
         let active_peer_count = self.connected_peer_count();
-        info!(
+        debug!(
             "Connected to {} peer{}",
             active_peer_count,
             if active_peer_count == 1 { "" } else { "s" }
@@ -188,10 +192,9 @@ impl PeerBook {
 
         for mut peer in self.peers.iter_mut() {
             if peer.dirty {
-                if let Err(e) = peer.data.save(&database).await {
+                if let Err(e) = peer.save(&database).await {
                     error!("failed to save peer data to database: {e:?}");
                 }
-                peer.dirty = false;
             }
         }
     }

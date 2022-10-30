@@ -34,8 +34,8 @@ fn default_bool<const D: bool>() -> bool {
 
 #[derive(Serialize, Deserialize)]
 pub struct Config {
-    #[serde(default)]
     /// Log level verbosity, defaults to `info`
+    #[serde(default)]
     pub verbosity: Verbosity,
     /// If not specified, an in-memory database is used
     pub database_file: Option<String>,
@@ -102,3 +102,4 @@ lazy_static::lazy_static! {
     /// unique node id, used to avoid cyclic connections
     pub static ref NODE_ID: Uuid = Uuid::new_v4();
 }
+pub static VERSION: &'static str = env!("CARGO_PKG_VERSION");

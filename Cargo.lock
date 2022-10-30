@@ -38,6 +38,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "always_cell"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "894879d2fad62acfdfbf0a3047d8ca8e3cba935e3740ec73d3517c3a4fa2bd5a"
+dependencies = [
+ "once_cell",
+]
+
+[[package]]
 name = "android_system_properties"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1442,6 +1451,7 @@ dependencies = [
 name = "snarkd_node"
 version = "0.1.0"
 dependencies = [
+ "always_cell",
  "anyhow",
  "arc-swap",
  "async-trait",

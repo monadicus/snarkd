@@ -12,3 +12,5 @@
 
 # MacOS stuff
 .DS_Store
+
+*.sqlite

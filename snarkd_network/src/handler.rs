@@ -110,6 +110,8 @@ pub trait RequestHandler: Send + Sync + 'static {
     async fn on_ping(&mut self, timestamp: u64, response: Option<ResponseHandle<'_>>)
         -> Result<()>;
 
+    async fn on_disconnect(&mut self) -> Result<()>;
+
     async fn on_packet(&mut self, packet: ProcessedPacket<'_>) -> Result<()> {
         assert!(matches!(packet.response_code, ResponseCode::NotAResponse));
         match packet.command {

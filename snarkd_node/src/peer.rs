@@ -1,15 +1,23 @@
-use std::{net::SocketAddr, time::Duration};
+use std::{net::SocketAddr, sync::Arc, time::Duration};
 
+use anyhow::Result;
 use chrono::{DateTime, Utc};
-use log::{info, warn};
-use snarkd_network::Connection;
-use snarkd_storage::PeerData;
+use log::{debug, error, info};
+use snarkd_network::{
+    proto::{packet::PacketBody, CommandId, Introduction},
+    Connection,
+};
+use snarkd_storage::{Database, PeerData, PeerDirection};
 use tokio::task::JoinHandle;
 
-use crate::inbound_handler::InboundHandler;
+use crate::{
+    config::{CONFIG, NODE_ID, VERSION},
+    inbound_handler::InboundHandler,
+    peer_book::PeerBook,
+};
 
 enum ConnectionState {
-    Connected(Connection),
+    Connected(Arc<Connection>),
     Connecting(JoinHandle<()>),
     Disconnected,
 }
@@ -26,6 +34,17 @@ pub struct Peer {
 const FAILURE_EXPIRY_TIME: Duration = Duration::from_secs(15 * 60);
 const FAILURE_THRESHOLD: usize = 5;
 pub const MAX_PEER_INACTIVITY: Duration = Duration::from_secs(30);
+pub const PEER_TIMEOUT: Duration = Duration::from_secs(3);
+
+pub fn form_introduction(address: SocketAddr) -> PacketBody {
+    let config = CONFIG.load();
+    PacketBody::Introduction(Introduction {
+        target_address: address.to_string(),
+        version: VERSION.to_string(),
+        instance_id: NODE_ID.as_bytes().to_vec(),
+        inbound_port: config.inbound_port.unwrap_or(config.listen_port) as u32,
+    })
+}
 
 impl Peer {
     pub fn new(address: SocketAddr, data: PeerData) -> Self {
@@ -36,6 +55,12 @@ impl Peer {
             recent_failures: vec![],
             dirty: false,
         }
+    }
+
+    pub async fn save(&mut self, db: &Database) -> Result<()> {
+        self.data.save(db).await?;
+        self.dirty = false;
+        Ok(())
     }
 
     pub fn recent_failures(&mut self) -> usize {
@@ -74,17 +99,22 @@ impl Peer {
         if matches!(self.connection, ConnectionState::Disconnected) {
             return;
         }
-        info!("Disconnecting from {}", self.address);
+        info!("disconnecting from {}", self.address);
         self.connection = ConnectionState::Disconnected;
     }
 
-    pub fn connect(&mut self, output: impl FnOnce(Option<Connection>) + Send + Sync + 'static) {
+    pub fn connect(
+        &mut self,
+        peer_book: PeerBook,
+        output: impl FnOnce(Option<Connection>) + Send + Sync + 'static,
+    ) {
         let address = self.address;
         let handle = tokio::spawn(async move {
-            match Connection::connect(address, InboundHandler { address }).await {
+            match Connection::connect(address, InboundHandler::new(address, peer_book, None)).await
+            {
                 Ok(connection) => output(Some(connection)),
                 Err(e) => {
-                    warn!("failed to connect to peer {address}: {e:?}");
+                    debug!("failed to connect to peer {address}: {e:?}");
                     output(None)
                 }
             }
@@ -97,11 +127,29 @@ impl Peer {
         self.dirty = true;
     }
 
-    pub fn register_connection(&mut self, connection: Connection) {
-        assert_eq!(connection.remote_addr(), self.address);
+    pub fn register_connection(&mut self, direction: PeerDirection, connection: Connection) {
+        let connection = Arc::new(connection);
+        if matches!(direction, PeerDirection::Outbound) {
+            let connection = connection.clone();
+            let address = self.address;
+            tokio::spawn(async move {
+                if let Err(e) = connection
+                    .request(
+                        CommandId::Introduction,
+                        form_introduction(address),
+                        PEER_TIMEOUT,
+                    )
+                    .await
+                {
+                    error!("failed to send introduction to peer: {e:?}");
+                }
+            });
+        }
         self.connection = ConnectionState::Connected(connection);
+        self.data.last_peer_direction = direction;
         self.data.connection_success_count += 1;
         self.data.last_connected = Some(Utc::now());
+        self.data.last_seen = self.data.last_connected;
         self.dirty = true;
     }
 

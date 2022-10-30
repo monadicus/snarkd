@@ -1,13 +1,34 @@
 use std::net::SocketAddr;
 
+use anyhow::Result;
+use log::info;
 use snarkd_common::Digest;
 use snarkd_network::{
-    proto::{Block, Introduction, Transaction},
+    proto::{Block, Introduction, ResponseCode, Transaction},
     RequestHandler, ResponseHandle,
 };
+use tokio::sync::oneshot;
+
+use crate::peer_book::PeerBook;
 
 pub struct InboundHandler {
-    pub address: SocketAddr,
+    peer_book: PeerBook,
+    address: SocketAddr,
+    intro_sender: Option<oneshot::Sender<Introduction>>,
+}
+
+impl InboundHandler {
+    pub fn new(
+        address: SocketAddr,
+        peer_book: PeerBook,
+        intro_sender: Option<oneshot::Sender<Introduction>>,
+    ) -> Self {
+        Self {
+            address,
+            intro_sender,
+            peer_book,
+        }
+    }
 }
 
 #[async_trait::async_trait]
@@ -16,15 +37,30 @@ impl RequestHandler for InboundHandler {
         &mut self,
         introduction: Introduction,
         response: Option<ResponseHandle<'_>>,
-    ) -> anyhow::Result<()> {
-        todo!()
+    ) -> Result<()> {
+        let intro_sender = match self.intro_sender.take() {
+            Some(x) => x,
+            None => return Ok(()),
+        };
+        self.address.set_port(introduction.inbound_port as u16);
+        info!("introduction received from {}", self.address);
+        intro_sender.send(introduction).ok();
+        if let Some(response) = response {
+            response
+                .send(
+                    ResponseCode::Ok,
+                    crate::peer::form_introduction(self.address),
+                )
+                .await;
+        }
+        Ok(())
     }
 
     async fn on_blocks(
         &mut self,
         blocks: Vec<Block>,
         response: Option<ResponseHandle<'_>>,
-    ) -> anyhow::Result<()> {
+    ) -> Result<()> {
         todo!()
     }
 
@@ -32,7 +68,7 @@ impl RequestHandler for InboundHandler {
         &mut self,
         transactions: Vec<Transaction>,
         response: Option<ResponseHandle<'_>>,
-    ) -> anyhow::Result<()> {
+    ) -> Result<()> {
         todo!()
     }
 
@@ -40,7 +76,7 @@ impl RequestHandler for InboundHandler {
         &mut self,
         digests: Vec<Digest>,
         response: Option<ResponseHandle<'_>>,
-    ) -> anyhow::Result<()> {
+    ) -> Result<()> {
         todo!()
     }
 
@@ -48,7 +84,7 @@ impl RequestHandler for InboundHandler {
         &mut self,
         digests: Vec<Digest>,
         response: Option<ResponseHandle<'_>>,
-    ) -> anyhow::Result<()> {
+    ) -> Result<()> {
         todo!()
     }
 
@@ -56,7 +92,7 @@ impl RequestHandler for InboundHandler {
         &mut self,
         peers: Vec<String>,
         response: Option<ResponseHandle<'_>>,
-    ) -> anyhow::Result<()> {
+    ) -> Result<()> {
         todo!()
     }
 
@@ -64,7 +100,7 @@ impl RequestHandler for InboundHandler {
         &mut self,
         digests: Vec<Digest>,
         response: Option<ResponseHandle<'_>>,
-    ) -> anyhow::Result<()> {
+    ) -> Result<()> {
         todo!()
     }
 
@@ -72,7 +108,14 @@ impl RequestHandler for InboundHandler {
         &mut self,
         timestamp: u64,
         response: Option<ResponseHandle<'_>>,
-    ) -> anyhow::Result<()> {
+    ) -> Result<()> {
         todo!()
+    }
+
+    async fn on_disconnect(&mut self) -> Result<()> {
+        if let Some(mut peer) = self.peer_book.peer_mut(&self.address) {
+            peer.disconnect();
+        }
+        Ok(())
     }
 }

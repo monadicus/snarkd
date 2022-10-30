@@ -1,0 +1,12 @@
+---
+verbosity: info
+database_file: ./testing/node2.sqlite
+minimum_connection_count: 20
+maximum_connection_count: 50
+tracker:
+  peers:
+  - 127.0.0.1:5423
+enable_tracker_announce: false
+peer_sync_interval: 1
+listen_port: 5424
+inbound_port: 5424

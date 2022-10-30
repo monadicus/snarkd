@@ -11,7 +11,7 @@ use std::{
 };
 
 use dashmap::DashMap;
-use log::{error, warn};
+use log::{error, trace, warn};
 use tokio::{
     io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt},
     net::{TcpListener, TcpStream, ToSocketAddrs},
@@ -157,6 +157,7 @@ fn process_inbound_packet<'a>(
     })
 }
 
+#[derive(Debug)]
 pub enum RequestError {
     Closed,
     Dropped,
@@ -201,7 +202,7 @@ impl Connection {
             loop {
                 let packet = match read_packet(&mut reader).await {
                     Err(e) => {
-                        error!("failed reading packet from remote {remote}: {e:?}");
+                        trace!("failed reading packet from remote {remote}: {e:?}");
                         break;
                     }
                     Ok(x) => x,
@@ -214,7 +215,7 @@ impl Connection {
         tokio::spawn(async move {
             while let Some(packet) = outbound_receiver.recv().await {
                 if let Err(e) = write_packet(&mut writer, packet).await {
-                    error!("failed writing packet to remote {remote}: {e:?}");
+                    trace!("failed writing packet to remote {remote}: {e:?}");
                     break;
                 }
             }
@@ -266,6 +267,9 @@ impl Connection {
                     // we don't care if the receiver side dropped, they just didn't want the response
                     // i.e. i.e. it died or intentionally ignored it
                     pending_response.send(packet.into()).ok();
+                }
+                if let Err(e) = handler.on_disconnect().await {
+                    error!("packet handler failed: {e:?}");
                 }
             });
         }

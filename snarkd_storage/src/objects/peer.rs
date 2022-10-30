@@ -69,6 +69,7 @@ impl PeerData {
 
     pub async fn save(&self, db: &Database) -> Result<()> {
         let self_ = *self;
+        let last_peer_direction: &'static str = self_.last_peer_direction.into();
         db.call(move |db| {
             let mut stmt = db.prepare_cached(
                 "
@@ -102,7 +103,7 @@ impl PeerData {
                 )
                 ON CONFLICT(address)
                 DO UPDATE SET
-                    last_peer_direction = excludede.last_peer_direction,
+                    last_peer_direction = excluded.last_peer_direction,
                     block_height = excluded.block_height,
                     first_seen = excluded.first_seen,
                     last_seen = excluded.last_seen,
@@ -118,6 +119,7 @@ impl PeerData {
 
             stmt.execute(params![
                 self_.address.to_string(),
+                last_peer_direction,
                 self_.block_height,
                 self_.first_seen.map(|x| x.naive_utc().timestamp()),
                 self_.last_seen.map(|x| x.naive_utc().timestamp()),
@@ -139,44 +141,32 @@ impl PeerData {
             let mut stmt = db.prepare_cached(
                 "
                 SELECT
-                    address,
-                    last_peer_direction
-                    block_height,
-                    first_seen,
-                    last_seen,
-                    last_connected,
-                    blocks_synced_to,
-                    blocks_synced_from,
-                    blocks_received_from,
-                    blocks_sent_to,
-                    connection_fail_count,
-                    connection_success_count
+                    *
                 FROM peers
-                WHERE address = ?
             ",
             )?;
             let mut rows = stmt.query([])?;
             let mut out = vec![];
             while let Some(row) = rows.next()? {
                 out.push(Self {
-                    address: row.get::<_, String>(0)?.parse()?,
-                    last_peer_direction: row.get::<_, String>(1)?.parse()?,
-                    block_height: row.get(2)?,
+                    address: row.get::<_, String>(1)?.parse()?,
+                    last_peer_direction: row.get::<_, String>(2)?.parse()?,
+                    block_height: row.get(3)?,
                     first_seen: row
-                        .get::<_, Option<i64>>(3)?
-                        .map(|x| DateTime::from_utc(NaiveDateTime::from_timestamp(x, 0), Utc)),
-                    last_seen: row
                         .get::<_, Option<i64>>(4)?
                         .map(|x| DateTime::from_utc(NaiveDateTime::from_timestamp(x, 0), Utc)),
-                    last_connected: row
+                    last_seen: row
                         .get::<_, Option<i64>>(5)?
                         .map(|x| DateTime::from_utc(NaiveDateTime::from_timestamp(x, 0), Utc)),
-                    blocks_synced_to: row.get(6)?,
-                    blocks_synced_from: row.get(7)?,
-                    blocks_received_from: row.get(8)?,
-                    blocks_sent_to: row.get(9)?,
-                    connection_fail_count: row.get(10)?,
-                    connection_success_count: row.get(11)?,
+                    last_connected: row
+                        .get::<_, Option<i64>>(6)?
+                        .map(|x| DateTime::from_utc(NaiveDateTime::from_timestamp(x, 0), Utc)),
+                    blocks_synced_to: row.get(7)?,
+                    blocks_synced_from: row.get(8)?,
+                    blocks_received_from: row.get(9)?,
+                    blocks_sent_to: row.get(10)?,
+                    connection_fail_count: row.get(11)?,
+                    connection_success_count: row.get(12)?,
                 });
             }
             Ok(out)
