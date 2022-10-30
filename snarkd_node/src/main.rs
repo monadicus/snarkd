@@ -186,7 +186,7 @@ async fn main() {
         error!("failed to load peers from database: {e:?}");
     }
 
-    // spawn peer connect/disconnect task
+    // spawn peer connect/disconnect task (also saves peers if dirty)
     {
         let peer_book = peer_book.clone();
         let database = database.clone();
@@ -255,6 +255,7 @@ async fn main() {
         error!("failed to add in raw tracker peers: {e:?}");
     }
 
+    // spawn peer pinger
     {
         let peer_book = peer_book.clone();
         tokio::spawn(async move {

@@ -1,8 +1,10 @@
+use snarkd_common::Digest32;
+
 use super::{Field, Group, Identifier, Input, Output, ProgramID, Value};
 
-type TransitionID = [u8; 32];
+type TransitionID = Digest32;
 
-type Proof = [u8; 32];
+type Proof = Digest32;
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct Transition {
