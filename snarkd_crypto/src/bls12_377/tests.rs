@@ -504,7 +504,7 @@ fn test_fq2_legendre() {
     // i^2 = -1
     let mut m1 = -Fq2::one();
     assert_eq!(QuadraticResidue, m1.legendre());
-    m1 = Fq6Parameters::mul_fp2_by_nonresidue(&m1);
+    m1 = Fq6::mul_fp2_by_nonresidue(&m1);
     assert_eq!(QuadraticNonResidue, m1.legendre());
 }
 

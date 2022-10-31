@@ -1,7 +1,9 @@
+use crate::bls12_377::field::Field;
+use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use ruint::{uint, Uint};
-use snarkvm_fields::{Fp384, PoseidonDefaultParameters, PoseidonDefaultParametersEntry};
 
-pub type Fq = Uint<384, 6>;
+#[derive(Copy, Clone)]
+pub struct Fq(pub Uint<384, 6>);
 
 const POWERS_OF_G: &'static [Uint<384, 6>] = &[
     uint!(11759432984210757955515102394259421622842731805301722003778799460755806109766954778381794158916389006258470283894_U384),
@@ -55,7 +57,7 @@ const TWO_ADICITY: u32 = 46u32;
 
 const TWO_ADIC_ROOT_OF_UNITY: Uint<384, 6> = uint!(146552004846884389553264564610149105174701957497228680529098805315416492923550540437026734404078567406251254115855_U384);
 
-const CAPACITY: u32 = Self::MODULUS_BITS - 1;
+const CAPACITY: u32 = MODULUS_BITS - 1;
 
 /// GENERATOR = -5
 const GENERATOR: Uint<384, 6> = uint!(92261639910053574722182574790803529333160366917737991650341130812388023949653897454961487930322210790384999596794_U384);
@@ -83,16 +85,131 @@ const T: Uint<384, 6> = uint!(36758425780614216763901358390127929501487857458373
 /// 1837921289030710838195067919506396475074392872918698035817074744121558668640693829665401097909504529
 const T_MINUS_ONE_DIV_TWO: Uint<384, 6> = uint!(1837921289030710838195067919506396475074392872918698035817074744121558668640693829665401097909504529_U384);
 
-impl PoseidonDefaultParameters for FqParameters {
-    const PARAMS_OPT_FOR_CONSTRAINTS: [PoseidonDefaultParametersEntry; 7] = [
-        PoseidonDefaultParametersEntry::new(2, 17, 8, 31, 0),
-        PoseidonDefaultParametersEntry::new(3, 5, 8, 56, 0),
-        PoseidonDefaultParametersEntry::new(4, 5, 8, 56, 0),
-        PoseidonDefaultParametersEntry::new(5, 5, 8, 57, 0),
-        PoseidonDefaultParametersEntry::new(6, 5, 8, 57, 0),
-        PoseidonDefaultParametersEntry::new(7, 5, 8, 57, 0),
-        PoseidonDefaultParametersEntry::new(8, 5, 8, 57, 0),
-    ];
+impl Field for Fq {
+    const PHI: Fq = uint!(80949648264912719408558363140637477264845294720710499478137287262712535938301461879813459410945_U384);
+
+    fn zero() -> Self {
+        uint!(0_U384)
+    }
+
+    fn is_zero(&self) -> bool {
+        self == self.zero()
+    }
+
+    fn one() -> Self {
+        uint!(1_U384)
+    }
+
+    fn is_one(&self) -> bool {
+        self == self.one()
+    }
+
+    fn characteristic<'a>() -> Self {
+        MODULUS
+    }
+
+    fn double(&self) -> Self {
+        let mut res = *self;
+        res.double_in_place();
+        res
+    }
+
+    // NOTE: check if this is quicker than snarkVM
+    fn double_in_place(&mut self) {
+        self.add_mod(&self, &MODULUS);
+    }
+
+    fn square(&self) -> Self {
+        let mut res = *self;
+        res.square_in_place();
+        res
+    }
+
+    // NOTE: Check if this is quicker than snarkvM
+    fn square_in_place(&mut self) {
+        self.mul_redc(self, MODULUS, INV);
+    }
+
+    fn inverse(&self) -> Option<Self> {
+        self.inv_mod(MODULUS)
+    }
+
+    fn inverse_in_place(&mut self) -> Option<&mut Self> {
+        self.inverse_in_place()
+    }
+
+    fn frobenius_map(&mut self, _: usize) {
+        // No-op
+    }
+
+    fn glv_endomorphism(&self) -> Self {
+        let p = self * &Self::PHI;
+        p
+    }
+}
+
+impl Add for Fq {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        self.add_mod(other, MODULUS)
+    }
+}
+
+impl AddAssign for Fq {
+    fn add_assign(&mut self, other: Self) {
+        *self = self.add_mod(&other, &MODULUS);
+    }
+}
+
+impl Sub for Fq {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        self.sub_mod(other, MODULUS)
+    }
+}
+
+impl SubAssign for Fq {
+    fn sub_assign(&mut self, other: Self) {
+        *self = self - other;
+    }
+}
+
+impl Mul for Fq {
+    type Output = Self;
+
+    fn mul(self, other: Self) -> Self {
+        self.mul_redc(other, MODULUS, INV)
+    }
+}
+
+impl MulAssign for Fq {
+    fn mul_assign(&mut self, other: Self) {
+        *self = self * other;
+    }
+}
+
+impl Neg for Fq {
+    type Output = Self;
+
+    fn neg(self) -> Self {
+        self.neg_mod(MODULUS)
+    }
+}
+
+impl Div for Fq {
+    type Output = Self;
+
+    fn div(self, other: Self) -> Self {
+        self.mul_redc(other.inverse().unwrap(), MODULUS, INV)
+    }
+}
+
+impl DivAssign for Fq {
+    fn div_assign(&mut self, other: Self) {
+        *self = self / other;
+    }
 }
 
 #[cfg(test)]

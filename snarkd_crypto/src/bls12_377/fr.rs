@@ -1,5 +1,6 @@
+use super::field::Field;
+use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use ruint::{uint, Uint};
-use snarkvm_fields::{Fp256, PoseidonDefaultParameters, PoseidonDefaultParametersEntry};
 
 /// BLS12-377 scalar field.
 ///
@@ -24,9 +25,9 @@ use snarkvm_fields::{Fp256, PoseidonDefaultParameters, PoseidonDefaultParameters
 /// print("2-adic gen (g2 * R % q): ", g2 * R % q)
 /// print("2-adic gen into_chunks(g2 * R % q): ", into_chunks(g2 * R % q, 64, 4))
 /// ```
-pub type Fr = Uint<256, 4>;
+pub struct Fr(pub Uint<256, 4>);
 
-const POWERS_OF_G: &'static [Uint<256, 4>] = &[
+pub const POWERS_OF_G: &'static [Uint<256, 4>] = &[
     uint!(7550553103602024334975125493733701741804725558747959317959731134235635147227_U256),
     uint!(2426736712223096716690040454781163745329121217182105961450780095846454806933_U256),
     uint!(7262145565060860359900199261463709015779508115142628947528384917326026416094_U256),
@@ -75,64 +76,179 @@ const POWERS_OF_G: &'static [Uint<256, 4>] = &[
     uint!(880904806456922042258150504921383618666682042621506879489_U256),
 ];
 
-const TWO_ADICITY: u32 = 47;
+pub const TWO_ADICITY: u32 = 47;
 
 /// TWO_ADIC_ROOT_OF_UNITY = 8065159656716812877374967518403273466521432693661810619979959746626482506078
 /// Encoded in Montgomery form, the value is
 /// (8065159656716812877374967518403273466521432693661810619979959746626482506078 * R % q) =
 /// 7039866554349711480672062101017509031917008525101396696252683426045173093960
-const TWO_ADIC_ROOT_OF_UNITY: Uint<256, 4> =
+pub const TWO_ADIC_ROOT_OF_UNITY: Uint<256, 4> =
     uint!(8065159656716812877374967518403273466521432693661810619979959746626482506078_U256);
 
-const CAPACITY: u32 = Self::MODULUS_BITS - 1;
+pub const CAPACITY: u32 = MODULUS_BITS - 1;
 
 /// GENERATOR = 22
 /// Encoded in Montgomery form, so the value is
 /// (22 * R) % q = 5642976643016801619665363617888466827793962762719196659561577942948671127251
-const GENERATOR: Uint<256, 4> =
+pub const GENERATOR: Uint<256, 4> =
     uint!(5642976643016801619665363617888466827793962762719196659561577942948671127251_U256);
 
-const INV: u64 = 725501752471715839u64;
+pub const INV: u64 = 725501752471715839u64;
 
 /// MODULUS = 8444461749428370424248824938781546531375899335154063827935233455917409239041
-const MODULUS: Uint<256, 4> =
+pub const MODULUS: Uint<256, 4> =
     uint!(8444461749428370424248824938781546531375899335154063827935233455917409239041_U256);
 
-const MODULUS_BITS: u32 = 253;
+pub const MODULUS_BITS: u32 = 253;
 
 /// (r - 1)/2 =
 /// 4222230874714185212124412469390773265687949667577031913967616727958704619520
-const MODULUS_MINUS_ONE_DIV_TWO: Uint<256, 4> =
+pub const MODULUS_MINUS_ONE_DIV_TWO: Uint<256, 4> =
     uint!(4222230874714185212124412469390773265687949667577031913967616727958704619520_U256);
 
-const R: Uint<256, 4> =
+pub const R: Uint<256, 4> =
     uint!(6014086494747379908336260804527802945383293308637734276299549080986809532403_U256);
 
-const R2: Uint<256, 4> =
+pub const R2: Uint<256, 4> =
     uint!(508595941311779472113692600146818027278633330499214071737745792929336755579_U256);
 
-const REPR_SHAVE_BITS: u32 = 3;
+pub const REPR_SHAVE_BITS: u32 = 3;
 
 /// t = (r - 1) / 2^s =
 /// 60001509534603559531609739528203892656505753216962260608619555
-const T: Uint256<256, 4> =
+pub const T: Uint<256, 4> =
     uint!(60001509534603559531609739528203892656505753216962260608619555_U256);
 
 /// (t - 1) / 2 =
 /// 30000754767301779765804869764101946328252876608481130304309777
-const T_MINUS_ONE_DIV_TWO: Uint<256, 4> =
+pub const T_MINUS_ONE_DIV_TWO: Uint<256, 4> =
     uint!(30000754767301779765804869764101946328252876608481130304309777_U256);
 
-impl PoseidonDefaultParameters for FrParameters {
-    const PARAMS_OPT_FOR_CONSTRAINTS: [PoseidonDefaultParametersEntry; 7] = [
-        PoseidonDefaultParametersEntry::new(2, 17, 8, 31, 0),
-        PoseidonDefaultParametersEntry::new(3, 17, 8, 31, 0),
-        PoseidonDefaultParametersEntry::new(4, 17, 8, 31, 0),
-        PoseidonDefaultParametersEntry::new(5, 17, 8, 31, 0),
-        PoseidonDefaultParametersEntry::new(6, 17, 8, 31, 0),
-        PoseidonDefaultParametersEntry::new(7, 17, 8, 31, 0),
-        PoseidonDefaultParametersEntry::new(8, 17, 8, 31, 0),
-    ];
+impl Field for Fr {
+    // We don't need GLV endomorphisms for the scalar field.
+    const PHI: Self = uint!(0_U256);
+
+    fn zero() -> Self {
+        uint!(0_U256)
+    }
+
+    fn is_zero(&self) -> bool {
+        self == self.zero()
+    }
+
+    fn one() -> Self {
+        uint!(1_U256)
+    }
+
+    fn is_one(&self) -> bool {
+        self == self.one()
+    }
+
+    fn characteristic() -> Self {
+        MODULUS
+    }
+
+    fn double(&self) -> Self {
+        let mut res = *self;
+        res.double_in_place();
+        res
+    }
+
+    // NOTE: check if this is quicker than snarkVM
+    fn double_in_place(&mut self) {
+        self.add_mod(&self, &MODULUS);
+    }
+
+    fn square(&self) -> Self {
+        let mut res = *self;
+        res.square_in_place();
+        res
+    }
+
+    // NOTE: Check if this is quicker than snarkvM
+    fn square_in_place(&mut self) {
+        self.mul_redc(self, MODULUS, INV);
+    }
+
+    fn inverse(&self) -> Option<Self> {
+        self.inv_mod(MODULUS)
+    }
+
+    fn inverse_in_place(&mut self) -> Option<&mut Self> {
+        self.inverse_in_place()
+    }
+
+    fn frobenius_map(&mut self, _: usize) {
+        // No-op
+    }
+
+    fn glv_endomorphism(&self) -> Self {
+        self.zero()
+    }
+}
+
+impl Add for Fr {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        self.add_mod(other, MODULUS)
+    }
+}
+
+impl AddAssign for Fr {
+    fn add_assign(&mut self, other: Self) {
+        *self = self + other
+    }
+}
+
+impl Sub for Fr {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        self.sub_mod(other, MODULUS)
+    }
+}
+
+impl SubAssign for Fr {
+    fn sub_assign(&mut self, other: Self) {
+        *self = self - other;
+    }
+}
+
+impl Mul for Fr {
+    type Output = Self;
+
+    fn mul(self, other: Self) -> Self {
+        self.mul_redc(other, MODULUS, INV)
+    }
+}
+
+impl MulAssign for Fr {
+    fn mul_assign(&mut self, other: Self) {
+        *self = self * other;
+    }
+}
+
+impl Neg for Fr {
+    type Output = Self;
+
+    fn neg(self) -> Self {
+        self.neg_mod(MODULUS)
+    }
+}
+
+impl Div for Fr {
+    type Output = Self;
+
+    fn div(self, other: Self) -> Self {
+        self.mul_redc(other.inverse().unwrap(), MODULUS, INV)
+    }
+}
+
+impl DivAssign for Fr {
+    fn div_assign(&mut self, other: Self) {
+        *self = self / other;
+    }
 }
 
 #[cfg(test)]

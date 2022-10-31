@@ -1,9 +1,5 @@
-use crate::bls12_377::{Fq, Fq2, Fq2Parameters};
-use snarkvm_fields::{
-    field,
-    fp6_3over2::{Fp6, Fp6Parameters},
-    Fp2Parameters,
-};
+use crate::bls12_377::Fq2;
+use ruint::{uint, Uint};
 
 pub struct Fq6 {
     pub c0: Fq2,
@@ -39,7 +35,16 @@ const FROBENIUS_COEFF_FP6_C1: [Fq2; 6] = [
     },
     // Fp2::NONRESIDUE^(((q^5) - 1) / 3)
     Fq2 {
-        c0: uint!(258664426012969093929703085429980814127835149614277183275038967946009968870203535512256352201271898244626862047232_U384),
+        // NOTE: For some reason, generating this big integer in the macro causes an overflow.
+        // So, we do it manually with the limbs for now.
+        c0: Uint::<384, 6>::from_limbs([
+            0xaa3baf925a7b868e,
+            0x3e0d38ef753d5865,
+            0x4191258bc861923,
+            0x1e8a71ae63e00a87,
+            0xeffc4d11826f20dc,
+            0x4663a2a83dd119,
+        ]),
         c1: uint!(0_U384),
     },
 ];
@@ -83,12 +88,14 @@ const NONRESIDUE: Fq2 = Fq2 {
     c1: uint!(1_U384),
 };
 
-#[inline(always)]
-fn mul_fp2_by_nonresidue(fe: &Fq2) -> Fq2 {
-    // Karatsuba multiplication with constant other = u.
-    let c0 = Fq2Parameters::mul_fp_by_nonresidue(&fe.c1);
-    let c1 = fe.c0;
-    Fq2 { c0, c1 }
+impl Fq6 {
+    #[inline(always)]
+    fn mul_fp2_by_nonresidue(fe: &Fq2) -> Fq2 {
+        // Karatsuba multiplication with constant other = u.
+        let c0 = Fq2::mul_fp_by_nonresidue(&fe.c1);
+        let c1 = fe.c0;
+        Fq2 { c0, c1 }
+    }
 }
 
 #[cfg(test)]

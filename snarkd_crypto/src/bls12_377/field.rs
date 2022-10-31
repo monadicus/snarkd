@@ -1,6 +1,23 @@
-use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+use bitvec::prelude::*;
+use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
-pub trait Field: Add + AddAssign + Sub + SubAssign + Mul + MulAssign + Div + DivAssign {
+pub trait Field:
+    Add + AddAssign + Sub + SubAssign + Mul + MulAssign + Neg + Div + DivAssign + Sized
+{
+    const PHI: Self;
+
+    /// Returns the additive identity of the field.
+    fn zero() -> Self;
+
+    /// Returns whether or not the given element is zero.
+    fn is_zero(&self) -> bool;
+
+    /// Returns the multiplicative identity of the field.
+    fn one() -> Self;
+
+    /// Returns whether or not the given element is one.
+    fn is_one(&self) -> bool;
+
     /// Returns the characteristic of the field.
     fn characteristic<'a>() -> Self;
 
@@ -18,9 +35,9 @@ pub trait Field: Add + AddAssign + Sub + SubAssign + Mul + MulAssign + Div + Div
     /// Squares `self` in place.
     fn square_in_place(&mut self) -> &mut Self;
 
-    fn sum_of_products<'a>(
-        a: impl Iterator<Item = &'a Self> + Clone,
-        b: impl Iterator<Item = &'a Self> + Clone,
+    fn sum_of_products(
+        a: impl Iterator<Item = Self> + Clone,
+        b: impl Iterator<Item = Self> + Clone,
     ) -> Self {
         a.zip(b).map(|(a, b)| *a * b).sum::<Self>()
     }
@@ -36,15 +53,18 @@ pub trait Field: Add + AddAssign + Sub + SubAssign + Mul + MulAssign + Div + Div
     /// the Frobenius automorphism.
     fn frobenius_map(&mut self, power: usize);
 
+    /// Performs the GLV endomorphism.
+    fn glv_endomorphism(&self) -> Self;
+
     /// Exponentiates this element by a number represented with `u64` limbs,
     /// least significant limb first.
     #[must_use]
-    fn pow<S: AsRef<[u64]>>(&self, exp: S) -> Self {
+    fn pow(&self, exp: Self) -> Self {
         let mut res = Self::one();
 
         let mut found_one = false;
 
-        for i in BitIteratorBE::new(exp) {
+        for i in BitVec::<Msb0, u8>::from(exp.to_be_bytes()) {
             if !found_one {
                 if i {
                     found_one = true;
