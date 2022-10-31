@@ -1,17 +1,4 @@
-use crate::{
-    impl_sw_curve_serializer,
-    templates::short_weierstrass_jacobian::Projective,
-    traits::{AffineCurve, ProjectiveCurve, ShortWeierstrassParameters as Parameters},
-};
-use snarkvm_fields::{Field, One, SquareRootField, Zero};
-use snarkvm_utilities::{
-    bititerator::BitIteratorBE,
-    io::{Error, ErrorKind, Read, Result as IoResult, Write},
-    rand::Uniform,
-    serialize::*,
-    FromBytes, ToBits, ToBytes, ToMinimalBits,
-};
-
+use crate::bls12_377::{group::Group, templates::short_weierstrass_jacobian::Projective};
 use core::{
     fmt::{Display, Formatter, Result as FmtResult},
     ops::{Mul, Neg},
@@ -20,26 +7,24 @@ use rand::{
     distributions::{Distribution, Standard},
     Rng,
 };
-use serde::{Deserialize, Serialize};
+use std::io::Write;
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct Affine<P: Parameters> {
-    pub x: P::BaseField,
-    pub y: P::BaseField,
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct Affine<G: Group> {
+    pub x: G::BaseField,
+    pub y: G::BaseField,
     pub infinity: bool,
 }
 
-impl<P: Parameters> Affine<P> {
+impl<G: Group> Affine<G> {
     #[inline]
-    pub const fn new(x: P::BaseField, y: P::BaseField, infinity: bool) -> Self {
+    pub const fn new(x: G::BaseField, y: G::BaseField, infinity: bool) -> Self {
         Self { x, y, infinity }
     }
-}
 
-impl<P: Parameters> Zero for Affine<P> {
     #[inline]
     fn zero() -> Self {
-        Self::new(P::BaseField::zero(), P::BaseField::one(), true)
+        Self::new(G::BaseField::zero(), G::BaseField::one(), true)
     }
 
     #[inline]
@@ -48,14 +33,14 @@ impl<P: Parameters> Zero for Affine<P> {
     }
 }
 
-impl<P: Parameters> Default for Affine<P> {
+impl<G: Group> Default for Affine<G> {
     #[inline]
     fn default() -> Self {
         Self::zero()
     }
 }
 
-impl<P: Parameters> Display for Affine<P> {
+impl<G: Group> Display for Affine<G> {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         if self.infinity {
             write!(f, "Affine(Infinity)")
@@ -65,21 +50,15 @@ impl<P: Parameters> Display for Affine<P> {
     }
 }
 
-impl<P: Parameters> PartialEq<Projective<P>> for Affine<P> {
-    fn eq(&self, other: &Projective<P>) -> bool {
+impl<G: Group> PartialEq<Projective<G>> for Affine<G> {
+    fn eq(&self, other: &Projective<G>) -> bool {
         other.eq(self)
     }
 }
 
-impl<P: Parameters> AffineCurve for Affine<P> {
-    type BaseField = P::BaseField;
-    type Coordinates = (Self::BaseField, Self::BaseField, bool);
-    type Projective = Projective<P>;
-    type ScalarField = P::ScalarField;
-
+impl<G: Group> Affine<G> {
     /// Initializes a new affine group element from the given coordinates.
-    fn from_coordinates(coordinates: Self::Coordinates) -> Self {
-        let (x, y, infinity) = coordinates;
+    fn from_coordinates(x: G::BaseField, y: G::BaseField, infinity: bool) -> Self {
         let point = Self { x, y, infinity };
         assert!(point.is_on_curve());
         point
@@ -87,31 +66,16 @@ impl<P: Parameters> AffineCurve for Affine<P> {
 
     #[inline]
     fn cofactor() -> &'static [u64] {
-        P::COFACTOR
+        G::COFACTOR
     }
 
     #[inline]
     fn prime_subgroup_generator() -> Self {
         Self::new(
-            P::AFFINE_GENERATOR_COEFFS.0,
-            P::AFFINE_GENERATOR_COEFFS.1,
+            G::AFFINE_GENERATOR_COEFFS.0,
+            G::AFFINE_GENERATOR_COEFFS.1,
             false,
         )
-    }
-
-    #[inline]
-    fn from_random_bytes(bytes: &[u8]) -> Option<Self> {
-        Self::BaseField::from_random_bytes_with_flags::<SWFlags>(bytes).and_then(|(x, flags)| {
-            // If x is valid and is zero and only the infinity flag is set, then parse this
-            // point as infinity. For all other choices, get the original point.
-            if x.is_zero() && flags.is_infinity() {
-                Some(Self::zero())
-            } else if let Some(is_positive_y) = flags.is_positive() {
-                Self::from_x_coordinate(x, is_positive_y) // Unwrap is safe because it's not zero.
-            } else {
-                None
-            }
-        })
     }
 
     /// Attempts to construct an affine point given an x-coordinate. The
@@ -119,9 +83,9 @@ impl<P: Parameters> AffineCurve for Affine<P> {
     ///
     /// If and only if `greatest` is set will the lexicographically
     /// largest y-coordinate be selected.
-    fn from_x_coordinate(x: Self::BaseField, greatest: bool) -> Option<Self> {
+    fn from_x_coordinate(x: G::BaseField, greatest: bool) -> Option<Self> {
         // Compute x^3 + ax + b
-        let x3b = P::add_b(&((x.square() * x) + P::mul_by_a(&x)));
+        let x3b = G::add_b(&((x.square() * x) + G::mul_by_a(&x)));
 
         x3b.sqrt().map(|y| {
             let negy = -y;
@@ -136,11 +100,11 @@ impl<P: Parameters> AffineCurve for Affine<P> {
     ///
     /// If and only if `greatest` is set will the lexicographically
     /// largest y-coordinate be selected.
-    fn from_y_coordinate(_y: Self::BaseField, _greatest: bool) -> Option<Self> {
+    fn from_y_coordinate(_y: G::BaseField, _greatest: bool) -> Option<Self> {
         unimplemented!()
     }
 
-    fn mul_bits(&self, bits: impl Iterator<Item = bool>) -> Projective<P> {
+    fn mul_bits(&self, bits: impl Iterator<Item = bool>) -> Projective<G> {
         let mut output = Projective::zero();
         for i in bits.skip_while(|b| !b) {
             output.double_in_place();
@@ -151,28 +115,24 @@ impl<P: Parameters> AffineCurve for Affine<P> {
         output
     }
 
-    fn mul_by_cofactor_to_projective(&self) -> Self::Projective {
-        self.mul_bits(BitIteratorBE::new_without_leading_zeros(P::COFACTOR))
+    fn mul_by_cofactor_to_projective(&self) -> Projective<G> {
+        self.mul_bits(G::COFACTOR.to_bytes_be().into())
     }
 
     fn mul_by_cofactor_inv(&self) -> Self {
-        (*self * P::COFACTOR_INV).into()
+        (*self * G::COFACTOR_INV).into()
     }
 
     #[inline]
-    fn to_projective(&self) -> Projective<P> {
+    fn to_projective(&self) -> Projective<G> {
         (*self).into()
     }
 
-    fn is_in_correct_subgroup_assuming_on_curve(&self) -> bool {
-        P::is_in_correct_subgroup_assuming_on_curve(self)
-    }
-
-    fn to_x_coordinate(&self) -> Self::BaseField {
+    fn to_x_coordinate(&self) -> G::BaseField {
         self.x
     }
 
-    fn to_y_coordinate(&self) -> Self::BaseField {
+    fn to_y_coordinate(&self) -> G::BaseField {
         self.y
     }
 
@@ -183,7 +143,7 @@ impl<P: Parameters> AffineCurve for Affine<P> {
         } else {
             // Check that the point is on the curve
             let y2 = self.y.square();
-            let x3b = P::add_b(&((self.x.square() * self.x) + P::mul_by_a(&self.x)));
+            let x3b = G::add_b(&((self.x.square() * self.x) + G::mul_by_a(&self.x)));
             y2 == x3b
         }
     }
@@ -194,8 +154,8 @@ impl<P: Parameters> AffineCurve for Affine<P> {
     fn batch_add_loop_1(
         a: &mut Self,
         b: &mut Self,
-        half: &Self::BaseField,
-        inversion_tmp: &mut Self::BaseField,
+        half: &G::BaseField,
+        inversion_tmp: &mut G::BaseField,
     ) {
         if a.is_zero() || b.is_zero() {
         } else if a.x == b.x {
@@ -210,7 +170,7 @@ impl<P: Parameters> AffineCurve for Affine<P> {
                 let x_sq = b.x.square();
                 b.x -= &b.y; // x - y
                 a.x = b.y.double(); // denominator = 2y
-                a.y = x_sq.double() + x_sq + P::WEIERSTRASS_A; // numerator = 3x^2 + a
+                a.y = x_sq.double() + x_sq + G::WEIERSTRASS_A; // numerator = 3x^2 + a
                 b.y -= &(a.y * half); // y - (3x^2 + a)/2
                 a.y *= *inversion_tmp; // (3x^2 + a) * tmp
                 *inversion_tmp *= &a.x; // update tmp
@@ -231,7 +191,7 @@ impl<P: Parameters> AffineCurve for Affine<P> {
     /// Performs the second half of batch addition in-place:
     ///     `x3` := `lambda^2 - x1 - x2`
     ///     `y3` := `lambda * (x1 - x3) - y1`.
-    fn batch_add_loop_2(a: &mut Self, b: Self, inversion_tmp: &mut Self::BaseField) {
+    fn batch_add_loop_2(a: &mut Self, b: Self, inversion_tmp: &mut G::BaseField) {
         if a.is_zero() {
             *a = b;
         } else if !b.is_zero() {
@@ -248,16 +208,7 @@ impl<P: Parameters> AffineCurve for Affine<P> {
     }
 }
 
-impl<P: Parameters> ToMinimalBits for Affine<P> {
-    fn to_minimal_bits(&self) -> Vec<bool> {
-        let mut res_bits = self.x.to_bits_le();
-        res_bits.push(*self.y.to_bits_le().first().unwrap());
-        res_bits.push(self.infinity);
-        res_bits
-    }
-}
-
-impl<P: Parameters> Neg for Affine<P> {
+impl<G: Group> Neg for Affine<G> {
     type Output = Self;
 
     #[inline]
@@ -270,45 +221,19 @@ impl<P: Parameters> Neg for Affine<P> {
     }
 }
 
-impl<P: Parameters> Mul<P::ScalarField> for Affine<P> {
-    type Output = Projective<P>;
+impl<G: Group> Mul<G::BaseField> for Affine<G> {
+    type Output = Projective<G>;
 
-    fn mul(self, other: P::ScalarField) -> Self::Output {
+    fn mul(self, other: G::BaseField) -> Self::Output {
         self.to_projective().mul(other)
     }
 }
 
-impl<P: Parameters> ToBytes for Affine<P> {
+impl<G: Group> Distribution<Affine<G>> for Standard {
     #[inline]
-    fn write_le<W: Write>(&self, mut writer: W) -> IoResult<()> {
-        self.x.write_le(&mut writer)?;
-        self.y.write_le(&mut writer)?;
-        self.infinity.write_le(writer)
-    }
-}
-
-impl<P: Parameters> FromBytes for Affine<P> {
-    #[inline]
-    fn read_le<R: Read>(mut reader: R) -> IoResult<Self> {
-        let x = P::BaseField::read_le(&mut reader)?;
-        let y = P::BaseField::read_le(&mut reader)?;
-        let infinity = bool::read_le(&mut reader)?;
-
-        if infinity != x.is_zero() && y.is_one() {
-            return Err(Error::new(
-                ErrorKind::InvalidData,
-                "Infinity flag is not valid",
-            ));
-        }
-        Ok(Self::new(x, y, infinity))
-    }
-}
-
-impl<P: Parameters> Distribution<Affine<P>> for Standard {
-    #[inline]
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Affine<P> {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Affine<G> {
         loop {
-            let x = P::BaseField::rand(rng);
+            let x = G::BaseField::rand(rng);
             let greatest = rng.gen();
 
             if let Some(p) = Affine::from_x_coordinate(x, greatest) {
@@ -319,9 +244,9 @@ impl<P: Parameters> Distribution<Affine<P>> for Standard {
 }
 
 // The projective point X, Y, Z is represented in the affine coordinates as X/Z^2, Y/Z^3.
-impl<P: Parameters> From<Projective<P>> for Affine<P> {
+impl<G: Group> From<Projective<G>> for Affine<G> {
     #[inline]
-    fn from(p: Projective<P>) -> Affine<P> {
+    fn from(p: Projective<G>) -> Affine<G> {
         if p.is_zero() {
             Affine::zero()
         } else if p.z.is_one() {
@@ -342,5 +267,3 @@ impl<P: Parameters> From<Projective<P>> for Affine<P> {
         }
     }
 }
-
-impl_sw_curve_serializer!(Parameters);

@@ -1,9 +1,4 @@
-use crate::{
-    templates::short_weierstrass_jacobian::Affine,
-    traits::{AffineCurve, ProjectiveCurve, ShortWeierstrassParameters as Parameters},
-};
-use snarkvm_fields::{impl_add_sub_from_field_ref, Field, One, Zero};
-use snarkvm_utilities::{rand::Uniform, serialize::*, FromBytes, ToBytes};
+use crate::bls12_377::{group::Group, templates::short_weierstrass_jacobian::Affine, Fr};
 
 use core::{
     fmt::{Display, Formatter, Result as FmtResult},
@@ -14,61 +9,53 @@ use rand::{
     distributions::{Distribution, Standard},
     Rng,
 };
-use std::io::{Read, Result as IoResult, Write};
+use std::io::Write;
 
 #[derive(Copy, Clone, Debug)]
-pub struct Projective<P: Parameters> {
-    pub x: P::BaseField,
-    pub y: P::BaseField,
-    pub z: P::BaseField,
+pub struct Projective<G: Group> {
+    pub x: G::BaseField,
+    pub y: G::BaseField,
+    pub z: G::BaseField,
 }
 
-impl<P: Parameters> Projective<P> {
-    pub const fn new(x: P::BaseField, y: P::BaseField, z: P::BaseField) -> Self {
+impl<G: Group> Projective<G> {
+    pub const fn new(x: G::BaseField, y: G::BaseField, z: G::BaseField) -> Self {
         Self { x, y, z }
     }
-}
 
-impl<P: Parameters> Zero for Projective<P> {
     // The point at infinity is always represented by Z = 0.
     #[inline]
-    fn zero() -> Self {
+    pub const fn zero() -> Self {
         Self::new(
-            P::BaseField::zero(),
-            P::BaseField::one(),
-            P::BaseField::zero(),
+            G::BaseField::zero(),
+            G::BaseField::one(),
+            G::BaseField::zero(),
         )
     }
-
-    // The point at infinity is always represented by Z = 0.
-    #[inline]
-    fn is_zero(&self) -> bool {
-        self.z.is_zero()
-    }
 }
 
-impl<P: Parameters> Default for Projective<P> {
+impl<G: Group> Default for Projective<G> {
     #[inline]
     fn default() -> Self {
         Self::zero()
     }
 }
 
-impl<P: Parameters> Display for Projective<P> {
+impl<G: Group> Display for Projective<G> {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         write!(f, "{}", self.to_affine())
     }
 }
 
-impl<P: Parameters> Hash for Projective<P> {
+impl<G: Group> Hash for Projective<G> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.to_affine().hash(state);
     }
 }
 
-impl<P: Parameters> Eq for Projective<P> {}
+impl<G: Group> Eq for Projective<G> {}
 
-impl<P: Parameters> PartialEq for Projective<P> {
+impl<G: Group> PartialEq for Projective<G> {
     fn eq(&self, other: &Self) -> bool {
         if self.is_zero() {
             return other.is_zero();
@@ -88,8 +75,8 @@ impl<P: Parameters> PartialEq for Projective<P> {
     }
 }
 
-impl<P: Parameters> PartialEq<Affine<P>> for Projective<P> {
-    fn eq(&self, other: &Affine<P>) -> bool {
+impl<G: Group> PartialEq<Affine<G>> for Projective<G> {
+    fn eq(&self, other: &Affine<G>) -> bool {
         if self.is_zero() {
             return other.is_zero();
         }
@@ -106,11 +93,11 @@ impl<P: Parameters> PartialEq<Affine<P>> for Projective<P> {
     }
 }
 
-impl<P: Parameters> Distribution<Projective<P>> for Standard {
+impl<G: Group> Distribution<Projective<G>> for Standard {
     #[inline]
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Projective<P> {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Projective<G> {
         loop {
-            let x = P::BaseField::rand(rng);
+            let x = G::BaseField::rand(rng);
             let greatest = rng.gen();
 
             if let Some(p) = Affine::from_x_coordinate(x, greatest) {
@@ -120,33 +107,15 @@ impl<P: Parameters> Distribution<Projective<P>> for Standard {
     }
 }
 
-impl<P: Parameters> ToBytes for Projective<P> {
-    #[inline]
-    fn write_le<W: Write>(&self, mut writer: W) -> IoResult<()> {
-        self.x.write_le(&mut writer)?;
-        self.y.write_le(&mut writer)?;
-        self.z.write_le(writer)
-    }
-}
-
-impl<P: Parameters> FromBytes for Projective<P> {
-    #[inline]
-    fn read_le<R: Read>(mut reader: R) -> IoResult<Self> {
-        let x = P::BaseField::read_le(&mut reader)?;
-        let y = P::BaseField::read_le(&mut reader)?;
-        let z = P::BaseField::read_le(reader)?;
-        Ok(Self::new(x, y, z))
-    }
-}
-
-impl<P: Parameters> ProjectiveCurve for Projective<P> {
-    type Affine = Affine<P>;
-    type BaseField = P::BaseField;
-    type ScalarField = P::ScalarField;
-
+impl<G: Group> Projective<G> {
     #[inline]
     fn prime_subgroup_generator() -> Self {
         Affine::prime_subgroup_generator().into()
+    }
+
+    #[inline]
+    fn cofactor() -> &'static [u64] {
+        G::COFACTOR
     }
 
     #[inline]
@@ -163,7 +132,7 @@ impl<P: Parameters> ProjectiveCurve for Projective<P> {
 
         // First pass: compute [a, ab, abc, ...]
         let mut prod = Vec::with_capacity(v.len());
-        let mut tmp = P::BaseField::one();
+        let mut tmp = G::BaseField::one();
         for g in v
             .iter_mut()
             // Ignore normalized elements
@@ -188,7 +157,7 @@ impl<P: Parameters> ProjectiveCurve for Projective<P> {
                 prod.into_iter()
                     .rev()
                     .skip(1)
-                    .chain(Some(P::BaseField::one())),
+                    .chain(Some(G::BaseField::one())),
             )
         {
             // tmp := tmp * g.z; g.z := tmp * s = 1/z
@@ -203,7 +172,7 @@ impl<P: Parameters> ProjectiveCurve for Projective<P> {
                 let z2 = g.z.square(); // 1/z
                 g.x *= &z2; // x/z^2
                 g.y *= &(z2 * g.z); // y/z^3
-                g.z = P::BaseField::one(); // z = 1
+                g.z = G::BaseField::one(); // z = 1
             }
         }
 
@@ -217,13 +186,13 @@ impl<P: Parameters> ProjectiveCurve for Projective<P> {
                     let z2 = g.z.square(); // 1/z
                     g.x *= &z2; // x/z^2
                     g.y *= &(z2 * g.z); // y/z^3
-                    g.z = P::BaseField::one(); // z = 1
+                    g.z = G::BaseField::one(); // z = 1
                 });
         }
     }
 
     #[allow(clippy::many_single_char_names)]
-    fn add_assign_mixed(&mut self, other: &Self::Affine) {
+    fn add_assign_mixed(&mut self, other: &Affine<G>) {
         if other.is_zero() {
             return;
         }
@@ -231,7 +200,7 @@ impl<P: Parameters> ProjectiveCurve for Projective<P> {
         if self.is_zero() {
             self.x = other.x;
             self.y = other.y;
-            self.z = P::BaseField::one();
+            self.z = G::BaseField::one();
             return;
         }
 
@@ -284,7 +253,7 @@ impl<P: Parameters> ProjectiveCurve for Projective<P> {
             self.x -= &v.double();
 
             // Y3 = r*(V-X3)-2*Y1*J
-            self.y = P::BaseField::sum_of_products(
+            self.y = G::BaseField::sum_of_products(
                 [r, -self.y.double()].iter(),
                 [(v - self.x), j].iter(),
             );
@@ -311,7 +280,7 @@ impl<P: Parameters> ProjectiveCurve for Projective<P> {
             return;
         }
 
-        if P::WEIERSTRASS_A.is_zero() {
+        if G::WEIERSTRASS_A.is_zero() {
             // A = X1^2
             let mut a = self.x.square();
 
@@ -362,7 +331,7 @@ impl<P: Parameters> ProjectiveCurve for Projective<P> {
             let s = ((self.x + yy).square() - xx - yyyy).double();
 
             // M = 3*XX+a*ZZ^2
-            let m = xx.double() + xx + P::mul_by_a(&zz.square());
+            let m = xx.double() + xx + G::mul_by_a(&zz.square());
 
             // T = M^2-2*S
             let t = m.square() - s.double();
@@ -381,12 +350,12 @@ impl<P: Parameters> ProjectiveCurve for Projective<P> {
     }
 
     #[inline]
-    fn to_affine(&self) -> Affine<P> {
+    fn to_affine(&self) -> Affine<G> {
         (*self).into()
     }
 }
 
-impl<P: Parameters> Neg for Projective<P> {
+impl<G: Group> Neg for Projective<G> {
     type Output = Self;
 
     #[inline]
@@ -399,9 +368,7 @@ impl<P: Parameters> Neg for Projective<P> {
     }
 }
 
-impl_add_sub_from_field_ref!(Projective, Parameters);
-
-impl<'a, P: Parameters> Add<&'a Self> for Projective<P> {
+impl<'a, G: Group> Add<&'a Self> for Projective<G> {
     type Output = Self;
 
     #[inline]
@@ -412,7 +379,7 @@ impl<'a, P: Parameters> Add<&'a Self> for Projective<P> {
     }
 }
 
-impl<'a, P: Parameters> AddAssign<&'a Self> for Projective<P> {
+impl<'a, G: Group> AddAssign<&'a Self> for Projective<G> {
     #[allow(clippy::many_single_char_names)]
     #[allow(clippy::suspicious_op_assign_impl)]
     fn add_assign(&mut self, other: &'a Self) {
@@ -472,7 +439,7 @@ impl<'a, P: Parameters> AddAssign<&'a Self> for Projective<P> {
 
             // Y3 = r*(V - X3) - 2*S1*J
             self.y =
-                P::BaseField::sum_of_products([r, -s1.double()].iter(), [(v - self.x), j].iter());
+                G::BaseField::sum_of_products([r, -s1.double()].iter(), [(v - self.x), j].iter());
 
             // Z3 = ((Z1+Z2)^2 - Z1Z1 - Z2Z2)*H
             self.z = ((self.z + other.z).square() - z1z1 - z2z2) * h;
@@ -480,7 +447,7 @@ impl<'a, P: Parameters> AddAssign<&'a Self> for Projective<P> {
     }
 }
 
-impl<'a, P: Parameters> Sub<&'a Self> for Projective<P> {
+impl<'a, G: Group> Sub<&'a Self> for Projective<G> {
     type Output = Self;
 
     #[inline]
@@ -491,38 +458,152 @@ impl<'a, P: Parameters> Sub<&'a Self> for Projective<P> {
     }
 }
 
-impl<'a, P: Parameters> SubAssign<&'a Self> for Projective<P> {
+impl<'a, G: Group> SubAssign<&'a Self> for Projective<G> {
     fn sub_assign(&mut self, other: &'a Self) {
         *self += &(-(*other));
     }
 }
 
-impl<P: Parameters> Mul<P::ScalarField> for Projective<P> {
+impl<G: Group> Mul<G::BaseField> for Projective<G> {
     type Output = Self;
 
     /// Performs scalar multiplication of this element.
     #[allow(clippy::suspicious_arithmetic_impl)]
     #[inline]
-    fn mul(self, other: P::ScalarField) -> Self {
-        P::mul_projective(self, other)
+    fn mul(self, other: G::BaseField) -> Self {
+        /// The scalar multiplication window size.
+        const GLV_WINDOW_SIZE: usize = 4;
+
+        /// The table size, used for w-ary NAF recoding.
+        const TABLE_SIZE: i64 = 1 << (GLV_WINDOW_SIZE + 1);
+        const HALF_TABLE_SIZE: i64 = 1 << (GLV_WINDOW_SIZE);
+        const MASK_FOR_MOD_TABLE_SIZE: u64 = (TABLE_SIZE as u64) - 1;
+        /// The GLV table length.
+        const L: usize = 1 << (GLV_WINDOW_SIZE - 1);
+
+        let decomposition = other.decompose(
+            &Self::Q1,
+            &Self::Q2,
+            Self::B1,
+            Self::B2,
+            Self::R128,
+            &Self::HALF_R,
+        );
+
+        // Prepare tables.
+        let mut t_1 = Vec::with_capacity(L);
+        let double = Affine::<Self>::from(self.double());
+        t_1.push(self);
+        for i in 1..L {
+            t_1.push(t_1[i - 1].add_mixed(&double));
+        }
+        let t_1 = Projective::<Self>::batch_normalization_into_affine(t_1);
+
+        let t_2 = t_1
+            .iter()
+            .copied()
+            .map(|v| v.x.glv_endomorphism())
+            .collect::<Vec<_>>();
+
+        let mod_signed = |d| {
+            let d_mod_window_size = i64::try_from(d & MASK_FOR_MOD_TABLE_SIZE).unwrap();
+            if d_mod_window_size >= HALF_TABLE_SIZE {
+                d_mod_window_size - TABLE_SIZE
+            } else {
+                d_mod_window_size
+            }
+        };
+        let to_wnaf = |mut e: Fr| -> Vec<i32> {
+            let mut naf = vec![];
+            while !e.is_zero() {
+                let next = if e.is_odd() {
+                    let naf_sign = mod_signed(e.to_le_limbs()[0]);
+                    if naf_sign < 0 {
+                        e += -naf_sign as u64;
+                    } else {
+                        e -= naf_sign as u64;
+                    }
+                    naf_sign.try_into().unwrap()
+                } else {
+                    0
+                };
+                naf.push(next);
+                e.div2();
+            }
+
+            naf
+        };
+
+        let wnaf = |k1: Self::ScalarField,
+                    k2: Self::ScalarField,
+                    s1: bool,
+                    s2: bool|
+         -> (Vec<i32>, Vec<i32>) {
+            let mut wnaf_1 = to_wnaf(k1);
+            let mut wnaf_2 = to_wnaf(k2);
+
+            if s1 {
+                wnaf_1.iter_mut().for_each(|e| *e = -*e);
+            }
+            if !s2 {
+                wnaf_2.iter_mut().for_each(|e| *e = -*e);
+            }
+
+            (wnaf_1, wnaf_2)
+        };
+
+        let naf_add = |table: &[Affine<Self>], naf: i32, acc: &mut Projective<Self>| {
+            if naf != 0 {
+                let mut p_1 = table[(naf.abs() >> 1) as usize];
+                if naf < 0 {
+                    p_1 = p_1.neg();
+                }
+                acc.add_assign_mixed(&p_1);
+            }
+        };
+
+        // Recode scalars.
+        let (naf_1, naf_2) = wnaf(
+            decomposition.0,
+            decomposition.1,
+            decomposition.2,
+            decomposition.3,
+        );
+        let max_len = naf_1.len().max(naf_2.len());
+        let mut acc = Projective::<Self>::zero();
+        for i in (0..max_len).rev() {
+            if i < naf_1.len() {
+                naf_add(&t_1, naf_1[i], &mut acc)
+            }
+
+            if i < naf_2.len() {
+                naf_add(&t_2, naf_2[i], &mut acc)
+            }
+
+            if i != 0 {
+                acc.double_in_place();
+            }
+        }
+
+        acc
     }
 }
 
-impl<P: Parameters> MulAssign<P::ScalarField> for Projective<P> {
+impl<G: Group> MulAssign<G::BaseField> for Projective<G> {
     /// Performs scalar multiplication of this element.
-    fn mul_assign(&mut self, other: P::ScalarField) {
+    fn mul_assign(&mut self, other: G::BaseField) {
         *self = *self * other
     }
 }
 
 /// The affine point X, Y is represented in the Jacobian coordinates with Z = 1.
-impl<P: Parameters> From<Affine<P>> for Projective<P> {
+impl<G: Group> From<Affine<G>> for Projective<G> {
     #[inline]
-    fn from(p: Affine<P>) -> Projective<P> {
+    fn from(p: Affine<G>) -> Projective<G> {
         if p.is_zero() {
             Self::zero()
         } else {
-            Self::new(p.x, p.y, P::BaseField::one())
+            Self::new(p.x, p.y, G::BaseField::one())
         }
     }
 }
