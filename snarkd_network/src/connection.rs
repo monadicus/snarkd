@@ -79,13 +79,13 @@ pub struct ProcessedPacket<'a> {
     pub response_code: ResponseCode,
 }
 
-impl<'a> Into<ProcessedPacketOwned> for ProcessedPacket<'a> {
-    fn into(self) -> ProcessedPacketOwned {
+impl<'a> From<ProcessedPacket<'a>> for ProcessedPacketOwned {
+    fn from(val: ProcessedPacket<'a>) -> Self {
         ProcessedPacketOwned {
-            command: self.command,
-            response: self.response.map(Into::into),
-            body: self.body,
-            response_code: self.response_code,
+            command: val.command,
+            response: val.response.map(Into::into),
+            body: val.body,
+            response_code: val.response_code,
         }
     }
 }
@@ -97,10 +97,10 @@ pub struct ProcessedPacketOwned {
     pub response_code: ResponseCode,
 }
 
-fn process_inbound_packet<'a>(
-    response: &'a mpsc::Sender<Packet>,
+fn process_inbound_packet(
+    response: &mpsc::Sender<Packet>,
     packet: Packet,
-) -> Result<ProcessedPacket<'a>, Packet> {
+) -> Result<ProcessedPacket, Packet> {
     let command = match CommandId::from_i32(packet.command) {
         Some(x) => x,
         None => {

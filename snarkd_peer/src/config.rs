@@ -51,7 +51,7 @@ fn default_trackers() -> Vec<url::Url> {
 ",
     ]
     .iter()
-    .map(|u| url::Url::parse(u).expect(&format!("Error parsing default tracker {u}")))
+    .map(|u| url::Url::parse(u).unwrap_or_else(|_| panic!("Error parsing default tracker {u}")))
     .collect()
 }
 

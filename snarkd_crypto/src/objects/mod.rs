@@ -12,7 +12,7 @@ type LiteralType = ();
 
 mod address;
 mod block;
-use block::*;
+
 mod block_header;
 use block_header::*;
 mod closure;

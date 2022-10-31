@@ -4,7 +4,7 @@ use bip_bencode::{BDecodeOpt, BRefAccess, BencodeRef, BencodeRefKind};
 /// Converts bencoded bytes to JSON string
 pub fn bencode_bytes_to_json(bytes: &[u8]) -> Result<String> {
     let decoded =
-        BencodeRef::decode(&bytes, BDecodeOpt::default()).map_err(|e| anyhow::anyhow!("{e:?}"))?;
+        BencodeRef::decode(bytes, BDecodeOpt::default()).map_err(|e| anyhow::anyhow!("{e:?}"))?;
     Ok(bencode_to_json(&decoded))
 }
 
@@ -26,7 +26,7 @@ pub fn bencode_to_json(decoded: &BencodeRef) -> String {
             "[{}]",
             // json stringify all items in the list
             n.into_iter()
-                .map(|r| bencode_to_json(r))
+                .map(bencode_to_json)
                 .collect::<Vec<String>>()
                 .join(",")
         ),

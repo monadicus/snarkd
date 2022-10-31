@@ -67,15 +67,10 @@ impl Peer {
     pub fn recent_failures(&mut self) -> usize {
         let now = Utc::now();
         if self.recent_failures.len() >= FAILURE_THRESHOLD {
-            self.recent_failures = self
-                .recent_failures
-                .iter()
-                .filter(|x| {
-                    now.signed_duration_since(**x)
-                        < chrono::Duration::from_std(FAILURE_EXPIRY_TIME).unwrap()
-                })
-                .copied()
-                .collect();
+            self.recent_failures.retain(|x| {
+                now.signed_duration_since(*x)
+                    < chrono::Duration::from_std(FAILURE_EXPIRY_TIME).unwrap()
+            });
         }
         self.recent_failures.len()
     }
