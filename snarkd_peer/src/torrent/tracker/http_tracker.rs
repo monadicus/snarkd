@@ -23,13 +23,7 @@ impl TrackerHTTP {
 
 fn kv_to_query(kvs: Vec<(&str, Option<String>)>) -> String {
     kvs.iter()
-        .filter_map(|(k, v)| {
-            if let Some(v) = v {
-                Some(format!("{k}={v}"))
-            } else {
-                None
-            }
-        })
+        .filter_map(|(k, v)| v.as_ref().map(|v| format!("{k}={v}")))
         .collect::<Vec<String>>()
         .join("&")
 }

@@ -6,6 +6,6 @@ type TransactionID = Digest32;
 
 #[derive(Clone, PartialEq, Eq)]
 pub enum Transaction {
-    Deploy(TransactionID, Deployment, Transition),
+    Deploy(TransactionID, Box<Deployment>, Transition),
     Execute(TransactionID, Execution, Option<Transition>),
 }
