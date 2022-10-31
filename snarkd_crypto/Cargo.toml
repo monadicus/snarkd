@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0"
+bitvec = "1.0"
 indexmap = "1.9"
 num-bigint = "0.4"
 rand = "0.8"
