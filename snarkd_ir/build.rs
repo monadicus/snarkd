@@ -1,4 +1,6 @@
 fn main() {
-    prost_build::compile_protos(&["proto/ir.proto"], &["proto/"])
-        .expect("failed to build IR protobuf");
+    prost_build::Config::new()
+        .include_file("_includes.rs")
+        .compile_protos(&["proto/ir.proto"], &["proto/"])
+        .unwrap_or_else(|e| panic!("failed to build IR protobuf: {e}"));
 }

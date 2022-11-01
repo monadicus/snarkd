@@ -1,0 +1,115 @@
+syntax = "proto3";
+
+package operand;
+
+message StructType {
+  repeated Type subtypes = 1;
+  repeated string subtype_names = 2;
+}
+
+message RecordType {
+  repeated Type subtypes = 1;
+  repeated string subtype_names = 2;
+  repeated Visibility visibilities = 3;
+}
+
+message SimpleType {}
+
+message Type {
+  oneof Type {
+    SimpleType address = 1;
+    SimpleType boolean = 2;
+    SimpleType field = 3;
+    SimpleType group = 4;
+
+    SimpleType u8 = 5;
+    SimpleType u16 = 6;
+    SimpleType u32 = 7;
+    SimpleType u64 = 8;
+    SimpleType u128 = 9;
+    SimpleType i8 = 10;
+    SimpleType i16 = 11;
+    SimpleType i32 = 12;
+    SimpleType i64 = 13;
+    SimpleType i128 = 14;
+
+    SimpleType scalar = 15;
+    SimpleType string = 16;
+    StructType struct = 17;
+    RecordType record = 18;
+  }
+}
+
+message GroupCoordinate {
+  oneof GroupCoordinate {
+    Field GroupField = 1;
+    SimpleType SignHigh = 2;
+    SimpleType SignLow = 3;
+    SimpleType Inferred = 4;
+  }
+}
+
+message TupleGroup {
+  GroupCoordinate left = 1;
+  GroupCoordinate right = 2;
+}
+
+message Group {
+  oneof Group {
+    Field single = 1;
+    TupleGroup tuple = 2;
+  }
+}
+
+message Address { bytes address = 1; }
+
+message Field {
+  bool negate = 1;
+  repeated fixed64 values = 2;
+}
+
+message Scalar { repeated fixed64 values = 1; }
+
+message Struct { repeated Operand values = 1; }
+
+enum Visibility {
+  Constant = 0;
+  Private = 1;
+  Public = 2;
+}
+
+message VisibleData {
+  Operand value = 1;
+  Visibility visibility = 2;
+}
+
+message Record {
+  VisibleData owner = 1;
+  VisibleData gates = 2;
+  repeated VisibleData data = 3;
+  VisibleData nonce = 4;
+}
+
+message Operand {
+  oneof Operand {
+    Address address = 1;
+    bool boolean = 2;
+    Field field = 3;
+    Group group = 4;
+    uint32 u8 = 5;
+    uint32 u16 = 6;
+    uint32 u32 = 7;
+    uint64 u64 = 8;
+    bytes u128 = 9;
+    int32 i8 = 10;
+    int32 i16 = 11;
+    int32 i32 = 12;
+    int64 i64 = 13;
+    bytes i128 = 14;
+    uint32 ref = 15;
+    Scalar scalar = 16;
+    string string = 17;
+    Record record = 18;
+    Struct struct = 19;
+  }
+}

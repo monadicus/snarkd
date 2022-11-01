@@ -1,0 +1,87 @@
+syntax = "proto3";
+
+import "operand.proto";
+
+package opcode;
+
+message UnaryData {
+  operand.Operand operand = 1;
+  uint32 dest = 3;
+}
+
+message BinaryData {
+  operand.Operand lhs = 1;
+  operand.Operand rhs = 2;
+  uint32 dest = 3;
+}
+
+message TernaryData {
+  operand.Operand cond = 1;
+  operand.Operand lhs = 2;
+  operand.Operand rhs = 3;
+  uint32 dest = 4;
+}
+
+message AssertData {
+  operand.Operand lhs = 1;
+  operand.Operand rhs = 2;
+}
+
+message Instruction {
+  oneof Instruction {
+    UnaryData abs = 1;
+    UnaryData abs_wrapped = 2;
+    BinaryData add = 3;
+    BinaryData add_wrapped = 4;
+    BinaryData and = 5;
+    AssertData assert_eq = 6;
+    AssertData assert_neq = 7;
+    BinaryData commit_bhp_256 = 8;
+    BinaryData commit_bhp_512 = 9;
+    BinaryData commit_bhp_768 = 10;
+    BinaryData commit_bhp_1024 = 11;
+    BinaryData commit_ped_64 = 12;
+    BinaryData commit_ped_128 = 13;
+    BinaryData div = 14;
+    BinaryData div_wrapped = 15;
+    UnaryData double = 16;
+    BinaryData gt = 17;
+    BinaryData gte = 18;
+    UnaryData hash_bhp_256 = 19;
+    UnaryData hash_bhp_512 = 20;
+    UnaryData hash_bhp_768 = 21;
+    UnaryData hash_bhp_1024 = 22;
+    UnaryData hash_ped_64 = 23;
+    UnaryData hash_ped_128 = 24;
+    UnaryData hash_psd_2 = 25;
+    UnaryData hash_psd_4 = 26;
+    UnaryData hash_psd_8 = 27;
+    UnaryData inv = 28;
+    BinaryData is_eq = 29;
+    BinaryData is_neq = 30;
+    BinaryData lt = 31;
+    BinaryData lte = 32;
+    BinaryData mod = 33;
+    BinaryData mul = 34;
+    BinaryData mul_wrapped = 35;
+    BinaryData nand = 36;
+    UnaryData neg = 37;
+    BinaryData nor = 38;
+    UnaryData not = 39;
+    BinaryData or = 40;
+    BinaryData pow = 41;
+    BinaryData pow_wrapped = 42;
+    BinaryData rem = 43;
+    BinaryData rem_wrapped = 44;
+    BinaryData shl = 45;
+    BinaryData shl_wrapped = 46;
+    BinaryData shr = 47;
+    BinaryData shr_wrapped = 48;
+    UnaryData sqrt = 49;
+    UnaryData square = 50;
+    BinaryData sub = 51;
+    BinaryData sub_wrapped = 52;
+    TernaryData ternary = 53;
+    BinaryData xor = 54;
+  }
+}

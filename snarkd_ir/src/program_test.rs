@@ -42,15 +42,16 @@ fn example_program() -> Program {
         functions: vec![Function {
             argument_start_variable: 0,
             instructions: vec![Instruction::Add(BinaryData {
-                destination: 2,
-                values: vec![Value::Ref(0), Value::Ref(1)],
+                lhs: Operand::Ref(0),
+                rhs: Operand::Ref(1),
+                dest: 2,
             })],
         }],
     }
 }
 
-fn zero_group() -> Value {
-    Value::Group(Group::Single(Field {
+fn zero_group() -> Operand {
+    Operand::Group(Group::Single(Field {
         negate: false,
         values: vec![0],
     }))
@@ -62,45 +63,43 @@ fn example_basic_record_program() -> Program {
         functions: vec![Function {
             argument_start_variable: 0,
             instructions: vec![Instruction::IsEq(BinaryData {
-                destination: 2,
-                values: vec![
-                    Value::Record(Record {
-                        owner: VisibleData {
-                            value: Box::new(Value::Address(Address { address: vec![0] })),
-                            visibility: Visibility::Constant,
-                        },
-                        gates: VisibleData {
-                            value: Box::new(Value::Integer(Integer::U64(0))),
-                            visibility: Visibility::Constant,
-                        },
-                        data: vec![VisibleData {
-                            value: Box::new(Value::Boolean(false)),
-                            visibility: Visibility::Constant,
-                        }],
-                        nonce: VisibleData {
-                            value: Box::new(zero_group()),
-                            visibility: Visibility::Constant,
-                        },
-                    }),
-                    Value::Record(Record {
-                        owner: VisibleData {
-                            value: Box::new(Value::Address(Address { address: vec![0] })),
-                            visibility: Visibility::Constant,
-                        },
-                        gates: VisibleData {
-                            value: Box::new(Value::Integer(Integer::U64(0))),
-                            visibility: Visibility::Constant,
-                        },
-                        data: vec![VisibleData {
-                            value: Box::new(Value::Boolean(false)),
-                            visibility: Visibility::Constant,
-                        }],
-                        nonce: VisibleData {
-                            value: Box::new(zero_group()),
-                            visibility: Visibility::Constant,
-                        },
-                    }),
-                ],
+                lhs: Operand::Record(Box::new(Record {
+                    owner: VisibleData {
+                        value: Operand::Address(Address { address: vec![0] }),
+                        visibility: Visibility::Constant,
+                    },
+                    gates: VisibleData {
+                        value: Operand::U64(0),
+                        visibility: Visibility::Constant,
+                    },
+                    data: vec![VisibleData {
+                        value: Operand::Boolean(false),
+                        visibility: Visibility::Constant,
+                    }],
+                    nonce: VisibleData {
+                        value: zero_group(),
+                        visibility: Visibility::Constant,
+                    },
+                })),
+                rhs: Operand::Record(Box::new(Record {
+                    owner: VisibleData {
+                        value: Operand::Address(Address { address: vec![0] }),
+                        visibility: Visibility::Constant,
+                    },
+                    gates: VisibleData {
+                        value: Operand::U64(0),
+                        visibility: Visibility::Constant,
+                    },
+                    data: vec![VisibleData {
+                        value: Operand::Boolean(false),
+                        visibility: Visibility::Constant,
+                    }],
+                    nonce: VisibleData {
+                        value: zero_group(),
+                        visibility: Visibility::Constant,
+                    },
+                })),
+                dest: 2,
             })],
         }],
     }
@@ -112,39 +111,37 @@ fn incorrect_record_owner_type() -> Program {
         functions: vec![Function {
             argument_start_variable: 0,
             instructions: vec![Instruction::IsEq(BinaryData {
-                destination: 2,
-                values: vec![
-                    Value::Record(Record {
-                        owner: VisibleData {
-                            value: Box::new(zero_group()),
-                            visibility: Visibility::Constant,
-                        },
-                        gates: VisibleData {
-                            value: Box::new(Value::Integer(Integer::U64(0))),
-                            visibility: Visibility::Constant,
-                        },
-                        data: Vec::new(),
-                        nonce: VisibleData {
-                            value: Box::new(zero_group()),
-                            visibility: Visibility::Constant,
-                        },
-                    }),
-                    Value::Record(Record {
-                        owner: VisibleData {
-                            value: Box::new(Value::Address(Address { address: vec![0] })),
-                            visibility: Visibility::Constant,
-                        },
-                        gates: VisibleData {
-                            value: Box::new(Value::Integer(Integer::U64(0))),
-                            visibility: Visibility::Constant,
-                        },
-                        data: Vec::new(),
-                        nonce: VisibleData {
-                            value: Box::new(zero_group()),
-                            visibility: Visibility::Constant,
-                        },
-                    }),
-                ],
+                lhs: Operand::Record(Box::new(Record {
+                    owner: VisibleData {
+                        value: zero_group(),
+                        visibility: Visibility::Constant,
+                    },
+                    gates: VisibleData {
+                        value: Operand::U64(0),
+                        visibility: Visibility::Constant,
+                    },
+                    data: Vec::new(),
+                    nonce: VisibleData {
+                        value: zero_group(),
+                        visibility: Visibility::Constant,
+                    },
+                })),
+                rhs: Operand::Record(Box::new(Record {
+                    owner: VisibleData {
+                        value: Operand::Address(Address { address: vec![0] }),
+                        visibility: Visibility::Constant,
+                    },
+                    gates: VisibleData {
+                        value: Operand::U64(0),
+                        visibility: Visibility::Constant,
+                    },
+                    data: Vec::new(),
+                    nonce: VisibleData {
+                        value: zero_group(),
+                        visibility: Visibility::Constant,
+                    },
+                })),
+                dest: 2,
             })],
         }],
     }
@@ -156,20 +153,26 @@ fn struct_program() -> Program {
             main_inputs: vec![Input {
                 variable: 0,
                 name: "a".into(),
-                type_: Type::Struct(vec![("hello".into(), Type::Boolean)]),
+                type_: Type::Struct(StructType {
+                    subtypes: vec![(Type::Boolean)],
+                    subtype_names: vec!["hello".into()],
+                }),
             }],
             ..Default::default()
         },
         functions: vec![Function {
             argument_start_variable: 0,
             instructions: vec![Instruction::AssertEq(AssertData {
-                values: vec![Value::Struct(vec![Value::Boolean(false)]), Value::Ref(0)],
+                lhs: Operand::Struct(Struct {
+                    values: vec![Operand::Boolean(false)],
+                }),
+                rhs: Operand::Ref(0),
             })],
         }],
     }
 }
 
-fn test_program(input: Program) {
+fn test_program(mut input: Program) {
     let bytes = input.serialize().unwrap();
     let output = Program::deserialize(&bytes).unwrap();
     assert_eq!(input, output);
@@ -190,6 +193,7 @@ fn basic_record_test() {
     test_program(example_basic_record_program())
 }
 
+// TODO this restriction should be conveyed in the protobuf
 #[test]
 #[should_panic]
 fn record_wrong_owner_type_test() {
