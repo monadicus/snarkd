@@ -93,7 +93,7 @@ message Type {
   }
 }
 
-// TODO
+// A coordinate on the curve
 message GroupCoordinate {
   oneof GroupCoordinate {
     Field GroupField = 1;
@@ -103,7 +103,7 @@ message GroupCoordinate {
   }
 }
 
-// TODO
+// A group made up of two coordinates
 message TupleGroup {
   GroupCoordinate left = 1;
   GroupCoordinate right = 2;
@@ -118,16 +118,16 @@ message TupleGroup {
 message Group {
   // The possible group types that snarkd supports
   oneof Group {
-    // TODO
+    // A single group value
     Field single = 1;
-    // TODO
+    // A tuple group value
     TupleGroup tuple = 2;
   }
 }
 
 // The address of an Aleo account
 message Address {
-  // TODO size?
+  // A byte array representing an aleo address
   bytes address = 1;
 }
 
@@ -136,15 +136,15 @@ message Address {
  * the modulus length of the field
  */
 message Field {
-  // TODO
+  // The sign of the field
   bool negate = 1;
-  // TODO
+  // The bytes of the field
   repeated fixed64 values = 2;
 }
 
 // Field elements in the scalar field.
 message Scalar {
-  // TODO size?
+  // The bytes of the scalar field
   repeated fixed64 values = 1;
 }
 
