@@ -1,4 +1,4 @@
-#![warn(clippy::todo, clippy::use_debug)]
+#![warn(clippy::todo, clippy::dbg_macro)]
 
 mod ir;
 
@@ -11,10 +11,5 @@ pub use opcode::*;
 mod operand;
 pub use operand::*;
 
-#[path = ""]
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    mod program_test;
-}
+mod tests;
