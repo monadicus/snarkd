@@ -110,4 +110,4 @@ lazy_static::lazy_static! {
     /// unique node id, used to avoid cyclic connections
     pub static ref NODE_ID: Uuid = Uuid::new_v4();
 }
-pub static VERSION: &'static str = env!("CARGO_PKG_VERSION");
+pub static VERSION: &str = env!("CARGO_PKG_VERSION");

@@ -22,7 +22,7 @@ pub async fn run(config: PeerConfig, inbound_port: u16, consumer: impl Announcer
         // num_want: Some(max_peers),
         ..Default::default()
     };
-    for tracker in config.trackers.into_iter().map(|url| TrackerHTTP::new(url)) {
+    for tracker in config.trackers.into_iter().map(TrackerHTTP::new) {
         let mut request = request.clone();
         let consumer = consumer.clone();
         tokio::spawn(async move {

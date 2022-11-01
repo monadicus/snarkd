@@ -38,12 +38,12 @@ impl<'a> ResponseHandle<'a> {
     }
 }
 
-impl<'a> Into<ResponseHandleOwned> for ResponseHandle<'a> {
-    fn into(self) -> ResponseHandleOwned {
+impl<'a> From<ResponseHandle<'a>> for ResponseHandleOwned {
+    fn from(val: ResponseHandle<'a>) -> Self {
         ResponseHandleOwned {
-            command: self.command,
-            id: self.id,
-            sender: self.sender.clone(),
+            command: val.command,
+            id: val.id,
+            sender: val.sender.clone(),
         }
     }
 }

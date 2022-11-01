@@ -86,7 +86,7 @@ impl PeerBook {
 
     /// disconnect from `count` peers at random
     pub fn disconnect_from_peers(&self, count: usize) {
-        if count <= 0 {
+        if count == 0 {
             return;
         }
         info!("Disconnecting {count} peers");
@@ -127,7 +127,7 @@ impl PeerBook {
     }
 
     pub fn connect_to_peers(&self, count: usize) {
-        if count <= 0 {
+        if count == 0 {
             return;
         }
         debug!("Looking for {count} new peer connections");
@@ -190,13 +190,13 @@ impl PeerBook {
         self.disconnect_from_peers(to_disconnect);
         self.connect_to_peers(to_connect);
 
-        self.save_peers(&database).await;
+        self.save_peers(database).await;
     }
 
     async fn save_peers(&self, database: &Database) {
         for mut peer in self.peers.iter_mut() {
             if peer.dirty {
-                if let Err(e) = peer.save(&database).await {
+                if let Err(e) = peer.save(database).await {
                     error!("failed to save peer data to database: {e:?}");
                 }
             }

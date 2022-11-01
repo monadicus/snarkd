@@ -108,7 +108,7 @@ message Record {
     Data owner = 1;
     Data gates = 2;
     repeated Data data = 3;
-    optional Data nonce = 4;
+    Data nonce = 4;
 }
 
 message Operand {

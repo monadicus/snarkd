@@ -22,30 +22,10 @@ commands:
           condition: <<parameters.protoc>>
           steps:
             - protobuf/install
-      - setup_remote_docker:
-          docker_layer_caching: true
 
 jobs:
-  # runs rustfmt
-  format:
-    docker:
-      - image: cimg/rust:1.64.0
-    steps:
-      - setup
-      - checkout
-      - rust/format
-
-  # runs clippy
-  lint:
-    docker:
-      - image: cimg/rust:1.64.0
-    steps:
-      - setup
-      - checkout
-      - rust/clippy
-
-  # runs cargo test
-  test:
+  # runs rustfmt, clippy, and cargo test
+  lint_and_test:
     environment:
       RUST_BACKTRACE: 1
     docker:
@@ -54,11 +34,11 @@ jobs:
       - setup:
          protoc: true
       - checkout
+      - rust/format
+      - rust/clippy
       - rust/test
 
 workflows:
   lint_and_test:
     jobs:
-      - format
-      - lint
-      - test
+      - lint_and_test
