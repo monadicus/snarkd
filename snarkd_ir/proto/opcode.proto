@@ -10,7 +10,7 @@ message UnaryData {
   // the value to be operated on
   operand.Operand operand = 1;
   // the register to store the result in
-  uint32 dest = 3;
+  uint32 dest = 2;
 }
 
 // The argumnents for a binary operation
