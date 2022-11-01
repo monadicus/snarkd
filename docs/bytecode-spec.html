@@ -1,0 +1,2165 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <title>Protocol Documentation</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Ubuntu:400,700,400italic"/>
+    <style>
+      body {
+        width: 60em;
+        margin: 1em auto;
+        color: #222;
+        font-family: "Ubuntu", sans-serif;
+        padding-bottom: 4em;
+      }
+
+      h1 {
+        font-weight: normal;
+        border-bottom: 1px solid #aaa;
+        padding-bottom: 0.5ex;
+      }
+
+      h2 {
+        border-bottom: 1px solid #aaa;
+        padding-bottom: 0.5ex;
+        margin: 1.5em 0;
+      }
+
+      h3 {
+        font-weight: normal;
+        border-bottom: 1px solid #aaa;
+        padding-bottom: 0.5ex;
+      }
+
+      a {
+        text-decoration: none;
+        color: #567e25;
+      }
+
+      table {
+        width: 100%;
+        font-size: 80%;
+        border-collapse: collapse;
+      }
+
+      thead {
+        font-weight: 700;
+        background-color: #dcdcdc;
+      }
+
+      tbody tr:nth-child(even) {
+        background-color: #fbfbfb;
+      }
+
+      td {
+        border: 1px solid #ccc;
+        padding: 0.5ex 2ex;
+      }
+
+      td p {
+        text-indent: 1em;
+        margin: 0;
+      }
+
+      td p:nth-child(1) {
+        text-indent: 0;  
+      }
+
+       
+      .field-table td:nth-child(1) {  
+        width: 10em;
+      }
+      .field-table td:nth-child(2) {  
+        width: 10em;
+      }
+      .field-table td:nth-child(3) {  
+        width: 6em;
+      }
+      .field-table td:nth-child(4) {  
+        width: auto;
+      }
+
+       
+      .extension-table td:nth-child(1) {  
+        width: 10em;
+      }
+      .extension-table td:nth-child(2) {  
+        width: 10em;
+      }
+      .extension-table td:nth-child(3) {  
+        width: 10em;
+      }
+      .extension-table td:nth-child(4) {  
+        width: 5em;
+      }
+      .extension-table td:nth-child(5) {  
+        width: auto;
+      }
+
+       
+      .enum-table td:nth-child(1) {  
+        width: 10em;
+      }
+      .enum-table td:nth-child(2) {  
+        width: 10em;
+      }
+      .enum-table td:nth-child(3) {  
+        width: auto;
+      }
+
+       
+      .scalar-value-types-table tr {
+        height: 3em;
+      }
+
+       
+      #toc-container ul {
+        list-style-type: none;
+        padding-left: 1em;
+        line-height: 180%;
+        margin: 0;
+      }
+      #toc > li > a {
+        font-weight: bold;
+      }
+
+       
+      .file-heading {
+        width: 100%;
+        display: table;
+        border-bottom: 1px solid #aaa;
+        margin: 4em 0 1.5em 0;
+      }
+      .file-heading h2 {
+        border: none;
+        display: table-cell;
+      }
+      .file-heading a {
+        text-align: right;
+        display: table-cell;
+      }
+
+       
+      .badge {
+        width: 1.6em;
+        height: 1.6em;
+        display: inline-block;
+
+        line-height: 1.6em;
+        text-align: center;
+        font-weight: bold;
+        font-size: 60%;
+
+        color: #89ba48;
+        background-color: #dff0c8;
+
+        margin: 0.5ex 1em 0.5ex -1em;
+        border: 1px solid #fbfbfb;
+        border-radius: 1ex;
+      }
+    </style>
+
+    
+    <link rel="stylesheet" type="text/css" href="stylesheet.css"/>
+  </head>
+
+  <body>
+
+    <h1 id="title">Protocol Documentation</h1>
+
+    <h2>Table of Contents</h2>
+
+    <div id="toc-container">
+      <ul id="toc">
+        
+          
+          <li>
+            <a href="#ir.proto">ir.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#ir.Function"><span class="badge">M</span>Function</a>
+                </li>
+              
+                <li>
+                  <a href="#ir.Header"><span class="badge">M</span>Header</a>
+                </li>
+              
+                <li>
+                  <a href="#ir.Input"><span class="badge">M</span>Input</a>
+                </li>
+              
+                <li>
+                  <a href="#ir.Program"><span class="badge">M</span>Program</a>
+                </li>
+              
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#opcode.proto">opcode.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#opcode.AssertData"><span class="badge">M</span>AssertData</a>
+                </li>
+              
+                <li>
+                  <a href="#opcode.BinaryData"><span class="badge">M</span>BinaryData</a>
+                </li>
+              
+                <li>
+                  <a href="#opcode.Instruction"><span class="badge">M</span>Instruction</a>
+                </li>
+              
+                <li>
+                  <a href="#opcode.TernaryData"><span class="badge">M</span>TernaryData</a>
+                </li>
+              
+                <li>
+                  <a href="#opcode.UnaryData"><span class="badge">M</span>UnaryData</a>
+                </li>
+              
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#operand.proto">operand.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#operand.Address"><span class="badge">M</span>Address</a>
+                </li>
+              
+                <li>
+                  <a href="#operand.Field"><span class="badge">M</span>Field</a>
+                </li>
+              
+                <li>
+                  <a href="#operand.Group"><span class="badge">M</span>Group</a>
+                </li>
+              
+                <li>
+                  <a href="#operand.GroupCoordinate"><span class="badge">M</span>GroupCoordinate</a>
+                </li>
+              
+                <li>
+                  <a href="#operand.Operand"><span class="badge">M</span>Operand</a>
+                </li>
+              
+                <li>
+                  <a href="#operand.Record"><span class="badge">M</span>Record</a>
+                </li>
+              
+                <li>
+                  <a href="#operand.RecordType"><span class="badge">M</span>RecordType</a>
+                </li>
+              
+                <li>
+                  <a href="#operand.RecordTypeEntry"><span class="badge">M</span>RecordTypeEntry</a>
+                </li>
+              
+                <li>
+                  <a href="#operand.Scalar"><span class="badge">M</span>Scalar</a>
+                </li>
+              
+                <li>
+                  <a href="#operand.SimpleType"><span class="badge">M</span>SimpleType</a>
+                </li>
+              
+                <li>
+                  <a href="#operand.Struct"><span class="badge">M</span>Struct</a>
+                </li>
+              
+                <li>
+                  <a href="#operand.StructType"><span class="badge">M</span>StructType</a>
+                </li>
+              
+                <li>
+                  <a href="#operand.StructTypeEntry"><span class="badge">M</span>StructTypeEntry</a>
+                </li>
+              
+                <li>
+                  <a href="#operand.TupleGroup"><span class="badge">M</span>TupleGroup</a>
+                </li>
+              
+                <li>
+                  <a href="#operand.Type"><span class="badge">M</span>Type</a>
+                </li>
+              
+                <li>
+                  <a href="#operand.VisibleData"><span class="badge">M</span>VisibleData</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#operand.Visibility"><span class="badge">E</span>Visibility</a>
+                </li>
+              
+              
+              
+            </ul>
+          </li>
+        
+        <li><a href="#scalar-value-types">Scalar Value Types</a></li>
+      </ul>
+    </div>
+
+    
+      
+      <div class="file-heading">
+        <h2 id="ir.proto">ir.proto</h2><a href="#title">Top</a>
+      </div>
+      <p>The structure of a Snarkd program</p>
+
+      
+        <h3 id="ir.Function">Function</h3>
+        <p>A function in a Snarkd program</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>argument_start_variable</td>
+                  <td><a href="#uint32">uint32</a></td>
+                  <td></td>
+                  <td><p>The ID of the function </p></td>
+                </tr>
+              
+                <tr>
+                  <td>instructions</td>
+                  <td><a href="#opcode.Instruction">opcode.Instruction</a></td>
+                  <td>repeated</td>
+                  <td><p>The instructions contained within the function </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="ir.Header">Header</h3>
+        <p>The metadata of a Snarkd program</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>snarkd_major</td>
+                  <td><a href="#uint32">uint32</a></td>
+                  <td></td>
+                  <td><p>The major release version of snarkd this programn was made for </p></td>
+                </tr>
+              
+                <tr>
+                  <td>snarkd_minor</td>
+                  <td><a href="#uint32">uint32</a></td>
+                  <td></td>
+                  <td><p>The minor release version of snarkd this programn was made for </p></td>
+                </tr>
+              
+                <tr>
+                  <td>snarkd_patch</td>
+                  <td><a href="#uint32">uint32</a></td>
+                  <td></td>
+                  <td><p>The patch release version of snarkd this programn was made for </p></td>
+                </tr>
+              
+                <tr>
+                  <td>main_inputs</td>
+                  <td><a href="#ir.Input">Input</a></td>
+                  <td>repeated</td>
+                  <td><p>A list of main input registers </p></td>
+                </tr>
+              
+                <tr>
+                  <td>constant_inputs</td>
+                  <td><a href="#ir.Input">Input</a></td>
+                  <td>repeated</td>
+                  <td><p>A list of constant input registers </p></td>
+                </tr>
+              
+                <tr>
+                  <td>register_inputs</td>
+                  <td><a href="#ir.Input">Input</a></td>
+                  <td>repeated</td>
+                  <td><p>A list of registers inputs </p></td>
+                </tr>
+              
+                <tr>
+                  <td>public_states</td>
+                  <td><a href="#ir.Input">Input</a></td>
+                  <td>repeated</td>
+                  <td><p>A list of public state inputs </p></td>
+                </tr>
+              
+                <tr>
+                  <td>private_record_states</td>
+                  <td><a href="#ir.Input">Input</a></td>
+                  <td>repeated</td>
+                  <td><p>A list of private record state inputs </p></td>
+                </tr>
+              
+                <tr>
+                  <td>private_leaf_states</td>
+                  <td><a href="#ir.Input">Input</a></td>
+                  <td>repeated</td>
+                  <td><p>A list of private leaf state inputs </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="ir.Input">Input</h3>
+        <p>A register input for a program</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>variable</td>
+                  <td><a href="#uint32">uint32</a></td>
+                  <td></td>
+                  <td><p>The ID of the register </p></td>
+                </tr>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the register, used for debugging purposes </p></td>
+                </tr>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#operand.Type">operand.Type</a></td>
+                  <td></td>
+                  <td><p>The type of the register </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="ir.Program">Program</h3>
+        <p>A Snarkd program</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>header</td>
+                  <td><a href="#ir.Header">Header</a></td>
+                  <td></td>
+                  <td><p>The metadata of the program </p></td>
+                </tr>
+              
+                <tr>
+                  <td>functions</td>
+                  <td><a href="#ir.Function">Function</a></td>
+                  <td>repeated</td>
+                  <td><p>The functions within the program </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="opcode.proto">opcode.proto</h2><a href="#title">Top</a>
+      </div>
+      <p>Instructions supported by Snarkd</p>
+
+      
+        <h3 id="opcode.AssertData">AssertData</h3>
+        <p>The argumnents for an assertion operation</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>lhs</td>
+                  <td><a href="#operand.Operand">operand.Operand</a></td>
+                  <td></td>
+                  <td><p>the lhs value of the operation </p></td>
+                </tr>
+              
+                <tr>
+                  <td>rhs</td>
+                  <td><a href="#operand.Operand">operand.Operand</a></td>
+                  <td></td>
+                  <td><p>the rhs value of the operation </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="opcode.BinaryData">BinaryData</h3>
+        <p>The argumnents for a binary operation</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>lhs</td>
+                  <td><a href="#operand.Operand">operand.Operand</a></td>
+                  <td></td>
+                  <td><p>the lhs value of the operation </p></td>
+                </tr>
+              
+                <tr>
+                  <td>rhs</td>
+                  <td><a href="#operand.Operand">operand.Operand</a></td>
+                  <td></td>
+                  <td><p>the rhs value of the operation </p></td>
+                </tr>
+              
+                <tr>
+                  <td>dest</td>
+                  <td><a href="#uint32">uint32</a></td>
+                  <td></td>
+                  <td><p>the register to store the result in </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="opcode.Instruction">Instruction</h3>
+        <p>A Snarkd instruction</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>abs</td>
+                  <td><a href="#opcode.UnaryData">UnaryData</a></td>
+                  <td></td>
+                  <td><p>Computes the absolute value of the input, checking for overflow, storing
+the result in the destination register.
+
+For integer types, a constraint is added to check for underflow. For
+cases where wrapping semantics are needed, see the abs.w instruction.
+This underflow happens when the input is the minimum value of a signed
+integer type. For example, abs -128i8 would result in underflow, since
+128 cannot be represented as an i8. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>abs_wrapped</td>
+                  <td><a href="#opcode.UnaryData">UnaryData</a></td>
+                  <td></td>
+                  <td><p>Compute the absolute value of the input, wrapping around at the boundary
+of the type, and storing the result in the destination register. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>add</td>
+                  <td><a href="#opcode.BinaryData">BinaryData</a></td>
+                  <td></td>
+                  <td><p>Adds first with second, storing the outcome in destination.
+
+For integer types, a constraint is added to check for overflow. For cases
+where wrapping semantics are needed for integer types, see the add.w
+instruction. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>add_wrapped</td>
+                  <td><a href="#opcode.BinaryData">BinaryData</a></td>
+                  <td></td>
+                  <td><p>Adds first with second, wrapping around at the boundary of the type, and
+storing the outcome in destination. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>and</td>
+                  <td><a href="#opcode.BinaryData">BinaryData</a></td>
+                  <td></td>
+                  <td><p>Performs an AND operation on integer (bitwise) or boolean first and
+second, storing the outcome in destination. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>assert_eq</td>
+                  <td><a href="#opcode.AssertData">AssertData</a></td>
+                  <td></td>
+                  <td><p>Checks whether first and second are equal, halting if they are not equal. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>assert_neq</td>
+                  <td><a href="#opcode.AssertData">AssertData</a></td>
+                  <td></td>
+                  <td><p>Checks whether first and second are not equal, halting if they are equal. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>commit_bhp_256</td>
+                  <td><a href="#opcode.BinaryData">BinaryData</a></td>
+                  <td></td>
+                  <td><p>Computes a BHP commitment on inputs of 256-bit chunks in first, and some
+randomness in second, storing the commitment in destination. Randomness
+should always be a Scalar value, and the produced commitment will always
+be a Field value.
+
+The instruction will halt if the given input is smaller than 129 bits. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>commit_bhp_512</td>
+                  <td><a href="#opcode.BinaryData">BinaryData</a></td>
+                  <td></td>
+                  <td><p>Computes a BHP commitment on inputs of 512-bit chunks in first, and some
+randomness in second, storing the commitment in destination. Randomness
+should always be a Scalar value, and the produced commitment will always
+be a Field value.
+
+The instruction will halt if the given input is smaller than 171 bits. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>commit_bhp_768</td>
+                  <td><a href="#opcode.BinaryData">BinaryData</a></td>
+                  <td></td>
+                  <td><p>Computes a BHP commitment on inputs of 768-bit chunks in first, and some
+randomness in second, storing the commitment in destination. Randomness
+should always be a Scalar value, and the produced commitment will always
+be a Field value.
+
+The instruction will halt if the given input is smaller than 129 bits. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>commit_bhp_1024</td>
+                  <td><a href="#opcode.BinaryData">BinaryData</a></td>
+                  <td></td>
+                  <td><p>Computes a BHP commitment on inputs of 1024-bit chunks in first, and some
+randomness in second, storing the commitment in destination. Randomness
+should always be a Scalar value, and the produced commitment will always
+be a Field value.
+
+The instruction will halt if the given input is smaller than 171 bits. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>commit_ped_64</td>
+                  <td><a href="#opcode.BinaryData">BinaryData</a></td>
+                  <td></td>
+                  <td><p>Computes a Pedersen commitment up to a 64-bit input in first, and some
+randomness in second, storing the commitment in destination. Randomness
+should always be a Scalar value, and the produced commitment will always
+be a Group value.
+
+The instruction will halt if the given String or Interface value exceeds
+the 64-bit limit. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>commit_ped_128</td>
+                  <td><a href="#opcode.BinaryData">BinaryData</a></td>
+                  <td></td>
+                  <td><p>Computes a Pedersen commitment up to a 128-bit input in first, and some
+randomness in second, storing the commitment in destination. Randomness
+should always be a Scalar value, and the produced commitment will always
+be a Group value.
+
+The instruction will halt if the given String or Interface value exceeds
+the 128-bit limit. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>div</td>
+                  <td><a href="#opcode.BinaryData">BinaryData</a></td>
+                  <td></td>
+                  <td><p>Divides first by second, storing the outcome in destination. Halts on
+division by zero.
+
+For integer types, this operation performs truncated division.
+Furthermore, a constraint is added to check for underflow. This underflow
+happens when dividing the minimum value of a signed integer type by -1.
+For example, div -128i8 -1i8 would result in underflow, since 128 cannot
+be represented as an i8.
+
+For cases where wrapping semantics are needed for integer types, see the
+div.w instruction. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>div_wrapped</td>
+                  <td><a href="#opcode.BinaryData">BinaryData</a></td>
+                  <td></td>
+                  <td><p>Divides first by second, wrapping around at the boundary of the type, and
+storing the outcome in destination. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>double</td>
+                  <td><a href="#opcode.UnaryData">UnaryData</a></td>
+                  <td></td>
+                  <td><p>Doubles the input, storing the outcome in destination. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>gt</td>
+                  <td><a href="#opcode.BinaryData">BinaryData</a></td>
+                  <td></td>
+                  <td><p>Checks if first is greater than second, storing the result in
+destination. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>gte</td>
+                  <td><a href="#opcode.BinaryData">BinaryData</a></td>
+                  <td></td>
+                  <td><p>Checks if first is greater than or equal to second, storing the result in
+destination. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>hash_bhp_256</td>
+                  <td><a href="#opcode.UnaryData">UnaryData</a></td>
+                  <td></td>
+                  <td><p>Computes a BHP hash on inputs of 256-bit chunks in first, storing the
+hash in destination. The produced hash will always be a Field value.
+
+The instruction will halt if the given input is smaller than 129 bits. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>hash_bhp_512</td>
+                  <td><a href="#opcode.UnaryData">UnaryData</a></td>
+                  <td></td>
+                  <td><p>Computes a BHP hash on inputs of 512-bit chunks in first, storing the
+hash in destination. The produced hash will always be a Field value.
+
+The instruction will halt if the given input is smaller than 171 bits. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>hash_bhp_768</td>
+                  <td><a href="#opcode.UnaryData">UnaryData</a></td>
+                  <td></td>
+                  <td><p>Computes a BHP hash on inputs of 768-bit chunks in first, storing the
+hash in destination. The produced hash will always be a Field value.
+
+The instruction will halt if the given input is smaller than 129 bits. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>hash_bhp_1024</td>
+                  <td><a href="#opcode.UnaryData">UnaryData</a></td>
+                  <td></td>
+                  <td><p>Computes a BHP hash on inputs of 1024-bit chunks in first, storing the
+hash in destination. The produced hash will always be a Field value.
+
+The instruction will halt if the given input is smaller than 171 bits. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>hash_ped_64</td>
+                  <td><a href="#opcode.UnaryData">UnaryData</a></td>
+                  <td></td>
+                  <td><p>Computes a Pedersen hash up to a 64-bit input in first, storing the hash
+in destination. The produced hash will always be a Field value.
+
+The instruction will halt if the given String or Interface value exceeds
+the 64-bit limit. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>hash_ped_128</td>
+                  <td><a href="#opcode.UnaryData">UnaryData</a></td>
+                  <td></td>
+                  <td><p>Computes a Pedersen hash up to a 128-bit input in first, storing the hash
+in destination. The produced hash will always be a Field value.
+
+The instruction will halt if the given String or Interface value exceeds
+the 128-bit limit. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>hash_psd_2</td>
+                  <td><a href="#opcode.UnaryData">UnaryData</a></td>
+                  <td></td>
+                  <td><p>Calculates a Poseidon hash with an input rate of 2, from an input in
+first, storing the hash in destination. The produced hash will always be
+a Field value. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>hash_psd_4</td>
+                  <td><a href="#opcode.UnaryData">UnaryData</a></td>
+                  <td></td>
+                  <td><p>Calculates a Poseidon hash with an input rate of 4, from an input in
+first, storing the hash in destination. The produced hash will always be
+a Field value. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>hash_psd_8</td>
+                  <td><a href="#opcode.UnaryData">UnaryData</a></td>
+                  <td></td>
+                  <td><p>Calculates a Poseidon hash with an input rate of 8, from an input in
+first, storing the hash in destination. The produced hash will always be
+a Field value. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>inv</td>
+                  <td><a href="#opcode.UnaryData">UnaryData</a></td>
+                  <td></td>
+                  <td><p>Computes the multiplicative inverse of the input, storing the outcome in
+destination. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>is_eq</td>
+                  <td><a href="#opcode.BinaryData">BinaryData</a></td>
+                  <td></td>
+                  <td><p>Compares first and second, storing the result in destination. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>is_neq</td>
+                  <td><a href="#opcode.BinaryData">BinaryData</a></td>
+                  <td></td>
+                  <td><p>Returns true if first is not equal to second, storing the result in
+destination. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>lt</td>
+                  <td><a href="#opcode.BinaryData">BinaryData</a></td>
+                  <td></td>
+                  <td><p>Checks if first is less than second, storing the outcome in destination. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>lte</td>
+                  <td><a href="#opcode.BinaryData">BinaryData</a></td>
+                  <td></td>
+                  <td><p>Checks if first is less than or equal to second, storing the outcome in
+destination. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>mod</td>
+                  <td><a href="#opcode.BinaryData">BinaryData</a></td>
+                  <td></td>
+                  <td><p>Takes the modulus of first with respect to second, storing the outcome in
+destination. Halts if second is zero.
+
+The semantics of this operation are consistent with the mathematical
+definition of modulo operation. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>mul</td>
+                  <td><a href="#opcode.BinaryData">BinaryData</a></td>
+                  <td></td>
+                  <td><p>Multiplies first with second, storing the outcome in destination.
+
+For integer types, a constraint is added to check for overflow/underflow.
+For cases where wrapping semantics are needed for integer types, see the
+mul.w instruction. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>mul_wrapped</td>
+                  <td><a href="#opcode.BinaryData">BinaryData</a></td>
+                  <td></td>
+                  <td><p>Multiplies first with second, wrapping around at the boundary of the
+type, and storing the outcome in destination. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>nand</td>
+                  <td><a href="#opcode.BinaryData">BinaryData</a></td>
+                  <td></td>
+                  <td><p>Returns false only if first and second are true, storing the outcome in
+destination. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>neg</td>
+                  <td><a href="#opcode.UnaryData">UnaryData</a></td>
+                  <td></td>
+                  <td><p>Negates first, storing the outcome in destination.
+
+For signed integer types, calling neg on the minimum value is an invalid
+operation. For example, the input -128i8 would not be valid since 128
+cannot be represented as an i8. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>nor</td>
+                  <td><a href="#opcode.BinaryData">BinaryData</a></td>
+                  <td></td>
+                  <td><p>Returns true when neither first nor second is true, storing the outcome
+in destination. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>not</td>
+                  <td><a href="#opcode.UnaryData">UnaryData</a></td>
+                  <td></td>
+                  <td><p>Perform a NOT operation on an integer (bitwise) or boolean input, storing
+the outcome in destination. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>or</td>
+                  <td><a href="#opcode.BinaryData">BinaryData</a></td>
+                  <td></td>
+                  <td><p>Performs an OR operation on integer (bitwise) or boolean first and
+second, storing the outcome in destination. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>pow</td>
+                  <td><a href="#opcode.BinaryData">BinaryData</a></td>
+                  <td></td>
+                  <td><p>Raises first to the power of second, storing the outcome in destination.
+
+For integer types, a constraint is added to check for overflow/underflow.
+For cases where wrapping semantics are needed for integer types, see the
+pow.w instruction. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>pow_wrapped</td>
+                  <td><a href="#opcode.BinaryData">BinaryData</a></td>
+                  <td></td>
+                  <td><p>Raises first to the power of second, wrapping around at the boundary of
+the type, storing the outcome in destination. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>rem</td>
+                  <td><a href="#opcode.BinaryData">BinaryData</a></td>
+                  <td></td>
+                  <td><p>Computes the truncated remainder of first divided by second, storing the
+outcome in destination. Halts on division by zero.
+
+A constraint is added to check for underflow. This underflow happens when
+the associated division operation, div, underflows.
+
+For cases where wrapping semantics are needed for integer types, see the
+rem.w instruction. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>rem_wrapped</td>
+                  <td><a href="#opcode.BinaryData">BinaryData</a></td>
+                  <td></td>
+                  <td><p>Computes the truncated remainder of first divided by second, wrapping
+around at the boundary of the type, and storing the outcome in
+destination. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>shl</td>
+                  <td><a href="#opcode.BinaryData">BinaryData</a></td>
+                  <td></td>
+                  <td><p>Shifts first left by second bits, storing the outcome in destination. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>shl_wrapped</td>
+                  <td><a href="#opcode.BinaryData">BinaryData</a></td>
+                  <td></td>
+                  <td><p>Shifts first left by second bits, wrapping around at the boundary of the
+type, storing the outcome in destination. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>shr</td>
+                  <td><a href="#opcode.BinaryData">BinaryData</a></td>
+                  <td></td>
+                  <td><p>Shifts first right by second bits, storing the outcome in destination. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>shr_wrapped</td>
+                  <td><a href="#opcode.BinaryData">BinaryData</a></td>
+                  <td></td>
+                  <td><p>Shifts first right by second bits, wrapping around at the boundary of the
+type, storing the outcome in destination. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>square</td>
+                  <td><a href="#opcode.UnaryData">UnaryData</a></td>
+                  <td></td>
+                  <td><p>Squares the input, storing the outcome in destination. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sqrt</td>
+                  <td><a href="#opcode.UnaryData">UnaryData</a></td>
+                  <td></td>
+                  <td><p>Computes the square root of the input, storing the outcome in
+destination. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sub</td>
+                  <td><a href="#opcode.BinaryData">BinaryData</a></td>
+                  <td></td>
+                  <td><p>Computes first - second, storing the outcome in destination. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sub_wrapped</td>
+                  <td><a href="#opcode.BinaryData">BinaryData</a></td>
+                  <td></td>
+                  <td><p>Computes first - second, wrapping around at the boundary of the type, and
+storing the outcome in destination. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ternary</td>
+                  <td><a href="#opcode.TernaryData">TernaryData</a></td>
+                  <td></td>
+                  <td><p>Selects first, if condition is true, otherwise selects second, storing
+the result in destination.
+
+Example: ternary r0 r1 r2 into r3, where r0 is the condition, r1 is
+first, r2 is second, and r3 is the destination. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>xor</td>
+                  <td><a href="#opcode.BinaryData">BinaryData</a></td>
+                  <td></td>
+                  <td><p>Performs an XOR operation on an integer (bitwise) or boolean first and
+second, storing the outcome in destination. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="opcode.TernaryData">TernaryData</h3>
+        <p>The argumnents for a ternary operation</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>cond</td>
+                  <td><a href="#operand.Operand">operand.Operand</a></td>
+                  <td></td>
+                  <td><p>the condition that operation will use to make its selection </p></td>
+                </tr>
+              
+                <tr>
+                  <td>lhs</td>
+                  <td><a href="#operand.Operand">operand.Operand</a></td>
+                  <td></td>
+                  <td><p>the lhs value of the operation </p></td>
+                </tr>
+              
+                <tr>
+                  <td>rhs</td>
+                  <td><a href="#operand.Operand">operand.Operand</a></td>
+                  <td></td>
+                  <td><p>the rhs value of the operation </p></td>
+                </tr>
+              
+                <tr>
+                  <td>dest</td>
+                  <td><a href="#uint32">uint32</a></td>
+                  <td></td>
+                  <td><p>the register to store the result in </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="opcode.UnaryData">UnaryData</h3>
+        <p>The arguments for a unary operation</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>operand</td>
+                  <td><a href="#operand.Operand">operand.Operand</a></td>
+                  <td></td>
+                  <td><p>the value to be operated on </p></td>
+                </tr>
+              
+                <tr>
+                  <td>dest</td>
+                  <td><a href="#uint32">uint32</a></td>
+                  <td></td>
+                  <td><p>the register to store the result in </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="operand.proto">operand.proto</h2><a href="#title">Top</a>
+      </div>
+      <p>Types and Values supported by snarkd</p>
+
+      
+        <h3 id="operand.Address">Address</h3>
+        <p>The address of an Aleo account</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>address</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>TODO size? </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="operand.Field">Field</h3>
+        <p>A native field element as an unsigned number up to</p><p>the modulus length of the field</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>negate</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>TODO </p></td>
+                </tr>
+              
+                <tr>
+                  <td>values</td>
+                  <td><a href="#fixed64">fixed64</a></td>
+                  <td>repeated</td>
+                  <td><p>TODO </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="operand.Group">Group</h3>
+        <p>The set of affine points on the elliptic curve passed into the</p><p>snarkd-vm forms a group. Snarkd supports this set as a primitive</p><p>data type. Group elements are special since their values can be</p><p>defined from the x-coordinate of a coordinate pair.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>single</td>
+                  <td><a href="#operand.Field">Field</a></td>
+                  <td></td>
+                  <td><p>TODO </p></td>
+                </tr>
+              
+                <tr>
+                  <td>tuple</td>
+                  <td><a href="#operand.TupleGroup">TupleGroup</a></td>
+                  <td></td>
+                  <td><p>TODO </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="operand.GroupCoordinate">GroupCoordinate</h3>
+        <p>TODO</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>GroupField</td>
+                  <td><a href="#operand.Field">Field</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>SignHigh</td>
+                  <td><a href="#operand.SimpleType">SimpleType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>SignLow</td>
+                  <td><a href="#operand.SimpleType">SimpleType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>Inferred</td>
+                  <td><a href="#operand.SimpleType">SimpleType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="operand.Operand">Operand</h3>
+        <p>An instance of a Snarkd value</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>address</td>
+                  <td><a href="#operand.Address">Address</a></td>
+                  <td></td>
+                  <td><p>The address of an Aleo account </p></td>
+                </tr>
+              
+                <tr>
+                  <td>boolean</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>A true or false value </p></td>
+                </tr>
+              
+                <tr>
+                  <td>field</td>
+                  <td><a href="#operand.Field">Field</a></td>
+                  <td></td>
+                  <td><p>A native field element as an unsigned number up to
+the modulus length of the field </p></td>
+                </tr>
+              
+                <tr>
+                  <td>group</td>
+                  <td><a href="#operand.Group">Group</a></td>
+                  <td></td>
+                  <td><p>The set of affine points on the elliptic curve passed into the
+snarkd-vm forms a group. Snarkd supports this set as a primitive
+data type. Group elements are special since their values can be
+defined from the x-coordinate of a coordinate pair. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>u8</td>
+                  <td><a href="#uint32">uint32</a></td>
+                  <td></td>
+                  <td><p>An 8 bit unsigned integer </p></td>
+                </tr>
+              
+                <tr>
+                  <td>u16</td>
+                  <td><a href="#uint32">uint32</a></td>
+                  <td></td>
+                  <td><p>A 16 bit unsigned integer </p></td>
+                </tr>
+              
+                <tr>
+                  <td>u32</td>
+                  <td><a href="#uint32">uint32</a></td>
+                  <td></td>
+                  <td><p>A 32 bit unsigned integer </p></td>
+                </tr>
+              
+                <tr>
+                  <td>u64</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>A 64 bit unsigned integer </p></td>
+                </tr>
+              
+                <tr>
+                  <td>u128</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>A 128 bit unsigned integer </p></td>
+                </tr>
+              
+                <tr>
+                  <td>i8</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>An 8 bit signed integer </p></td>
+                </tr>
+              
+                <tr>
+                  <td>i16</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>A 16 bit signed integer </p></td>
+                </tr>
+              
+                <tr>
+                  <td>i32</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>A 32 bit signed integer </p></td>
+                </tr>
+              
+                <tr>
+                  <td>i64</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p>A 64 bit signed integer </p></td>
+                </tr>
+              
+                <tr>
+                  <td>i128</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>A 128 bit signed integer </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ref</td>
+                  <td><a href="#uint32">uint32</a></td>
+                  <td></td>
+                  <td><p>The ID of an input register containing the target value </p></td>
+                </tr>
+              
+                <tr>
+                  <td>scalar</td>
+                  <td><a href="#operand.Scalar">Scalar</a></td>
+                  <td></td>
+                  <td><p>Field elements in the scalar field. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>string</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>An array of characters. Snarkd currently only
+supports static strings for certian commit operations </p></td>
+                </tr>
+              
+                <tr>
+                  <td>struct</td>
+                  <td><a href="#operand.Struct">Struct</a></td>
+                  <td></td>
+                  <td><p>a complex data structure containing fields with
+other data. Internally represented as a tuple. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>record</td>
+                  <td><a href="#operand.Record">Record</a></td>
+                  <td></td>
+                  <td><p>An arbitrary collection of user-owned state </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="operand.Record">Record</h3>
+        <p>An arbitrary collection of user-owned state</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>owner</td>
+                  <td><a href="#operand.VisibleData">VisibleData</a></td>
+                  <td></td>
+                  <td><p>The owner of the record. This must always be an address </p></td>
+                </tr>
+              
+                <tr>
+                  <td>gates</td>
+                  <td><a href="#operand.VisibleData">VisibleData</a></td>
+                  <td></td>
+                  <td><p>TODO </p></td>
+                </tr>
+              
+                <tr>
+                  <td>data</td>
+                  <td><a href="#operand.VisibleData">VisibleData</a></td>
+                  <td>repeated</td>
+                  <td><p>The values held by the record </p></td>
+                </tr>
+              
+                <tr>
+                  <td>nonce</td>
+                  <td><a href="#operand.VisibleData">VisibleData</a></td>
+                  <td></td>
+                  <td><p>TODO </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="operand.RecordType">RecordType</h3>
+        <p>The type and visibility information for a record</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>owner</td>
+                  <td><a href="#operand.Visibility">Visibility</a></td>
+                  <td></td>
+                  <td><p>The visibility status for the record owner </p></td>
+                </tr>
+              
+                <tr>
+                  <td>gates</td>
+                  <td><a href="#operand.Visibility">Visibility</a></td>
+                  <td></td>
+                  <td><p>The visibility status for the record gates </p></td>
+                </tr>
+              
+                <tr>
+                  <td>data</td>
+                  <td><a href="#operand.RecordTypeEntry">RecordTypeEntry</a></td>
+                  <td>repeated</td>
+                  <td><p>The fields within the record </p></td>
+                </tr>
+              
+                <tr>
+                  <td>nonce</td>
+                  <td><a href="#operand.Visibility">Visibility</a></td>
+                  <td></td>
+                  <td><p>The visibility status for the record nonce </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="operand.RecordTypeEntry">RecordTypeEntry</h3>
+        <p>Type data for the field of a record</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the record entry </p></td>
+                </tr>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#operand.Type">Type</a></td>
+                  <td></td>
+                  <td><p>The data type of the record entry </p></td>
+                </tr>
+              
+                <tr>
+                  <td>visibility</td>
+                  <td><a href="#operand.Visibility">Visibility</a></td>
+                  <td></td>
+                  <td><p>The visibility status of the record entry </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="operand.Scalar">Scalar</h3>
+        <p>Field elements in the scalar field.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>values</td>
+                  <td><a href="#fixed64">fixed64</a></td>
+                  <td>repeated</td>
+                  <td><p>TODO size? </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="operand.SimpleType">SimpleType</h3>
+        <p>An empty type used to get around the limitations of the `oneof` keyword</p>
+
+        
+
+        
+      
+        <h3 id="operand.Struct">Struct</h3>
+        <p>Acomplex data structure containing fields with</p><p>other data. Internally represented as a tuple.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>values</td>
+                  <td><a href="#operand.Operand">Operand</a></td>
+                  <td>repeated</td>
+                  <td><p>a list of values held by the data structure </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="operand.StructType">StructType</h3>
+        <p>The type information for a struct</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>fields</td>
+                  <td><a href="#operand.StructTypeEntry">StructTypeEntry</a></td>
+                  <td>repeated</td>
+                  <td><p>The fields of the struct </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="operand.StructTypeEntry">StructTypeEntry</h3>
+        <p>Type data for the field of a struct</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The names of the field </p></td>
+                </tr>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#operand.Type">Type</a></td>
+                  <td></td>
+                  <td><p>The data type of the field </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="operand.TupleGroup">TupleGroup</h3>
+        <p>TODO</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>left</td>
+                  <td><a href="#operand.GroupCoordinate">GroupCoordinate</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>right</td>
+                  <td><a href="#operand.GroupCoordinate">GroupCoordinate</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="operand.Type">Type</h3>
+        <p>Type information for an unknown value</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>address</td>
+                  <td><a href="#operand.SimpleType">SimpleType</a></td>
+                  <td></td>
+                  <td><p>The address of an Aleo account </p></td>
+                </tr>
+              
+                <tr>
+                  <td>boolean</td>
+                  <td><a href="#operand.SimpleType">SimpleType</a></td>
+                  <td></td>
+                  <td><p>A true or false value </p></td>
+                </tr>
+              
+                <tr>
+                  <td>field</td>
+                  <td><a href="#operand.SimpleType">SimpleType</a></td>
+                  <td></td>
+                  <td><p>A native field element as an unsigned number up to
+the modulus length of the field </p></td>
+                </tr>
+              
+                <tr>
+                  <td>group</td>
+                  <td><a href="#operand.SimpleType">SimpleType</a></td>
+                  <td></td>
+                  <td><p>The set of affine points on the elliptic curve passed into the
+snarkd-vm forms a group. Snarkd supports this set as a primitive
+data type. Group elements are special since their values can be
+defined from the x-coordinate of a coordinate pair. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>u8</td>
+                  <td><a href="#operand.SimpleType">SimpleType</a></td>
+                  <td></td>
+                  <td><p>An 8 bit unsigned integer </p></td>
+                </tr>
+              
+                <tr>
+                  <td>u16</td>
+                  <td><a href="#operand.SimpleType">SimpleType</a></td>
+                  <td></td>
+                  <td><p>A 16 bit unsigned integer </p></td>
+                </tr>
+              
+                <tr>
+                  <td>u32</td>
+                  <td><a href="#operand.SimpleType">SimpleType</a></td>
+                  <td></td>
+                  <td><p>A 32 bit unsigned integer </p></td>
+                </tr>
+              
+                <tr>
+                  <td>u64</td>
+                  <td><a href="#operand.SimpleType">SimpleType</a></td>
+                  <td></td>
+                  <td><p>A 64 bit unsigned integer </p></td>
+                </tr>
+              
+                <tr>
+                  <td>u128</td>
+                  <td><a href="#operand.SimpleType">SimpleType</a></td>
+                  <td></td>
+                  <td><p>A 128 bit unsigned integer </p></td>
+                </tr>
+              
+                <tr>
+                  <td>i8</td>
+                  <td><a href="#operand.SimpleType">SimpleType</a></td>
+                  <td></td>
+                  <td><p>An 8 bit signed integer </p></td>
+                </tr>
+              
+                <tr>
+                  <td>i16</td>
+                  <td><a href="#operand.SimpleType">SimpleType</a></td>
+                  <td></td>
+                  <td><p>A 16 bit signed integer </p></td>
+                </tr>
+              
+                <tr>
+                  <td>i32</td>
+                  <td><a href="#operand.SimpleType">SimpleType</a></td>
+                  <td></td>
+                  <td><p>A 32 bit signed integer </p></td>
+                </tr>
+              
+                <tr>
+                  <td>i64</td>
+                  <td><a href="#operand.SimpleType">SimpleType</a></td>
+                  <td></td>
+                  <td><p>A 64 bit signed integer </p></td>
+                </tr>
+              
+                <tr>
+                  <td>i128</td>
+                  <td><a href="#operand.SimpleType">SimpleType</a></td>
+                  <td></td>
+                  <td><p>A 128 bit signed integer </p></td>
+                </tr>
+              
+                <tr>
+                  <td>scalar</td>
+                  <td><a href="#operand.SimpleType">SimpleType</a></td>
+                  <td></td>
+                  <td><p>Field elements in the scalar field. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>string</td>
+                  <td><a href="#operand.SimpleType">SimpleType</a></td>
+                  <td></td>
+                  <td><p>An array of characters. Snarkd currently only supports static
+strings for certian commit operations </p></td>
+                </tr>
+              
+                <tr>
+                  <td>struct</td>
+                  <td><a href="#operand.StructType">StructType</a></td>
+                  <td></td>
+                  <td><p>a complex data structure containing fields with
+other data. Internally represented as a tuple. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>record</td>
+                  <td><a href="#operand.RecordType">RecordType</a></td>
+                  <td></td>
+                  <td><p>An arbitrary collection of user-owned state </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="operand.VisibleData">VisibleData</h3>
+        <p>A value and visibility pair used in a record</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#operand.Operand">Operand</a></td>
+                  <td></td>
+                  <td><p>the value held in the record </p></td>
+                </tr>
+              
+                <tr>
+                  <td>visibility</td>
+                  <td><a href="#operand.Visibility">Visibility</a></td>
+                  <td></td>
+                  <td><p>the visibility status of the value </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+        <h3 id="operand.Visibility">Visibility</h3>
+        <p>The possible visibility states for an input or record</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>Constant</td>
+                <td>0</td>
+                <td><p>A public value, able to be seen but not set by others</p></td>
+              </tr>
+            
+              <tr>
+                <td>Private</td>
+                <td>1</td>
+                <td><p>A private value, unable to be seen or set by others</p></td>
+              </tr>
+            
+              <tr>
+                <td>Public</td>
+                <td>2</td>
+                <td><p>A public value, able to be seen and set by others</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+
+      
+
+      
+    
+
+    <h2 id="scalar-value-types">Scalar Value Types</h2>
+    <table class="scalar-value-types-table">
+      <thead>
+        <tr><td>.proto Type</td><td>Notes</td><td>C++</td><td>Java</td><td>Python</td><td>Go</td><td>C#</td><td>PHP</td><td>Ruby</td></tr>
+      </thead>
+      <tbody>
+        
+          <tr id="double">
+            <td>double</td>
+            <td></td>
+            <td>double</td>
+            <td>double</td>
+            <td>float</td>
+            <td>float64</td>
+            <td>double</td>
+            <td>float</td>
+            <td>Float</td>
+          </tr>
+        
+          <tr id="float">
+            <td>float</td>
+            <td></td>
+            <td>float</td>
+            <td>float</td>
+            <td>float</td>
+            <td>float32</td>
+            <td>float</td>
+            <td>float</td>
+            <td>Float</td>
+          </tr>
+        
+          <tr id="int32">
+            <td>int32</td>
+            <td>Uses variable-length encoding. Inefficient for encoding negative numbers – if your field is likely to have negative values, use sint32 instead.</td>
+            <td>int32</td>
+            <td>int</td>
+            <td>int</td>
+            <td>int32</td>
+            <td>int</td>
+            <td>integer</td>
+            <td>Bignum or Fixnum (as required)</td>
+          </tr>
+        
+          <tr id="int64">
+            <td>int64</td>
+            <td>Uses variable-length encoding. Inefficient for encoding negative numbers – if your field is likely to have negative values, use sint64 instead.</td>
+            <td>int64</td>
+            <td>long</td>
+            <td>int/long</td>
+            <td>int64</td>
+            <td>long</td>
+            <td>integer/string</td>
+            <td>Bignum</td>
+          </tr>
+        
+          <tr id="uint32">
+            <td>uint32</td>
+            <td>Uses variable-length encoding.</td>
+            <td>uint32</td>
+            <td>int</td>
+            <td>int/long</td>
+            <td>uint32</td>
+            <td>uint</td>
+            <td>integer</td>
+            <td>Bignum or Fixnum (as required)</td>
+          </tr>
+        
+          <tr id="uint64">
+            <td>uint64</td>
+            <td>Uses variable-length encoding.</td>
+            <td>uint64</td>
+            <td>long</td>
+            <td>int/long</td>
+            <td>uint64</td>
+            <td>ulong</td>
+            <td>integer/string</td>
+            <td>Bignum or Fixnum (as required)</td>
+          </tr>
+        
+          <tr id="sint32">
+            <td>sint32</td>
+            <td>Uses variable-length encoding. Signed int value. These more efficiently encode negative numbers than regular int32s.</td>
+            <td>int32</td>
+            <td>int</td>
+            <td>int</td>
+            <td>int32</td>
+            <td>int</td>
+            <td>integer</td>
+            <td>Bignum or Fixnum (as required)</td>
+          </tr>
+        
+          <tr id="sint64">
+            <td>sint64</td>
+            <td>Uses variable-length encoding. Signed int value. These more efficiently encode negative numbers than regular int64s.</td>
+            <td>int64</td>
+            <td>long</td>
+            <td>int/long</td>
+            <td>int64</td>
+            <td>long</td>
+            <td>integer/string</td>
+            <td>Bignum</td>
+          </tr>
+        
+          <tr id="fixed32">
+            <td>fixed32</td>
+            <td>Always four bytes. More efficient than uint32 if values are often greater than 2^28.</td>
+            <td>uint32</td>
+            <td>int</td>
+            <td>int</td>
+            <td>uint32</td>
+            <td>uint</td>
+            <td>integer</td>
+            <td>Bignum or Fixnum (as required)</td>
+          </tr>
+        
+          <tr id="fixed64">
+            <td>fixed64</td>
+            <td>Always eight bytes. More efficient than uint64 if values are often greater than 2^56.</td>
+            <td>uint64</td>
+            <td>long</td>
+            <td>int/long</td>
+            <td>uint64</td>
+            <td>ulong</td>
+            <td>integer/string</td>
+            <td>Bignum</td>
+          </tr>
+        
+          <tr id="sfixed32">
+            <td>sfixed32</td>
+            <td>Always four bytes.</td>
+            <td>int32</td>
+            <td>int</td>
+            <td>int</td>
+            <td>int32</td>
+            <td>int</td>
+            <td>integer</td>
+            <td>Bignum or Fixnum (as required)</td>
+          </tr>
+        
+          <tr id="sfixed64">
+            <td>sfixed64</td>
+            <td>Always eight bytes.</td>
+            <td>int64</td>
+            <td>long</td>
+            <td>int/long</td>
+            <td>int64</td>
+            <td>long</td>
+            <td>integer/string</td>
+            <td>Bignum</td>
+          </tr>
+        
+          <tr id="bool">
+            <td>bool</td>
+            <td></td>
+            <td>bool</td>
+            <td>boolean</td>
+            <td>boolean</td>
+            <td>bool</td>
+            <td>bool</td>
+            <td>boolean</td>
+            <td>TrueClass/FalseClass</td>
+          </tr>
+        
+          <tr id="string">
+            <td>string</td>
+            <td>A string must always contain UTF-8 encoded or 7-bit ASCII text.</td>
+            <td>string</td>
+            <td>String</td>
+            <td>str/unicode</td>
+            <td>string</td>
+            <td>string</td>
+            <td>string</td>
+            <td>String (UTF-8)</td>
+          </tr>
+        
+          <tr id="bytes">
+            <td>bytes</td>
+            <td>May contain any arbitrary sequence of bytes.</td>
+            <td>string</td>
+            <td>ByteString</td>
+            <td>str</td>
+            <td>[]byte</td>
+            <td>ByteString</td>
+            <td>string</td>
+            <td>String (ASCII-8BIT)</td>
+          </tr>
+        
+      </tbody>
+    </table>
+  </body>
+</html>
+

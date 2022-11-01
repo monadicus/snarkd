@@ -154,8 +154,10 @@ fn struct_program() -> Program {
                 variable: 0,
                 name: "a".into(),
                 type_: Type::Struct(StructType {
-                    subtypes: vec![(Type::Boolean)],
-                    subtype_names: vec!["hello".into()],
+                    fields: vec![StructTypeEntry {
+                        name: "hello".into(),
+                        type_: Type::Boolean,
+                    }],
                 }),
             }],
             ..Default::default()

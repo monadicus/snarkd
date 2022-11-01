@@ -1,9 +1,37 @@
 use super::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StructTypeEntry {
+    pub name: String,
+    pub type_: Type,
+}
+
+impl TryFrom<ir::operand::StructTypeEntry> for StructTypeEntry {
+    type Error = Error;
+
+    fn try_from(value: ir::operand::StructTypeEntry) -> Result<Self> {
+        Ok(Self {
+            name: value.name,
+            type_: value
+                .r#type
+                .ok_or_else(|| anyhow!("StructTypeEntry type unset"))?
+                .try_into()?,
+        })
+    }
+}
+
+impl From<StructTypeEntry> for ir::operand::StructTypeEntry {
+    fn from(value: StructTypeEntry) -> Self {
+        Self {
+            name: value.name,
+            r#type: Some(value.type_.into()),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StructType {
-    pub subtypes: Vec<Type>,
-    pub subtype_names: Vec<String>,
+    pub fields: Vec<StructTypeEntry>,
 }
 
 impl TryFrom<ir::operand::StructType> for StructType {
@@ -11,12 +39,11 @@ impl TryFrom<ir::operand::StructType> for StructType {
 
     fn try_from(value: ir::operand::StructType) -> Result<Self> {
         Ok(Self {
-            subtypes: value
-                .subtypes
+            fields: value
+                .fields
                 .into_iter()
-                .map(|t| t.try_into())
+                .map(|f| f.try_into())
                 .collect::<Result<_>>()?,
-            subtype_names: value.subtype_names,
         })
     }
 }
@@ -24,17 +51,50 @@ impl TryFrom<ir::operand::StructType> for StructType {
 impl From<StructType> for ir::operand::StructType {
     fn from(value: StructType) -> Self {
         Self {
-            subtypes: value.subtypes.into_iter().map(|t| t.into()).collect(),
-            subtype_names: value.subtype_names,
+            fields: value.fields.into_iter().map(|f| f.into()).collect(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RecordTypeEntry {
+    pub name: String,
+    pub type_: Type,
+    pub visibility: Visibility,
+}
+
+impl TryFrom<ir::operand::RecordTypeEntry> for RecordTypeEntry {
+    type Error = Error;
+
+    fn try_from(value: ir::operand::RecordTypeEntry) -> Result<Self> {
+        Ok(Self {
+            name: value.name,
+            type_: value
+                .r#type
+                .ok_or_else(|| anyhow!("RecordTypeEntry type unset"))?
+                .try_into()?,
+            visibility: Visibility::from_i32(value.visibility)
+                .ok_or_else(|| anyhow!("RecordTypeEntry invalid visibility"))?,
+        })
+    }
+}
+
+impl From<RecordTypeEntry> for ir::operand::RecordTypeEntry {
+    fn from(value: RecordTypeEntry) -> Self {
+        Self {
+            name: value.name,
+            r#type: Some(value.type_.into()),
+            visibility: value.visibility as i32,
         }
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RecordType {
-    pub subtypes: Vec<Type>,
-    pub subtype_names: Vec<String>,
-    pub visibilities: Vec<Visibility>,
+    pub owner: Visibility,
+    pub gates: Visibility,
+    pub data: Vec<RecordTypeEntry>,
+    pub nonce: Visibility,
 }
 
 impl TryFrom<ir::operand::RecordType> for RecordType {
@@ -42,17 +102,16 @@ impl TryFrom<ir::operand::RecordType> for RecordType {
 
     fn try_from(value: ir::operand::RecordType) -> Result<Self> {
         Ok(RecordType {
-            subtypes: value
-                .subtypes
+            owner: Visibility::from_i32(value.owner)
+                .ok_or_else(|| anyhow!("invalid owner visibility"))?,
+            gates: Visibility::from_i32(value.gates)
+                .ok_or_else(|| anyhow!("invalid gates visibility"))?,
+            data: value
+                .data
                 .into_iter()
-                .map(|t| t.try_into())
+                .map(|v| v.try_into())
                 .collect::<Result<_>>()?,
-            subtype_names: value.subtype_names,
-            visibilities: value
-                .visibilities
-                .into_iter()
-                .map(Visibility::from_i32)
-                .collect::<Option<_>>()
+            nonce: Visibility::from_i32(value.nonce)
                 .ok_or_else(|| anyhow!("invalid visibility"))?,
         })
     }
@@ -61,9 +120,10 @@ impl TryFrom<ir::operand::RecordType> for RecordType {
 impl From<RecordType> for ir::operand::RecordType {
     fn from(value: RecordType) -> Self {
         Self {
-            subtypes: value.subtypes.into_iter().map(|v| v.into()).collect(),
-            subtype_names: value.subtype_names,
-            visibilities: value.visibilities.into_iter().map(|v| v as i32).collect(),
+            owner: value.owner as i32,
+            gates: value.gates as i32,
+            data: value.data.into_iter().map(|v| v.into()).collect(),
+            nonce: value.nonce as i32,
         }
     }
 }
