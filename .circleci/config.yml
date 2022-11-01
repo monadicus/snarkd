@@ -10,6 +10,30 @@ orbs:
   rust: circleci/rust@1.6.0
 
 commands:
+  # adapted from https://circleci.com/developer/orbs/orb/izumin5210 to support architecture parameter
+  # Licensed by MIT as per https://circleci.com/developer/orbs/licensing
+  protobuf_install:
+    description: Install protobuf (protoc command and standard libs)
+    parameters:
+      prefix:
+        default: /usr/local
+        type: string
+      arch:
+        # see arches from https://github.com/protocolbuffers/protobuf/releases/tag/v21.9
+        default: linux-x86_64
+        type: string
+      version:
+        default: "21.9"
+        type: string
+    steps:
+    - run:
+        command: |
+          archive=protoc-<<parameters.version>>-<<parameters.arch>>
+          curl -O -L https://github.com/protocolbuffers/protobuf/releases/download/v<<parameters.version>>/$archive.zip
+          sudo unzip -d '/usr/local' $archive.zip 'bin/*' 'include/*'
+          rm -rf $archive.zip
+        name: '[protobuf] Install'
+
   setup:
     description: Sets up the environment for building snarkd
     parameters:
@@ -17,11 +41,15 @@ commands:
         default: false
         description: Whether to install protoc during setup
         type: boolean
+      arch:
+        default: linux-x86_64
+        type: string
     steps:
       - when:
           condition: <<parameters.protoc>>
           steps:
-            - protobuf/install
+            - protobuf_install:
+              arch: <<parameters.arch>>
 
 jobs:
   # runs rustfmt, clippy, and cargo test
@@ -38,7 +66,22 @@ jobs:
       - rust/clippy
       - rust/test
 
+  # runs cargo test on arm64 architecture
+  test_arm64:
+    environment:
+      RUST_BACKTRACE: 1
+    machine:
+      image: arm-default
+    resource_class: arm.medium
+    steps:
+      - setup:
+         protoc: true
+         arch: linux-aarch_64
+      - checkout
+      - rust/test
+
 workflows:
   lint_and_test:
     jobs:
       - lint_and_test
+      - test_arm64
