@@ -113,21 +113,20 @@ async fn main() {
     // spawn network listener
     {
         let listen_port = config.listen_port;
+        let listen_ip = config.listen_ip;
         let peer_book = peer_book.clone();
         let database = database.clone();
         tokio::spawn(async move {
-            let listener = match TcpListener::bind(SocketAddr::V4(SocketAddrV4::new(
-                Ipv4Addr::UNSPECIFIED,
-                listen_port,
-            )))
-            .await
-            {
-                Ok(e) => e,
-                Err(e) => {
-                    error!("failed to bind for inbound connections: {e:?}");
-                    return;
-                }
-            };
+            let listener =
+                match TcpListener::bind(SocketAddr::V4(SocketAddrV4::new(listen_ip, listen_port)))
+                    .await
+                {
+                    Ok(e) => e,
+                    Err(e) => {
+                        error!("failed to bind for inbound connections: {e:?}");
+                        return;
+                    }
+                };
 
             loop {
                 let (stream, address) = match listener.accept().await {
