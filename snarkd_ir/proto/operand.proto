@@ -179,11 +179,11 @@ message VisibleData {
 message Record {
   // The owner of the record. This must always be an address
   VisibleData owner = 1;
-  // TODO
+  // The amount of Aleo credits held by the record
   VisibleData gates = 2;
   // The values held by the record
   repeated VisibleData data = 3;
-  // TODO
+  // Encryption metadata
   VisibleData nonce = 4;
 }
 

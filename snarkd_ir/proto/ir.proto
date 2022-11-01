@@ -1,6 +1,9 @@
 // markdown doc generation command
 /*
-protoc --plugin=protoc-gen-doc=D:\Downloads\protoc-gen-doc_1.5.1_windows_amd64.tar\protoc-gen-doc_1.5.1_windows_amd64\protoc-gen-doc.exe --proto_path=snarkd_ir\proto\ --doc_out=docs --doc_opt=markdown,bytecode-spec.md snarkd_ir\proto\*.proto
+protoc
+--plugin=protoc-gen-doc=D:\Downloads\protoc-gen-doc_1.5.1_windows_amd64.tar\protoc-gen-doc_1.5.1_windows_amd64\protoc-gen-doc.exe
+--proto_path=snarkd_ir\proto\ --doc_out=docs --doc_opt=markdown,bytecode-spec.md
+snarkd_ir\proto\*.proto
 */
 
 // html doc generation command

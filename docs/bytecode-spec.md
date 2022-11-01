@@ -176,30 +176,30 @@ A Snarkd instruction
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| abs | [UnaryData](#opcode-UnaryData) |  | Computes the absolute value of the input, checking for overflow, storing the result in the destination register.<br>For integer types, a constraint is added to check for underflow. For cases where wrapping semantics are needed, see the abs.w instruction. This underflow happens when the input is the minimum value of a signed integer type. For example, abs -128i8 would result in underflow, since 128 cannot be represented as an i8. |
+| abs | [UnaryData](#opcode-UnaryData) |  | Computes the absolute value of the input, checking for overflow, storing the result in the destination register.<br><br>For integer types, a constraint is added to check for underflow. For cases where wrapping semantics are needed, see the abs.w instruction. This underflow happens when the input is the minimum value of a signed integer type. For example, abs -128i8 would result in underflow, since 128 cannot be represented as an i8. |
 | abs_wrapped | [UnaryData](#opcode-UnaryData) |  | Compute the absolute value of the input, wrapping around at the boundary of the type, and storing the result in the destination register. |
-| add | [BinaryData](#opcode-BinaryData) |  | Adds first with second, storing the outcome in destination.<br>For integer types, a constraint is added to check for overflow. For cases where wrapping semantics are needed for integer types, see the add.w instruction. |
+| add | [BinaryData](#opcode-BinaryData) |  | Adds first with second, storing the outcome in destination.<br><br>For integer types, a constraint is added to check for overflow. For cases where wrapping semantics are needed for integer types, see the add.w instruction. |
 | add_wrapped | [BinaryData](#opcode-BinaryData) |  | Adds first with second, wrapping around at the boundary of the type, and storing the outcome in destination. |
 | and | [BinaryData](#opcode-BinaryData) |  | Performs an AND operation on integer (bitwise) or boolean first and second, storing the outcome in destination. |
 | assert_eq | [AssertData](#opcode-AssertData) |  | Checks whether first and second are equal, halting if they are not equal. |
 | assert_neq | [AssertData](#opcode-AssertData) |  | Checks whether first and second are not equal, halting if they are equal. |
-| commit_bhp_256 | [BinaryData](#opcode-BinaryData) |  | Computes a BHP commitment on inputs of 256-bit chunks in first, and some randomness in second, storing the commitment in destination. Randomness should always be a Scalar value, and the produced commitment will always be a Field value.<br>The instruction will halt if the given input is smaller than 129 bits. |
-| commit_bhp_512 | [BinaryData](#opcode-BinaryData) |  | Computes a BHP commitment on inputs of 512-bit chunks in first, and some randomness in second, storing the commitment in destination. Randomness should always be a Scalar value, and the produced commitment will always be a Field value.<br>The instruction will halt if the given input is smaller than 171 bits. |
-| commit_bhp_768 | [BinaryData](#opcode-BinaryData) |  | Computes a BHP commitment on inputs of 768-bit chunks in first, and some randomness in second, storing the commitment in destination. Randomness should always be a Scalar value, and the produced commitment will always be a Field value.<br>The instruction will halt if the given input is smaller than 129 bits. |
-| commit_bhp_1024 | [BinaryData](#opcode-BinaryData) |  | Computes a BHP commitment on inputs of 1024-bit chunks in first, and some randomness in second, storing the commitment in destination. Randomness should always be a Scalar value, and the produced commitment will always be a Field value.<br>The instruction will halt if the given input is smaller than 171 bits. |
-| commit_ped_64 | [BinaryData](#opcode-BinaryData) |  | Computes a Pedersen commitment up to a 64-bit input in first, and some randomness in second, storing the commitment in destination. Randomness should always be a Scalar value, and the produced commitment will always be a Group value.<br>The instruction will halt if the given String or Interface value exceeds the 64-bit limit. |
-| commit_ped_128 | [BinaryData](#opcode-BinaryData) |  | Computes a Pedersen commitment up to a 128-bit input in first, and some randomness in second, storing the commitment in destination. Randomness should always be a Scalar value, and the produced commitment will always be a Group value.<br>The instruction will halt if the given String or Interface value exceeds the 128-bit limit. |
-| div | [BinaryData](#opcode-BinaryData) |  | Divides first by second, storing the outcome in destination. Halts on division by zero.<br>For integer types, this operation performs truncated division. Furthermore, a constraint is added to check for underflow. This underflow happens when dividing the minimum value of a signed integer type by -1. For example, div -128i8 -1i8 would result in underflow, since 128 cannot be represented as an i8.<br>For cases where wrapping semantics are needed for integer types, see the div.w instruction. |
+| commit_bhp_256 | [BinaryData](#opcode-BinaryData) |  | Computes a BHP commitment on inputs of 256-bit chunks in first, and some randomness in second, storing the commitment in destination. Randomness should always be a Scalar value, and the produced commitment will always be a Field value.<br><br>The instruction will halt if the given input is smaller than 129 bits. |
+| commit_bhp_512 | [BinaryData](#opcode-BinaryData) |  | Computes a BHP commitment on inputs of 512-bit chunks in first, and some randomness in second, storing the commitment in destination. Randomness should always be a Scalar value, and the produced commitment will always be a Field value.<br><br>The instruction will halt if the given input is smaller than 171 bits. |
+| commit_bhp_768 | [BinaryData](#opcode-BinaryData) |  | Computes a BHP commitment on inputs of 768-bit chunks in first, and some randomness in second, storing the commitment in destination. Randomness should always be a Scalar value, and the produced commitment will always be a Field value.<br><br>The instruction will halt if the given input is smaller than 129 bits. |
+| commit_bhp_1024 | [BinaryData](#opcode-BinaryData) |  | Computes a BHP commitment on inputs of 1024-bit chunks in first, and some randomness in second, storing the commitment in destination. Randomness should always be a Scalar value, and the produced commitment will always be a Field value.<br><br>The instruction will halt if the given input is smaller than 171 bits. |
+| commit_ped_64 | [BinaryData](#opcode-BinaryData) |  | Computes a Pedersen commitment up to a 64-bit input in first, and some randomness in second, storing the commitment in destination. Randomness should always be a Scalar value, and the produced commitment will always be a Group value.<br><br>The instruction will halt if the given String or Interface value exceeds the 64-bit limit. |
+| commit_ped_128 | [BinaryData](#opcode-BinaryData) |  | Computes a Pedersen commitment up to a 128-bit input in first, and some randomness in second, storing the commitment in destination. Randomness should always be a Scalar value, and the produced commitment will always be a Group value.<br><br>The instruction will halt if the given String or Interface value exceeds the 128-bit limit. |
+| div | [BinaryData](#opcode-BinaryData) |  | Divides first by second, storing the outcome in destination. Halts on division by zero.<br><br>For integer types, this operation performs truncated division. Furthermore, a constraint is added to check for underflow. This underflow happens when dividing the minimum value of a signed integer type by -1. For example, div -128i8 -1i8 would result in underflow, since 128 cannot be represented as an i8.<br><br>For cases where wrapping semantics are needed for integer types, see the div.w instruction. |
 | div_wrapped | [BinaryData](#opcode-BinaryData) |  | Divides first by second, wrapping around at the boundary of the type, and storing the outcome in destination. |
 | double | [UnaryData](#opcode-UnaryData) |  | Doubles the input, storing the outcome in destination. |
 | gt | [BinaryData](#opcode-BinaryData) |  | Checks if first is greater than second, storing the result in destination. |
 | gte | [BinaryData](#opcode-BinaryData) |  | Checks if first is greater than or equal to second, storing the result in destination. |
-| hash_bhp_256 | [UnaryData](#opcode-UnaryData) |  | Computes a BHP hash on inputs of 256-bit chunks in first, storing the hash in destination. The produced hash will always be a Field value.<br>The instruction will halt if the given input is smaller than 129 bits. |
-| hash_bhp_512 | [UnaryData](#opcode-UnaryData) |  | Computes a BHP hash on inputs of 512-bit chunks in first, storing the hash in destination. The produced hash will always be a Field value.<br>The instruction will halt if the given input is smaller than 171 bits. |
-| hash_bhp_768 | [UnaryData](#opcode-UnaryData) |  | Computes a BHP hash on inputs of 768-bit chunks in first, storing the hash in destination. The produced hash will always be a Field value.<br>The instruction will halt if the given input is smaller than 129 bits. |
-| hash_bhp_1024 | [UnaryData](#opcode-UnaryData) |  | Computes a BHP hash on inputs of 1024-bit chunks in first, storing the hash in destination. The produced hash will always be a Field value.<br>The instruction will halt if the given input is smaller than 171 bits. |
-| hash_ped_64 | [UnaryData](#opcode-UnaryData) |  | Computes a Pedersen hash up to a 64-bit input in first, storing the hash in destination. The produced hash will always be a Field value.<br>The instruction will halt if the given String or Interface value exceeds the 64-bit limit. |
-| hash_ped_128 | [UnaryData](#opcode-UnaryData) |  | Computes a Pedersen hash up to a 128-bit input in first, storing the hash in destination. The produced hash will always be a Field value.<br>The instruction will halt if the given String or Interface value exceeds the 128-bit limit. |
+| hash_bhp_256 | [UnaryData](#opcode-UnaryData) |  | Computes a BHP hash on inputs of 256-bit chunks in first, storing the hash in destination. The produced hash will always be a Field value.<br><br>The instruction will halt if the given input is smaller than 129 bits. |
+| hash_bhp_512 | [UnaryData](#opcode-UnaryData) |  | Computes a BHP hash on inputs of 512-bit chunks in first, storing the hash in destination. The produced hash will always be a Field value.<br><br>The instruction will halt if the given input is smaller than 171 bits. |
+| hash_bhp_768 | [UnaryData](#opcode-UnaryData) |  | Computes a BHP hash on inputs of 768-bit chunks in first, storing the hash in destination. The produced hash will always be a Field value.<br><br>The instruction will halt if the given input is smaller than 129 bits. |
+| hash_bhp_1024 | [UnaryData](#opcode-UnaryData) |  | Computes a BHP hash on inputs of 1024-bit chunks in first, storing the hash in destination. The produced hash will always be a Field value.<br><br>The instruction will halt if the given input is smaller than 171 bits. |
+| hash_ped_64 | [UnaryData](#opcode-UnaryData) |  | Computes a Pedersen hash up to a 64-bit input in first, storing the hash in destination. The produced hash will always be a Field value.<br><br>The instruction will halt if the given String or Interface value exceeds the 64-bit limit. |
+| hash_ped_128 | [UnaryData](#opcode-UnaryData) |  | Computes a Pedersen hash up to a 128-bit input in first, storing the hash in destination. The produced hash will always be a Field value.<br><br>The instruction will halt if the given String or Interface value exceeds the 128-bit limit. |
 | hash_psd_2 | [UnaryData](#opcode-UnaryData) |  | Calculates a Poseidon hash with an input rate of 2, from an input in first, storing the hash in destination. The produced hash will always be a Field value. |
 | hash_psd_4 | [UnaryData](#opcode-UnaryData) |  | Calculates a Poseidon hash with an input rate of 4, from an input in first, storing the hash in destination. The produced hash will always be a Field value. |
 | hash_psd_8 | [UnaryData](#opcode-UnaryData) |  | Calculates a Poseidon hash with an input rate of 8, from an input in first, storing the hash in destination. The produced hash will always be a Field value. |
@@ -208,17 +208,17 @@ A Snarkd instruction
 | is_neq | [BinaryData](#opcode-BinaryData) |  | Returns true if first is not equal to second, storing the result in destination. |
 | lt | [BinaryData](#opcode-BinaryData) |  | Checks if first is less than second, storing the outcome in destination. |
 | lte | [BinaryData](#opcode-BinaryData) |  | Checks if first is less than or equal to second, storing the outcome in destination. |
-| mod | [BinaryData](#opcode-BinaryData) |  | Takes the modulus of first with respect to second, storing the outcome in destination. Halts if second is zero.<br>The semantics of this operation are consistent with the mathematical definition of modulo operation. |
-| mul | [BinaryData](#opcode-BinaryData) |  | Multiplies first with second, storing the outcome in destination.<br>For integer types, a constraint is added to check for overflow/underflow. For cases where wrapping semantics are needed for integer types, see the mul.w instruction. |
+| mod | [BinaryData](#opcode-BinaryData) |  | Takes the modulus of first with respect to second, storing the outcome in destination. Halts if second is zero.<br><br>The semantics of this operation are consistent with the mathematical definition of modulo operation. |
+| mul | [BinaryData](#opcode-BinaryData) |  | Multiplies first with second, storing the outcome in destination.<br><br>For integer types, a constraint is added to check for overflow/underflow. For cases where wrapping semantics are needed for integer types, see the mul.w instruction. |
 | mul_wrapped | [BinaryData](#opcode-BinaryData) |  | Multiplies first with second, wrapping around at the boundary of the type, and storing the outcome in destination. |
 | nand | [BinaryData](#opcode-BinaryData) |  | Returns false only if first and second are true, storing the outcome in destination. |
-| neg | [UnaryData](#opcode-UnaryData) |  | Negates first, storing the outcome in destination.<br>For signed integer types, calling neg on the minimum value is an invalid operation. For example, the input -128i8 would not be valid since 128 cannot be represented as an i8. |
+| neg | [UnaryData](#opcode-UnaryData) |  | Negates first, storing the outcome in destination.<br><br>For signed integer types, calling neg on the minimum value is an invalid operation. For example, the input -128i8 would not be valid since 128 cannot be represented as an i8. |
 | nor | [BinaryData](#opcode-BinaryData) |  | Returns true when neither first nor second is true, storing the outcome in destination. |
 | not | [UnaryData](#opcode-UnaryData) |  | Perform a NOT operation on an integer (bitwise) or boolean input, storing the outcome in destination. |
 | or | [BinaryData](#opcode-BinaryData) |  | Performs an OR operation on integer (bitwise) or boolean first and second, storing the outcome in destination. |
-| pow | [BinaryData](#opcode-BinaryData) |  | Raises first to the power of second, storing the outcome in destination.<br>For integer types, a constraint is added to check for overflow/underflow. For cases where wrapping semantics are needed for integer types, see the pow.w instruction. |
+| pow | [BinaryData](#opcode-BinaryData) |  | Raises first to the power of second, storing the outcome in destination.<br><br>For integer types, a constraint is added to check for overflow/underflow. For cases where wrapping semantics are needed for integer types, see the pow.w instruction. |
 | pow_wrapped | [BinaryData](#opcode-BinaryData) |  | Raises first to the power of second, wrapping around at the boundary of the type, storing the outcome in destination. |
-| rem | [BinaryData](#opcode-BinaryData) |  | Computes the truncated remainder of first divided by second, storing the outcome in destination. Halts on division by zero.<br>A constraint is added to check for underflow. This underflow happens when the associated division operation, div, underflows.<br>For cases where wrapping semantics are needed for integer types, see the rem.w instruction. |
+| rem | [BinaryData](#opcode-BinaryData) |  | Computes the truncated remainder of first divided by second, storing the outcome in destination. Halts on division by zero.<br><br>A constraint is added to check for underflow. This underflow happens when the associated division operation, div, underflows.<br><br>For cases where wrapping semantics are needed for integer types, see the rem.w instruction. |
 | rem_wrapped | [BinaryData](#opcode-BinaryData) |  | Computes the truncated remainder of first divided by second, wrapping around at the boundary of the type, and storing the outcome in destination. |
 | shl | [BinaryData](#opcode-BinaryData) |  | Shifts first left by second bits, storing the outcome in destination. |
 | shl_wrapped | [BinaryData](#opcode-BinaryData) |  | Shifts first left by second bits, wrapping around at the boundary of the type, storing the outcome in destination. |
@@ -228,7 +228,7 @@ A Snarkd instruction
 | sqrt | [UnaryData](#opcode-UnaryData) |  | Computes the square root of the input, storing the outcome in destination. |
 | sub | [BinaryData](#opcode-BinaryData) |  | Computes first - second, storing the outcome in destination. |
 | sub_wrapped | [BinaryData](#opcode-BinaryData) |  | Computes first - second, wrapping around at the boundary of the type, and storing the outcome in destination. |
-| ternary | [TernaryData](#opcode-TernaryData) |  | Selects first, if condition is true, otherwise selects second, storing the result in destination.<br>Example: ternary r0 r1 r2 into r3, where r0 is the condition, r1 is first, r2 is second, and r3 is the destination. |
+| ternary | [TernaryData](#opcode-TernaryData) |  | Selects first, if condition is true, otherwise selects second, storing the result in destination.<br><br>Example: ternary r0 r1 r2 into r3, where r0 is the condition, r1 is first, r2 is second, and r3 is the destination. |
 | xor | [BinaryData](#opcode-BinaryData) |  | Performs an XOR operation on an integer (bitwise) or boolean first and second, storing the outcome in destination. |
 
 
@@ -294,7 +294,7 @@ The address of an Aleo account
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| address | [bytes](#bytes) |  | TODO size? |
+| address | [bytes](#bytes) |  | A byte array representing an aleo address |
 
 
 
@@ -310,8 +310,8 @@ the modulus length of the field
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| negate | [bool](#bool) |  | TODO |
-| values | [fixed64](#fixed64) | repeated | TODO |
+| negate | [bool](#bool) |  | The sign of the field |
+| values | [fixed64](#fixed64) | repeated | The bytes of the field |
 
 
 
@@ -329,8 +329,8 @@ defined from the x-coordinate of a coordinate pair.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| single | [Field](#operand-Field) |  | TODO |
-| tuple | [TupleGroup](#operand-TupleGroup) |  | TODO |
+| single | [Field](#operand-Field) |  | A single group value |
+| tuple | [TupleGroup](#operand-TupleGroup) |  | A tuple group value |
 
 
 
@@ -340,7 +340,7 @@ defined from the x-coordinate of a coordinate pair.
 <a name="operand-GroupCoordinate"></a>
 
 ### GroupCoordinate
-TODO
+A coordinate on the curve
 
 
 | Field | Type | Label | Description |
@@ -397,9 +397,9 @@ An arbitrary collection of user-owned state
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | owner | [VisibleData](#operand-VisibleData) |  | The owner of the record. This must always be an address |
-| gates | [VisibleData](#operand-VisibleData) |  | TODO |
+| gates | [VisibleData](#operand-VisibleData) |  | The amount of Aleo credits held by the record |
 | data | [VisibleData](#operand-VisibleData) | repeated | The values held by the record |
-| nonce | [VisibleData](#operand-VisibleData) |  | TODO |
+| nonce | [VisibleData](#operand-VisibleData) |  | Encryption metadata |
 
 
 
@@ -449,7 +449,7 @@ Field elements in the scalar field.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| values | [fixed64](#fixed64) | repeated | TODO size? |
+| values | [fixed64](#fixed64) | repeated | The bytes of the scalar field |
 
 
 
@@ -516,7 +516,7 @@ Type data for the field of a struct
 <a name="operand-TupleGroup"></a>
 
 ### TupleGroup
-TODO
+A group made up of two coordinates
 
 
 | Field | Type | Label | Description |
