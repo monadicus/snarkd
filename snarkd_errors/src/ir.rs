@@ -50,4 +50,44 @@ CreateErrorType! {
     ],
     suggestions: [],
   }
+
+  from_error prost_decode_error {
+    args: (),
+    error_msgs: [
+        "Failed decoding Protobuf Message.",
+    ],
+    suggestions: [],
+  }
+
+  from_error invalid_ir {
+    args: (),
+    error_msgs: [
+        "Invalid IR.",
+    ],
+    suggestions: [],
+  }
+
+  from_error failed_to_read_ir_file {
+    args: (),
+    error_msgs: [
+        "Failed to read the IR file.",
+    ],
+    suggestions: [],
+  }
+
+  from_error failed_to_open_ir_file {
+    args: (file),
+    error_msgs: [
+        "Failed to read ir file `{file}`.",
+    ],
+    suggestions: [],
+  }
+
+  from_error failed_to_write_ir_file {
+    args: (mode),
+    error_msgs: [
+        "Failed to write the IR {mode} file.",
+    ],
+    suggestions: [],
+  }
 }

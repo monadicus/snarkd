@@ -7,4 +7,5 @@ edition = "2021"
 anyhow = { workspace = true }
 colored = { workspace = true }
 error-stack = { workspace = true }
+prost = { workspace = true }
 thiserror = { workspace = true }

@@ -4,7 +4,7 @@ pub use data::*;
 use std::fmt;
 
 use super::ir;
-use anyhow::{anyhow, Error, Result};
+use snarkd_errors::{Error, IRError, Result};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Instruction {
@@ -133,7 +133,7 @@ impl TryFrom<ir::Instruction> for Instruction {
         Ok(
             match value
                 .instruction
-                .ok_or_else(|| anyhow!("missing instruction"))?
+                .ok_or_else(|| IRError::unset("Instruction"))?
             {
                 ir::instruction::Instruction::Abs(v) => Self::Abs(v.try_into()?),
                 ir::instruction::Instruction::AbsWrapped(v) => Self::AbsWrapped(v.try_into()?),

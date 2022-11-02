@@ -2,32 +2,32 @@ use super::*;
 
 fn example_header() -> Header {
     Header {
-        main_inputs: vec![Input {
+        private_inputs: vec![InputType {
             variable: 0,
             name: "a".into(),
             type_: Type::U8,
         }],
-        constant_inputs: vec![Input {
+        constant_inputs: vec![InputType {
             variable: 1,
             name: "b".into(),
             type_: Type::U8,
         }],
-        register_inputs: vec![Input {
+        public_inputs: vec![InputType {
             variable: 2,
             name: "c".into(),
             type_: Type::U8,
         }],
-        public_states: vec![Input {
+        public_states: vec![InputType {
             variable: 3,
             name: "d".into(),
             type_: Type::U8,
         }],
-        private_record_states: vec![Input {
+        private_record_states: vec![InputType {
             variable: 4,
             name: "e".into(),
             type_: Type::U8,
         }],
-        private_leaf_states: vec![Input {
+        private_leaf_states: vec![InputType {
             variable: 5,
             name: "f".into(),
             type_: Type::U8,
@@ -96,7 +96,7 @@ fn example_basic_record_program() -> Program {
 fn struct_program() -> Program {
     Program {
         header: Header {
-            main_inputs: vec![Input {
+            private_inputs: vec![InputType {
                 variable: 0,
                 name: "a".into(),
                 type_: Type::Struct(StructType {

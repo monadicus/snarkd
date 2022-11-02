@@ -4,7 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-anyhow = { workspace = true }
 bech32 = { workspace = true }
 indexmap = { workspace = true }
 num_enum = { workspace = true }

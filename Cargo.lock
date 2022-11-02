@@ -1479,6 +1479,7 @@ dependencies = [
  "anyhow",
  "colored",
  "error-stack",
+ "prost",
  "thiserror",
 ]
 
@@ -1486,7 +1487,6 @@ dependencies = [
 name = "snarkd_ir"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "bech32",
  "indexmap",
  "num_enum",

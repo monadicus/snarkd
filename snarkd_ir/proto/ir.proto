@@ -22,8 +22,34 @@ import public "operand.proto";
 
 package ir;
 
+// A value being input to a program
+message InputValue {
+  // The name of the value
+  string name = 1;
+  // The value contained by the value
+  operand.Operand value = 2;
+}
+
+// The input values for a program
+message InputData {
+  // A list of constant input registers
+  repeated InputValue constants = 1;
+  // A list of private registers inputs
+  repeated InputValue privates = 2;
+  // A list of public registers inputs
+  repeated InputValue publics = 3;
+  // A list of registers inputs
+  repeated InputValue registers = 5;
+  // A list of public state inputs
+  repeated InputValue public_state = 6;
+  // A list of private record state inputs
+  repeated InputValue private_leaf_state = 7;
+  // A list of private leaf state inputs
+  repeated InputValue private_record_state = 8;
+}
+
 // A register input for a program
-message Input {
+message InputType {
   // The ID of the register
   uint32 variable = 1;
   // The name of the register, used for debugging purposes
@@ -40,18 +66,20 @@ message Header {
   uint32 snarkd_minor = 2;
   // The patch release version of snarkd this programn was made for
   uint32 snarkd_patch = 3;
-  // A list of main input registers
-  repeated Input main_inputs = 4;
   // A list of constant input registers
-  repeated Input constant_inputs = 5;
-  // A list of registers inputs
-  repeated Input register_inputs = 6;
+  repeated InputType constant_inputs = 4;
+  // A list of private input registers
+  repeated InputType private_inputs = 5;
+  // A list of public inputs
+  repeated InputType public_inputs = 6;
+  // A list of register inputs
+  repeated InputType register_inputs = 7;
   // A list of public state inputs
-  repeated Input public_states = 7;
+  repeated InputType public_states = 8;
   // A list of private record state inputs
-  repeated Input private_record_states = 8;
+  repeated InputType private_record_states = 9;
   // A list of private leaf state inputs
-  repeated Input private_leaf_states = 9;
+  repeated InputType private_leaf_states = 10;
 }
 
 // A function in a Snarkd program
