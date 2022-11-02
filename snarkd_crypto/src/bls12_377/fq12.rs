@@ -83,16 +83,9 @@ const FROBENIUS_COEFF_FP12_C1: [Fq2; 12] = [
     },
     // Fp2::NONRESIDUE^(((q^10) - 1) / 6)
     Fq2 {
-        // NOTE: For some reason, generating this big integer in the macro causes an overflow.
-        // So, we do it manually with the limbs for now.
-        c0: Fq(Uint::<384, 6>::from_limbs([
-            0xaa3baf925a7b868e,
-            0x3e0d38ef753d5865,
-            0x4191258bc861923,
-            0x1e8a71ae63e00a87,
-            0xeffc4d11826f20dc,
-            0x4663a2a83dd119,
-        ])),
+        c0: Fq(
+            uint!(258664426012969093929703085429980814127835149614277183275038967946009968870203535512256352201271898244626862047232_U384),
+        ),
         c1: Fq(uint!(0_U384)),
     },
     // Fp2::NONRESIDUE^(((q^11) - 1) / 6)
