@@ -1,18 +1,11 @@
-#![allow(clippy::module_inception)]
-// #![cfg_attr(nightly, feature(doc_cfg, external_doc))]
-// #![cfg_attr(nightly, warn(missing_docs))]
-#![cfg_attr(test, allow(clippy::assertions_on_result_states))]
-// #![doc = include_str!("../documentation/the_aleo_curves/00_overview.md")]
-#![cfg_attr(nightly, doc = include_str!("../documentation/the_aleo_curves/02_bls12-377.md"))]
-
 use bitvec::prelude::*;
 use ruint::uint;
 
+pub mod affine;
+pub use affine::*;
+
 pub mod errors;
 pub use errors::*;
-
-pub mod templates;
-pub use templates::*;
 
 pub mod field;
 pub use field::*;
@@ -48,6 +41,15 @@ pub use g2::*;
 pub mod group;
 pub use group::*;
 
+pub mod projective;
+pub use projective::*;
+
+pub mod sw_affine;
+pub use sw_affine::*;
+
+pub mod sw_projective;
+pub use sw_projective::*;
+
 #[cfg(test)]
 mod tests;
 
@@ -78,8 +80,19 @@ const HALF_R: [u64; 8] = [0, 0, 0, 0x8000000000000000, 0, 0, 0, 0];
 
 const X: u64 = 0x8508c00000000001;
 
+/// Performs multiple pairing operations
+fn pairing<G1: Into<G1Affine>, G2: Into<G2Affine>>(p: G1, q: G2) -> Fq12 {
+    final_exponentiation(&miller_loop(core::iter::once((
+        &G1Prepared::from_affine(p.into()),
+        &G2Prepared::from_affine(q.into()),
+    ))))
+    .unwrap()
+}
+
 /// Evaluate the line function at point p.
 fn ell(f: &mut Fq12, c0: Fq2, c1: Fq2, c2: Fq2, p: &G1Affine) {
+    let mut c0 = c0;
+    let mut c1 = c1;
     c0.mul_by_fp(&p.y);
     c1.mul_by_fp(&p.x);
     f.mul_by_034(&c0, &c1, &c2);

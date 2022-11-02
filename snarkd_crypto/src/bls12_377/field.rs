@@ -1,5 +1,6 @@
 use bitvec::prelude::*;
 use core::{
+    fmt::Debug,
     hash::Hash,
     iter::Sum,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
@@ -27,6 +28,7 @@ pub trait Field:
     + Copy
     + Eq
     + Hash
+    + Debug
     + Sized
 {
     const PHI: Self;

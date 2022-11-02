@@ -43,11 +43,9 @@ impl Fq2 {
         fe - original
     }
 
-    pub fn mul_by_fp(&self, other: &Fq) -> Self {
-        Self {
-            c0: self.c0 * other,
-            c1: self.c1 * other,
-        }
+    pub fn mul_by_fp(&mut self, other: &Fq) {
+        self.c0 *= other;
+        self.c1 *= other;
     }
 
     /// Norm of Fp2 over Fp: Norm(a) = a.x^2 - beta * a.y^2
@@ -125,12 +123,20 @@ impl Field for Fq2 {
         tmp
     }
 
-    // NOTE: check this
     fn square_in_place(&mut self) {
-        let c0 = self.c0;
-        let c1 = self.c1;
-        self.c0 = c0.square() - (c1.square() * NONRESIDUE);
-        self.c1 = (c0 + c1).square() - c0.square() - c1.square();
+        // v0 = c0 - c1
+        let mut v0 = self.c0 - self.c1;
+        // v3 = c0 - beta * c1
+        let v3 = self.c0 - Self::mul_fp_by_nonresidue(&self.c1);
+        // v2 = c0 * c1
+        let v2 = self.c0 * self.c1;
+
+        // v0 = (v0 * v3) + v2
+        v0 *= &v3;
+        v0 += &v2;
+
+        self.c1 = v2.double();
+        self.c0 = v0 + Self::mul_fp_by_nonresidue(&v2);
     }
 
     fn inverse(&self) -> Option<Self> {
@@ -187,8 +193,9 @@ impl Field for Fq2 {
     }
 
     fn glv_endomorphism(&self) -> Self {
-        let p = self.mul_by_fp(&Self::PHI.c1);
-        p
+        let mut tmp = *self;
+        tmp.mul_by_fp(&Self::PHI.c1);
+        tmp
     }
 }
 

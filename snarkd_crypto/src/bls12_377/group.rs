@@ -1,7 +1,10 @@
 use super::{field::Field, Fr};
-use core::{fmt::Display, hash::Hash};
+use core::{
+    fmt::{Debug, Display},
+    hash::Hash,
+};
 
-pub trait Group: Hash + Clone + Copy {
+pub trait Group: Hash + Clone + Copy + Debug + PartialEq + Eq {
     type BaseField: Field + Ord + Display;
 
     const COFACTOR: &'static [u64];

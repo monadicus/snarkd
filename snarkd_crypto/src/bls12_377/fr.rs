@@ -588,15 +588,12 @@ mod tests {
 
     #[test]
     fn test_powers_of_g() {
-        let two = Fr::from(2u8);
+        let two = Fr(uint!(2_U256));
 
         // Compute the expected powers of G.
-        let g = Fr::from_repr(GENERATOR).unwrap().pow(T);
+        let g = Fr(GENERATOR).pow(&T.into_limbs());
         let powers = (0..TWO_ADICITY - 1)
-            .map(|i| {
-                g.pow(two.pow(Fr::from(i as u64).to_repr()).to_repr())
-                    .to_repr()
-            })
+            .map(|i| g.pow(&two.pow(&[i as u64]).0.into_limbs()))
             .collect::<Vec<_>>();
 
         // Ensure the correct number of powers of G are present.
@@ -606,7 +603,7 @@ mod tests {
         // Ensure the expected and candidate powers match.
         for (expected, candidate) in powers.iter().zip(POWERS_OF_G.iter()) {
             println!("{:?} =?= {:?}", expected, candidate);
-            assert_eq!(expected, candidate);
+            assert_eq!(*expected, Fr(*candidate));
         }
     }
 }

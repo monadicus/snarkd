@@ -1,5 +1,10 @@
-use crate::bls12_377::{group::Group, Fq, Fr};
-use ruint::uint;
+use crate::bls12_377::{
+    field::Field, group::Group, sw_affine::SWAffine, sw_projective::SWProjective, Affine, Fq, Fr,
+    Projective, X,
+};
+use bitvec::prelude::*;
+use rand::Rng;
+use ruint::{uint, Uint};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct G1Parameters;
@@ -46,27 +51,66 @@ const G1_GENERATOR_Y: Fq = Fq(
     uint!(3702177272937190650578065972808860481433820514072818216637796320125658674906330993856598323293086021583822603349_U384),
 );
 
+pub type G1Affine = SWAffine<G1Parameters>;
+pub type G1Projective = SWProjective<G1Parameters>;
+
+impl G1Affine {
+    pub fn is_in_correct_subgroup_assuming_on_curve(&self) -> bool {
+        let phi = |mut p: Self| {
+            debug_assert!(Fq::PHI.pow(&[3]).is_one());
+            p.x *= Fq::PHI;
+            p
+        };
+        let x_square = Fr(Uint::from(X)).square();
+        let bytes = x_square.0.to_be_bytes::<32>();
+        let bits = bytes.view_bits::<Msb0>();
+        let bits = &bits[bits.leading_zeros()..];
+        (phi(*self).mul_bits(bits).add_mixed(self)).is_zero()
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct G1Prepared(pub G1Affine);
+
+impl G1Prepared {
+    pub fn is_zero(&self) -> bool {
+        self.0.is_zero()
+    }
+
+    pub fn from_affine(p: G1Affine) -> Self {
+        G1Prepared(p)
+    }
+}
+
+impl Default for G1Prepared {
+    fn default() -> Self {
+        G1Prepared(G1Affine::prime_subgroup_generator())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{super::G1Affine, *};
     use crate::bls12_377::field::Field;
-    use rand::Rng;
 
     #[test]
     fn test_subgroup_membership() {
-        let rng = &mut TestRng::default();
-
         for _ in 0..1000 {
-            let p = G1Affine::rand(rng);
-            assert!(Bls12_377G1Parameters::is_in_correct_subgroup_assuming_on_curve(&p));
-            let x = Fq::rand(rng);
-            let greatest = rng.gen();
+            let p = G1Affine::rand();
+            assert!(p.is_in_correct_subgroup_assuming_on_curve());
+            let x = Fq::rand();
+            let greatest = rand::thread_rng().gen();
 
             if let Some(p) = G1Affine::from_x_coordinate(x, greatest) {
                 assert_eq!(
-                    Bls12_377G1Parameters::is_in_correct_subgroup_assuming_on_curve(&p),
-                    p.mul_bits(Fr::characteristic().to_be_bytes().into())
-                        .is_zero(),
+                    p.is_in_correct_subgroup_assuming_on_curve(),
+                    p.mul_bits(
+                        Fr::characteristic()
+                            .0
+                            .to_be_bytes::<32>()
+                            .view_bits::<Msb0>()
+                    )
+                    .is_zero(),
                 );
             }
         }

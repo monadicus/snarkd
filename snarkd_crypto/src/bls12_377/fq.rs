@@ -108,6 +108,14 @@ impl Fq {
     pub fn half() -> Self {
         Self((MODULUS + uint!(1_U384)) >> 1)
     }
+
+    pub fn multiplicative_generator() -> Self {
+        Self(GENERATOR)
+    }
+
+    pub fn is_valid(&self) -> bool {
+        self.0 < MODULUS
+    }
 }
 
 impl Field for Fq {
@@ -449,15 +457,12 @@ mod tests {
 
     #[test]
     fn test_powers_of_g() {
-        let two = Fq::from(2u8);
+        let two = Fq(uint!(2_U384));
 
         // Compute the expected powers of G.
-        let g = Fq::from_repr(GENERATOR).unwrap().pow(T);
+        let g = Fq(GENERATOR).pow(&T.into_limbs());
         let powers = (0..TWO_ADICITY - 1)
-            .map(|i| {
-                g.pow(two.pow(Fq::from(i as u64).to_repr()).to_repr())
-                    .to_repr()
-            })
+            .map(|i| g.pow(&two.pow(&[i as u64]).0.into_limbs()))
             .collect::<Vec<_>>();
 
         // Ensure the correct number of powers of G are present.
@@ -467,7 +472,7 @@ mod tests {
         // Ensure the expected and candidate powers match.
         for (expected, candidate) in powers.iter().zip(POWERS_OF_G.iter()) {
             println!("{:?} =?= {:?}", expected, candidate);
-            assert_eq!(expected, candidate);
+            assert_eq!(*expected, Fq(*candidate));
         }
     }
 }

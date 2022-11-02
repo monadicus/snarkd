@@ -1,9 +1,8 @@
-#![allow(unused_imports)]
 use crate::bls12_377::{
-    field::Field, Fq, Fq12, Fq2, Fq6, Fr, G1Affine, G1Projective, G2Affine, G2Projective,
-    LegendreSymbol,
+    field::Field, fq, fq2, pairing, Affine, Fq, Fq12, Fq2, Fq6, Fr, G1Affine, G1Projective,
+    G2Affine, G2Projective, LegendreSymbol, Projective,
 };
-use rand::Rng;
+use bitvec::prelude::*;
 use ruint::uint;
 use std::{
     cmp::Ordering,
@@ -12,99 +11,695 @@ use std::{
 
 pub(crate) const ITERATIONS: usize = 10;
 
-#[test]
-fn test_bls12_377_fr() {
+fn random_addition_test<G: Projective>() {
+    for _ in 0..ITERATIONS {
+        let a = G::rand();
+        let b = G::rand();
+        let c = G::rand();
+        let a_affine = a.to_affine();
+        let b_affine = b.to_affine();
+        let c_affine = c.to_affine();
+
+        // a + a should equal the doubling
+        {
+            let mut aplusa = a;
+            aplusa.add_assign(a);
+
+            let mut aplusamixed = a;
+            aplusamixed.add_assign_mixed(&a.to_affine());
+
+            let mut adouble = a;
+            adouble.double_in_place();
+
+            assert_eq!(aplusa, adouble);
+            assert_eq!(aplusa, aplusamixed);
+        }
+
+        let mut tmp = vec![G::zero(); 6];
+
+        // (a + b) + c
+        tmp[0] = (a + b) + c;
+
+        // a + (b + c)
+        tmp[1] = a + (b + c);
+
+        // (a + c) + b
+        tmp[2] = (a + c) + b;
+
+        // Mixed addition
+
+        // (a + b) + c
+        tmp[3] = a_affine.to_projective();
+        tmp[3].add_assign_mixed(&b_affine);
+        tmp[3].add_assign_mixed(&c_affine);
+
+        // a + (b + c)
+        tmp[4] = b_affine.to_projective();
+        tmp[4].add_assign_mixed(&c_affine);
+        tmp[4].add_assign_mixed(&a_affine);
+
+        // (a + c) + b
+        tmp[5] = a_affine.to_projective();
+        tmp[5].add_assign_mixed(&c_affine);
+        tmp[5].add_assign_mixed(&b_affine);
+
+        // Comparisons
+        for i in 0..6 {
+            for j in 0..6 {
+                if tmp[i] != tmp[j] {
+                    println!("{} \n{}", tmp[i], tmp[j]);
+                }
+                assert_eq!(tmp[i], tmp[j], "Associativity failed {} {}", i, j);
+                assert_eq!(
+                    tmp[i].to_affine(),
+                    tmp[j].to_affine(),
+                    "Associativity failed"
+                );
+            }
+
+            assert!(tmp[i] != a);
+            assert!(tmp[i] != b);
+            assert!(tmp[i] != c);
+
+            assert!(a != tmp[i]);
+            assert!(b != tmp[i]);
+            assert!(c != tmp[i]);
+        }
+    }
+}
+
+fn random_multiplication_test<G: Projective>() {
+    for _ in 0..ITERATIONS {
+        let mut a = G::rand();
+        let mut b = G::rand();
+        let a_affine = a.to_affine();
+        let b_affine = b.to_affine();
+
+        let s = Fr::rand();
+
+        // s ( a + b )
+        let mut tmp1 = a;
+        tmp1.add_assign(b);
+        tmp1.mul_assign(s);
+
+        // sa + sb
+        a.mul_assign(s);
+        b.mul_assign(s);
+
+        let mut tmp2 = a;
+        tmp2.add_assign(b);
+
+        // Affine multiplication
+        let mut tmp3 = a_affine.mul(s);
+        tmp3.add_assign(b_affine.mul(s));
+
+        assert_eq!(tmp1, tmp2);
+        assert_eq!(tmp1, tmp3);
+    }
+}
+
+fn random_doubling_test<G: Projective>() {
+    for _ in 0..ITERATIONS {
+        let mut a = G::rand();
+        let mut b = G::rand();
+
+        // 2(a + b)
+        let mut tmp1 = a;
+        tmp1.add_assign(b);
+        tmp1.double_in_place();
+
+        // 2a + 2b
+        a.double_in_place();
+        b.double_in_place();
+
+        let mut tmp2 = a;
+        tmp2.add_assign(b);
+
+        let mut tmp3 = a;
+        tmp3.add_assign_mixed(&b.to_affine());
+
+        assert_eq!(tmp1, tmp2);
+        assert_eq!(tmp1, tmp3);
+    }
+}
+
+fn random_negation_test<G: Projective>() {
+    for _ in 0..ITERATIONS {
+        let r = G::rand();
+
+        let s = Fr::rand();
+        let sneg = -s;
+        assert!((s + sneg).is_zero());
+
+        let mut t1 = r;
+        t1.mul_assign(s);
+
+        let mut t2 = r;
+        t2.mul_assign(sneg);
+
+        let mut t3 = t1;
+        t3.add_assign(t2);
+        println!("t3 = {}", t3);
+        assert!(t3.is_zero());
+
+        let mut t4 = t1;
+        t4.add_assign_mixed(&t2.to_affine());
+        assert!(t4.is_zero());
+
+        t1 = -t1;
+        assert_eq!(t1, t2);
+    }
+}
+
+fn random_transformation_test<G: Projective>() {
     let mut rng = rand::thread_rng();
 
     for _ in 0..ITERATIONS {
-        let a: Fr = rng.gen();
-        let b: Fr = rng.gen();
-        field_test(a, b, &mut rng);
-        primefield_test::<Fr>(&mut rng);
-        sqrt_field_test(b, &mut rng);
-        field_serialization_test::<Fr>(&mut rng);
+        let g = G::rand();
+        let g_affine = g.to_affine();
+        let g_projective = g_affine.to_projective();
+        assert_eq!(g, g_projective);
+    }
+
+    // Batch normalization
+    for _ in 0..10 {
+        let mut v = (0..ITERATIONS).map(|_| G::rand()).collect::<Vec<_>>();
+
+        for i in &v {
+            assert!(!i.is_normalized());
+        }
+
+        use rand::distributions::{Distribution, Uniform};
+        let between = Uniform::from(0..ITERATIONS);
+        // Sprinkle in some normalized points
+        for _ in 0..5 {
+            v[between.sample(&mut rng)] = G::zero();
+        }
+        for _ in 0..5 {
+            let s = between.sample(&mut rng);
+            v[s] = v[s].to_affine().to_projective();
+        }
+
+        let expected_v = v
+            .iter()
+            .map(|v| v.to_affine().to_projective())
+            .collect::<Vec<_>>();
+        G::batch_normalization(&mut v);
+
+        for i in &v {
+            assert!(i.is_normalized());
+        }
+
+        assert_eq!(v, expected_v);
+    }
+}
+
+fn random_negation_tests<F: Field>() {
+    for _ in 0..ITERATIONS {
+        let a = F::rand();
+        let mut b = -a;
+        b += &a;
+
+        assert!(b.is_zero());
+    }
+}
+
+fn random_addition_tests<F: Field>() {
+    for _ in 0..ITERATIONS {
+        let a = F::rand();
+        let b = F::rand();
+        let c = F::rand();
+
+        let t0 = (a + b) + c; // (a + b) + c
+
+        let t1 = (a + c) + b; // (a + c) + b
+
+        let t2 = (b + c) + a; // (b + c) + a
+
+        assert_eq!(t0, t1);
+        assert_eq!(t1, t2);
+    }
+}
+
+fn random_subtraction_tests<F: Field>() {
+    for _ in 0..ITERATIONS {
+        let a = F::rand();
+        let b = F::rand();
+
+        let t0 = a - b; // (a - b)
+
+        let mut t1 = b; // (b - a)
+        t1 -= &a;
+
+        let mut t2 = t0; // (a - b) + (b - a) = 0
+        t2 += &t1;
+
+        assert!(t2.is_zero());
+    }
+}
+
+fn random_multiplication_tests<F: Field>() {
+    for _ in 0..ITERATIONS {
+        let a = F::rand();
+        let b = F::rand();
+        let c = F::rand();
+
+        let mut t0 = a; // (a * b) * c
+        t0 *= &b;
+        t0 *= &c;
+
+        let mut t1 = a; // (a * c) * b
+        t1 *= &c;
+        t1 *= &b;
+
+        let mut t2 = b; // (b * c) * a
+        t2 *= &c;
+        t2 *= &a;
+
+        assert_eq!(t0, t1);
+        assert_eq!(t1, t2);
+    }
+}
+
+fn random_inversion_tests<F: Field>() {
+    assert!(F::zero().inverse().is_none());
+
+    for _ in 0..ITERATIONS {
+        let mut a = F::rand();
+        let b = a.inverse().unwrap(); // probablistically nonzero
+        a *= &b;
+
+        assert_eq!(a, F::one());
+    }
+}
+
+fn random_doubling_tests<F: Field>() {
+    for _ in 0..ITERATIONS {
+        let mut a = F::rand();
+        let mut b = a;
+        a += &b;
+        b.double_in_place();
+
+        assert_eq!(a, b);
+    }
+}
+
+fn random_squaring_tests<F: Field>() {
+    for _ in 0..ITERATIONS {
+        let mut a = F::rand();
+        let mut b = a;
+        a *= &b;
+        b.square_in_place();
+
+        assert_eq!(a, b);
+    }
+}
+
+fn random_expansion_tests<F: Field>() {
+    for _ in 0..ITERATIONS {
+        // Compare (a + b)(c + d) and (a*c + b*c + a*d + b*d)
+
+        let a = F::rand();
+        let b = F::rand();
+        let c = F::rand();
+        let d = F::rand();
+
+        let mut t0 = a;
+        t0 += &b;
+        let mut t1 = c;
+        t1 += &d;
+        t0 *= &t1;
+
+        let mut t2 = a;
+        t2 *= &c;
+        let mut t3 = b;
+        t3 *= &c;
+        let mut t4 = a;
+        t4 *= &d;
+        let mut t5 = b;
+        t5 *= &d;
+
+        t2 += &t3;
+        t2 += &t4;
+        t2 += &t5;
+
+        assert_eq!(t0, t2);
+    }
+
+    for _ in 0..ITERATIONS {
+        // Compare (a + b)c and (a*c + b*c)
+
+        let a = F::rand();
+        let b = F::rand();
+        let c = F::rand();
+
+        let t0 = (a + b) * c;
+        let t2 = a * c + (b * c);
+
+        assert_eq!(t0, t2);
+    }
+}
+
+pub fn frobenius_test<F: Field>(characteristic: &[u64], maxpower: usize) {
+    for _ in 0..ITERATIONS {
+        let a = F::rand();
+
+        let mut a_0 = a;
+        a_0.frobenius_map(0);
+        assert_eq!(a, a_0);
+
+        let mut a_q = a.pow(&characteristic);
+        for power in 1..maxpower {
+            let mut a_qi = a;
+            a_qi.frobenius_map(power);
+            assert_eq!(a_qi, a_q);
+
+            a_q = a_q.pow(&characteristic);
+        }
+    }
+}
+
+pub fn sqrt_field_test<F: Field>(elem: F) {
+    let square = elem.square();
+    let sqrt = square.sqrt().unwrap();
+    assert!(sqrt == elem || sqrt == -elem);
+    if let Some(sqrt) = elem.sqrt() {
+        assert!(sqrt.square() == elem || sqrt.square() == -elem);
+    }
+    random_sqrt_tests::<F>();
+}
+
+#[allow(clippy::eq_op)]
+pub fn field_test<F: Field>(a: F, b: F) {
+    let zero = F::zero();
+    assert!(zero == zero);
+    assert!(zero.is_zero()); // true
+    assert!(!zero.is_one()); // false
+
+    let one = F::one();
+    assert!(one == one);
+    assert!(!one.is_zero()); // false
+    assert!(one.is_one()); // true
+    assert_eq!(zero + one, one);
+
+    let two = one + one;
+    assert!(two == two);
+    assert_ne!(zero, two);
+    assert_ne!(one, two);
+
+    // a == a
+    assert!(a == a);
+    // a + 0 = a
+    assert_eq!(a + zero, a);
+    // a - 0 = a
+    assert_eq!(a - zero, a);
+    // a - a = 0
+    assert_eq!(a - a, zero);
+    // 0 - a = -a
+    assert_eq!(zero - a, -a);
+    // a.double() = a + a
+    assert_eq!(a.double(), a + a);
+    // b.double() = b + b
+    assert_eq!(b.double(), b + b);
+    // a + b = b + a
+    assert_eq!(a + b, b + a);
+    // a - b = -(b - a)
+    assert_eq!(a - b, -(b - a));
+    // (a + b) + a = a + (b + a)
+    assert_eq!((a + b) + a, a + (b + a));
+    // (a + b).double() = (a + b) + (b + a)
+    assert_eq!((a + b).double(), (a + b) + (b + a));
+    // assert_eq!(F::half(), F::one().double().inverse().unwrap());
+
+    // a * 0 = 0
+    assert_eq!(a * zero, zero);
+    // a * 1 = a
+    assert_eq!(a * one, a);
+    // a * 2 = a.double()
+    assert_eq!(a * two, a.double());
+    // a * a^-1 = 1
+    assert_eq!(a * a.inverse().unwrap(), one);
+    // a * a = a^2
+    assert_eq!(a * a, a.square());
+    // a * a * a = a^3
+    assert_eq!(a * (a * a), a.pow(&[0x3, 0x0, 0x0, 0x0]));
+    // a * b = b * a
+    assert_eq!(a * b, b * a);
+    // (a * b) * a = a * (b * a)
+    assert_eq!((a * b) * a, a * (b * a));
+    // (a + b)^2 = a^2 + 2ab + b^2
+    assert_eq!(
+        (a + b).square(),
+        a.square() + ((a * b) + (a * b)) + b.square()
+    );
+    // (a - b)^2 = (-(b - a))^2
+    assert_eq!((a - b).square(), (-(b - a)).square());
+
+    for len in 0..10 {
+        let mut a = Vec::new();
+        let mut b = Vec::new();
+        for _ in 0..len {
+            a.push(F::rand());
+            b.push(F::rand());
+            assert_eq!(
+                F::sum_of_products(a.clone().into_iter(), b.clone().into_iter()),
+                a.iter().zip(b.iter()).map(|(x, y)| *x * y).sum()
+            );
+        }
+    }
+
+    random_negation_tests::<F>();
+    random_addition_tests::<F>();
+    random_subtraction_tests::<F>();
+    random_multiplication_tests::<F>();
+    random_inversion_tests::<F>();
+    random_doubling_tests::<F>();
+    random_squaring_tests::<F>();
+    random_expansion_tests::<F>();
+
+    assert!(F::zero().is_zero());
+    {
+        let z = -F::zero();
+        assert!(z.is_zero());
+    }
+
+    assert!(F::zero().inverse().is_none());
+
+    // Multiplication by zero
+    {
+        let a = F::rand() * F::zero();
+        assert!(a.is_zero());
+    }
+
+    // Addition by zero
+    {
+        let mut a = F::rand();
+        let copy = a;
+        a += &F::zero();
+        assert_eq!(a, copy);
+    }
+}
+
+fn random_sqrt_tests<F: Field>() {
+    for _ in 0..ITERATIONS {
+        let a = F::rand();
+        let b = a.square();
+        // assert_eq!(b.legendre(), LegendreSymbol::QuadraticResidue);
+
+        let b = b.sqrt().unwrap();
+        assert!(a == b || a == -b);
+    }
+
+    let mut c = F::one();
+    for _ in 0..ITERATIONS {
+        let mut b = c.square();
+        // assert_eq!(b.legendre(), LegendreSymbol::QuadraticResidue);
+
+        b = b.sqrt().unwrap();
+
+        if b != c {
+            b = -b;
+        }
+
+        assert_eq!(b, c);
+
+        c += &F::one();
+    }
+}
+
+pub fn curve_tests<G: Projective>() {
+    // Negation edge case with zero.
+    {
+        let z = -G::zero();
+        assert!(z.is_zero());
+    }
+
+    // Doubling edge case with zero.
+    {
+        let mut z = -G::zero();
+        z.double_in_place();
+        assert!(z.is_zero());
+    }
+
+    // Addition edge cases with zero
+    {
+        let mut r = G::rand();
+        let rcopy = r;
+        r.add_assign(G::zero());
+        assert_eq!(r, rcopy);
+        r.add_assign_mixed(&G::Affine::zero());
+        assert_eq!(r, rcopy);
+
+        let mut z = G::zero();
+        z.add_assign(G::zero());
+        assert!(z.is_zero());
+        z.add_assign_mixed(&G::Affine::zero());
+        assert!(z.is_zero());
+
+        let mut z2 = z;
+        z2.add_assign(r);
+
+        z.add_assign_mixed(&r.to_affine());
+
+        assert_eq!(z, z2);
+        assert_eq!(z, r);
+    }
+
+    // Transformations
+    {
+        let a = G::rand();
+        let b = a.to_affine().to_projective();
+        let c = a.to_affine().to_projective().to_affine().to_projective();
+        assert_eq!(a, b);
+        assert_eq!(b, c);
+    }
+
+    random_addition_test::<G>();
+    random_multiplication_test::<G>();
+    random_doubling_test::<G>();
+    random_negation_test::<G>();
+    random_transformation_test::<G>();
+}
+
+#[allow(clippy::eq_op)]
+pub fn projective_test<G: Projective>(a: G, mut b: G) {
+    let zero = G::zero();
+    let fr_zero = Fr::zero();
+    let fr_one = Fr::one();
+    let fr_two = fr_one + fr_one;
+    assert!(zero == zero);
+    assert!(zero.is_zero()); // true
+    assert_eq!(a.mul(fr_one), a);
+    assert_eq!(a.mul(fr_two), a + a);
+    assert_eq!(a.mul(fr_zero), zero);
+    assert_eq!(a.mul(fr_zero) - a, -a);
+    assert_eq!(a.mul(fr_one) - a, zero);
+    assert_eq!(a.mul(fr_two) - a, a);
+
+    // a == a
+    assert!(a == a);
+    // a + 0 = a
+    assert_eq!(a + zero, a);
+    // a - 0 = a
+    assert_eq!(a - zero, a);
+    // a - a = 0
+    assert_eq!(a - a, zero);
+    // 0 - a = -a
+    assert_eq!(zero - a, -a);
+    // a.double() = a + a
+    assert_eq!(a.double(), a + a);
+    // b.double() = b + b
+    assert_eq!(b.double(), b + b);
+    // a + b = b + a
+    assert_eq!(a + b, b + a);
+    // a - b = -(b - a)
+    assert_eq!(a - b, -(b - a));
+    // (a + b) + a = a + (b + a)
+    assert_eq!((a + b) + a, a + (b + a));
+    // (a + b).double() = (a + b) + (b + a)
+    assert_eq!((a + b).double(), (a + b) + (b + a));
+
+    // Check that double_in_place and double give the same result
+    let original_b = b;
+    b.double_in_place();
+    assert_eq!(original_b.double(), b);
+
+    let fr_rand1 = Fr::rand();
+    let fr_rand2 = Fr::rand();
+    let a_rand1 = a.mul(fr_rand1);
+    let a_rand2 = a.mul(fr_rand2);
+    let fr_three = fr_two + fr_rand1;
+    let a_two = a.mul(fr_two);
+    assert_eq!(a_two, a.double(), "(a * 2)  != a.double()");
+    let a_six = a.mul(fr_three * fr_two);
+    assert_eq!(a_two.mul(fr_three), a_six, "(a * 2) * 3 != a * (2 * 3)");
+
+    assert_eq!(
+        a_rand1.mul(fr_rand2),
+        a_rand2.mul(fr_rand1),
+        "(a * r1) * r2 != (a * r2) * r1"
+    );
+    assert_eq!(
+        a_rand2.mul(fr_rand1),
+        a.mul(fr_rand1 * fr_rand2),
+        "(a * r2) * r1 != a * (r1 * r2)"
+    );
+    assert_eq!(
+        a_rand1.mul(fr_rand2),
+        a.mul(fr_rand1 * fr_rand2),
+        "(a * r1) * r2 != a * (r1 * r2)"
+    );
+}
+
+#[test]
+fn test_bls12_377_fr() {
+    for _ in 0..ITERATIONS {
+        let a = Fr::rand();
+        let b = Fr::rand();
+        field_test(a, b);
+        sqrt_field_test(b);
     }
 }
 
 #[test]
 fn test_bls12_377_fq() {
-    let mut rng = rand::thread_rng();
-
     for _ in 0..ITERATIONS {
-        let a: Fq = rng.gen();
-        let b: Fq = rng.gen();
-        field_test(a, b, &mut rng);
-        primefield_test::<Fq>(&mut rng);
-        sqrt_field_test(a, &mut rng);
-        field_serialization_test::<Fq>(&mut rng);
+        let a = Fq::rand();
+        let b = Fq::rand();
+        field_test(a, b);
+        sqrt_field_test(a);
     }
 }
 
 #[test]
 fn test_bls12_377_fq2() {
-    let mut rng = rand::thread_rng();
-
     for _ in 0..ITERATIONS {
-        let a: Fq2 = rng.gen();
-        let b: Fq2 = rng.gen();
-        field_test(a, b, &mut rng);
-        sqrt_field_test(a, &mut rng);
+        let a = Fq2::rand();
+        let b = Fq2::rand();
+        field_test(a, b);
+        sqrt_field_test(a);
     }
-    frobenius_test::<Fq2, _>(Fq::characteristic(), 13, &mut rng);
-    field_serialization_test::<Fq2>(&mut rng);
+    frobenius_test::<Fq2>(&Fq::characteristic().0.into_limbs(), 13);
 }
 
 #[test]
 fn test_bls12_377_fq6() {
-    let mut rng = rand::thread_rng();
-
     for _ in 0..ITERATIONS {
-        let g: Fq6 = rng.gen();
-        let h: Fq6 = rng.gen();
-        field_test(g, h, &mut rng);
+        let g = Fq6::rand();
+        let h = Fq6::rand();
+        field_test(g, h);
     }
-    frobenius_test::<Fq6, _>(Fq::characteristic(), 13, &mut rng);
-    field_serialization_test::<Fq6>(&mut rng);
+    frobenius_test::<Fq6>(&Fq::characteristic().0.into_limbs(), 13);
 }
 
 #[test]
 fn test_bls12_377_fq12() {
-    let mut rng = rand::thread_rng();
-
     for _ in 0..ITERATIONS {
-        let g: Fq12 = rng.gen();
-        let h: Fq12 = rng.gen();
-        field_test(g, h, &mut rng);
+        let g = Fq12::rand();
+        let h = Fq12::rand();
+        field_test(g, h);
     }
-    frobenius_test::<Fq12, _>(Fq::characteristic(), 13, &mut rng);
-    field_serialization_test::<Fq12>(&mut rng);
-}
-
-#[test]
-fn test_fq_repr_from() {
-    assert_eq!(
-        BigInteger384::from(100),
-        BigInteger384([100, 0, 0, 0, 0, 0])
-    );
-}
-
-#[test]
-fn test_fq_repr_is_odd() {
-    assert!(!BigInteger384::from(0).is_odd());
-    assert!(BigInteger384::from(0).is_even());
-    assert!(BigInteger384::from(1).is_odd());
-    assert!(!BigInteger384::from(1).is_even());
-    assert!(!BigInteger384::from(324834872).is_odd());
-    assert!(BigInteger384::from(324834872).is_even());
-    assert!(BigInteger384::from(324834873).is_odd());
-    assert!(!BigInteger384::from(324834873).is_even());
-}
-
-#[test]
-fn test_fq_repr_is_zero() {
-    assert!(BigInteger384::from(0).is_zero());
-    assert!(!BigInteger384::from(1).is_zero());
-    assert!(!BigInteger384([0, 0, 0, 0, 1, 0]).is_zero());
+    frobenius_test::<Fq12>(&Fq::characteristic().0.into_limbs(), 13);
 }
 
 #[test]
@@ -114,12 +709,11 @@ fn test_fq_is_half() {
 
 #[test]
 fn test_fr_sum_of_products() {
-    let mut rng = rand::thread_rng();
     for i in [2, 4, 8, 16, 32] {
-        let a = (0..i).map(|_| rng.gen()).collect::<Vec<_>>();
-        let b = (0..i).map(|_| rng.gen()).collect::<Vec<_>>();
+        let a = (0..i).map(|_| Fr::rand()).collect::<Vec<_>>();
+        let b = (0..i).map(|_| Fr::rand()).collect::<Vec<_>>();
         assert_eq!(
-            Fr::sum_of_products(a.iter(), b.iter()),
+            Fr::sum_of_products(a.clone().into_iter(), b.clone().into_iter()),
             a.into_iter().zip(b).map(|(a, b)| a * b).sum()
         );
     }
@@ -127,34 +721,19 @@ fn test_fr_sum_of_products() {
 
 #[test]
 fn test_fq_sum_of_products() {
-    let mut rng = rand::thread_rng();
     for i in [2, 4, 8, 16, 32] {
-        let a = (0..i).map(|_| rng.gen()).collect::<Vec<_>>();
-        let b = (0..i).map(|_| rng.gen()).collect::<Vec<_>>();
+        let a = (0..i).map(|_| Fq::rand()).collect::<Vec<_>>();
+        let b = (0..i).map(|_| Fq::rand()).collect::<Vec<_>>();
         assert_eq!(
-            Fq::sum_of_products(a.iter(), b.iter()),
+            Fq::sum_of_products(a.clone().into_iter(), b.clone().into_iter()),
             a.into_iter().zip(b).map(|(a, b)| a * b).sum()
         );
     }
 }
 
 #[test]
-fn test_fq_repr_num_bits() {
-    let mut a = BigInteger384::from(0);
-    assert_eq!(0, a.num_bits());
-    a = BigInteger384::from(1);
-    for i in 1..385 {
-        assert_eq!(i, a.num_bits());
-        a.mul2();
-    }
-    assert_eq!(0, a.num_bits());
-}
-
-#[test]
 fn test_fq_add_assign() {
     // Test associativity
-
-    let mut rng = rand::thread_rng();
 
     for _ in 0..1000 {
         // Generate a, b, c and ensure (a + b) + c == a + (b + c).
@@ -178,8 +757,6 @@ fn test_fq_add_assign() {
 
 #[test]
 fn test_fq_sub_assign() {
-    let mut rng = rand::thread_rng();
-
     for _ in 0..1000 {
         // Ensure that (a - b) + (b - a) = 0.
         let a = Fq::rand();
@@ -198,8 +775,6 @@ fn test_fq_sub_assign() {
 
 #[test]
 fn test_fq_mul_assign() {
-    let mut rng = rand::thread_rng();
-
     for _ in 0..1000000 {
         // Ensure that (a * b) * c = a * (b * c)
         let a = Fq::rand();
@@ -243,8 +818,6 @@ fn test_fq_mul_assign() {
 
 #[test]
 fn test_fq_squaring() {
-    let mut rng = rand::thread_rng();
-
     for _ in 0..1000000 {
         // Ensure that (a * a) = a^2
         let a = Fq::rand();
@@ -263,8 +836,6 @@ fn test_fq_squaring() {
 fn test_fq_inverse() {
     assert!(Fq::zero().inverse().is_none());
 
-    let mut rng = rand::thread_rng();
-
     let one = Fq::one();
 
     for _ in 0..1000 {
@@ -278,8 +849,6 @@ fn test_fq_inverse() {
 
 #[test]
 fn test_fq_double_in_place() {
-    let mut rng = rand::thread_rng();
-
     for _ in 0..1000 {
         // Ensure doubling a is equivalent to adding a to itself.
         let mut a = Fq::rand();
@@ -298,8 +867,6 @@ fn test_fq_negate() {
         assert!(a.is_zero());
     }
 
-    let mut rng = rand::thread_rng();
-
     for _ in 0..1000 {
         // Ensure (a - (-a)) = 0.
         let mut a = Fq::rand();
@@ -312,8 +879,6 @@ fn test_fq_negate() {
 
 #[test]
 fn test_fq_pow() {
-    let mut rng = rand::thread_rng();
-
     for i in 0..1000 {
         // Exponentiate by various small numbers and ensure it consists with repeated
         // multiplication.
@@ -330,14 +895,12 @@ fn test_fq_pow() {
         // Exponentiating by the modulus should have no effect in a prime field.
         let a = Fq::rand();
 
-        assert_eq!(a, a.pow(Fq::characteristic()));
+        assert_eq!(a, a.pow(&Fq::characteristic().0.into_limbs()));
     }
 }
 
 #[test]
 fn test_fq_sqrt() {
-    let mut rng = rand::thread_rng();
-
     assert_eq!(Fq::zero().sqrt().unwrap(), Fq::zero());
 
     for _ in 0..1000 {
@@ -365,44 +928,16 @@ fn test_fq_sqrt() {
 }
 
 #[test]
-fn test_fq_sqrt_tonelli() {
-    let mut rng = rand::thread_rng();
-
-    random_sqrt_tonelli_tests::<Fq>(&mut rng);
-}
-
-#[test]
-fn test_fr_sqrt_tonelli() {
-    let mut rng = rand::thread_rng();
-
-    random_sqrt_tonelli_tests::<Fr>(&mut rng);
-}
-
-#[test]
-fn test_fq_bench_sqrt() {
-    let mut rng = rand::thread_rng();
-
-    bench_sqrt::<Fq>(&mut rng);
-}
-
-#[test]
-fn test_fr_bench_sqrt() {
-    let mut rng = rand::thread_rng();
-
-    bench_sqrt::<Fr>(&mut rng);
-}
-
-#[test]
 fn test_fq_num_bits() {
-    assert_eq!(FqParameters::MODULUS_BITS, 377);
-    assert_eq!(FqParameters::CAPACITY, 376);
+    assert_eq!(fq::MODULUS_BITS, 377);
+    assert_eq!(fq::CAPACITY, 376);
 }
 
 #[test]
 fn test_fq_root_of_unity() {
-    assert_eq!(FqParameters::TWO_ADICITY, 46);
+    assert_eq!(fq::TWO_ADICITY, 46);
     assert_eq!(
-        Fq::multiplicative_generator().pow([
+        Fq::multiplicative_generator().pow(&[
             0x7510c00000021423,
             0x88bee82520005c2d,
             0x67cc03d44e3c7bcd,
@@ -410,31 +945,19 @@ fn test_fq_root_of_unity() {
             0xe9185f1443ab18ec,
             0x6b8
         ]),
-        Fq::two_adic_root_of_unity()
+        Fq(fq::TWO_ADIC_ROOT_OF_UNITY)
     );
     assert_eq!(
-        Fq::two_adic_root_of_unity().pow([1 << FqParameters::TWO_ADICITY]),
+        Fq(fq::TWO_ADIC_ROOT_OF_UNITY).pow(&[1 << fq::TWO_ADICITY]),
         Fq::one()
     );
     assert!(Fq::multiplicative_generator().sqrt().is_none());
 }
 
 #[test]
-fn test_fq_ordering() {
-    // BigInteger384's ordering is well-tested, but we still need to make sure the
-    // Fq elements aren't being compared in Montgomery form.
-    for i in 0..100 {
-        assert!(
-            Fq::from_repr(BigInteger384::from(i + 1)).unwrap()
-                > Fq::from_repr(BigInteger384::from(i)).unwrap()
-        );
-    }
-}
-
-#[test]
 fn test_fq_legendre() {
     assert_eq!(LegendreSymbol::QuadraticResidue, Fq::one().legendre());
-    assert_eq!(Zero, Fq::zero().legendre());
+    assert_eq!(LegendreSymbol::Zero, Fq::zero().legendre());
     assert_eq!(
         LegendreSymbol::QuadraticResidue,
         Fq(uint!(4_U384)).legendre()
@@ -476,7 +999,7 @@ fn test_fq2_basics() {
 
 #[test]
 fn test_fq2_legendre() {
-    assert_eq!(Zero, Fq2::zero().legendre());
+    assert_eq!(LegendreSymbol::Zero, Fq2::zero().legendre());
     // i^2 = -1
     let mut m1 = -Fq2::one();
     assert_eq!(LegendreSymbol::QuadraticResidue, m1.legendre());
@@ -486,14 +1009,9 @@ fn test_fq2_legendre() {
 
 #[test]
 fn test_fq2_mul_nonresidue() {
-    let mut rng = rand::thread_rng();
-
     let nqr = Fq2::new(Fq::zero(), Fq::one());
 
-    let quadratic_non_residue = Fq2::new(
-        Fq2Parameters::QUADRATIC_NONRESIDUE.0,
-        Fq2Parameters::QUADRATIC_NONRESIDUE.1,
-    );
+    let quadratic_non_residue = Fq2::new(fq2::QUADRATIC_NONRESIDUE.0, fq2::QUADRATIC_NONRESIDUE.1);
     for _ in 0..1000 {
         let mut a = Fq2::rand();
         let mut b = a;
@@ -506,8 +1024,6 @@ fn test_fq2_mul_nonresidue() {
 
 #[test]
 fn test_fq6_mul_by_1() {
-    let mut rng = rand::thread_rng();
-
     for _ in 0..1000 {
         let c1 = Fq2::rand();
         let mut a = Fq6::rand();
@@ -522,8 +1038,6 @@ fn test_fq6_mul_by_1() {
 
 #[test]
 fn test_fq6_mul_by_01() {
-    let mut rng = rand::thread_rng();
-
     for _ in 0..1000 {
         let c0 = Fq2::rand();
         let c1 = Fq2::rand();
@@ -539,8 +1053,6 @@ fn test_fq6_mul_by_01() {
 
 #[test]
 fn test_fq12_mul_by_014() {
-    let mut rng = rand::thread_rng();
-
     for _ in 0..1000 {
         let c0 = Fq2::rand();
         let c1 = Fq2::rand();
@@ -560,8 +1072,6 @@ fn test_fq12_mul_by_014() {
 
 #[test]
 fn test_fq12_mul_by_034() {
-    let mut rng = rand::thread_rng();
-
     for _ in 0..1000 {
         let c0 = Fq2::rand();
         let c3 = Fq2::rand();
@@ -581,31 +1091,26 @@ fn test_fq12_mul_by_034() {
 
 #[test]
 fn test_g1_projective_glv() {
-    let mut rng = rand::thread_rng();
-
     let point = G1Projective::rand();
     let scalar = Fr::rand();
     let affine = point.to_affine();
     assert_eq!(point.mul(scalar), affine.mul(scalar));
     assert_eq!(
         affine.mul(scalar),
-        affine.mul_bits(BitIteratorBE::new_without_leading_zeros(scalar.to_repr()))
+        affine.mul_bits(scalar.0.to_be_bytes::<32>().view_bits::<Msb0>())
     );
 }
 
 #[test]
 fn test_g1_projective_curve() {
-    let mut rng = rand::thread_rng();
-    curve_tests::<G1Projective>(&mut rng);
+    curve_tests::<G1Projective>();
 }
 
 #[test]
 fn test_g1_projective_group() {
-    let mut rng = rand::thread_rng();
-
-    let a: G1Projective = rng.gen();
-    let b: G1Projective = rng.gen();
-    projective_test(a, b, &mut rng);
+    let a = G1Projective::rand();
+    let b = G1Projective::rand();
+    projective_test(a, b);
 }
 
 #[test]
@@ -617,17 +1122,14 @@ fn test_g1_generator() {
 
 #[test]
 fn test_g2_projective_curve() {
-    let mut rng = rand::thread_rng();
-    curve_tests::<G2Projective>(&mut rng);
+    curve_tests::<G2Projective>();
 }
 
 #[test]
 fn test_g2_projective_group() {
-    let mut rng = rand::thread_rng();
-
-    let a: G2Projective = rng.gen();
-    let b: G2Projective = rng.gen();
-    projective_test(a, b, &mut rng);
+    let a = G2Projective::rand();
+    let b = G2Projective::rand();
+    projective_test(a, b);
 }
 
 #[test]
@@ -639,18 +1141,16 @@ fn test_g2_generator() {
 
 #[test]
 fn test_bilinearity() {
-    let mut rng = rand::thread_rng();
-
-    let a: G1Projective = rng.gen();
-    let b: G2Projective = rng.gen();
-    let s: Fr = rng.gen();
+    let a = G1Projective::rand();
+    let b = G2Projective::rand();
+    let s = Fr::rand();
 
     let sa = a * s;
     let sb = b * s;
 
-    let ans1 = Bls12_377::pairing(sa, b);
-    let ans2 = Bls12_377::pairing(a, sb);
-    let ans3 = Bls12_377::pairing(a, b).pow(s.0.into_limbs());
+    let ans1 = pairing(sa, b);
+    let ans2 = pairing(a, sb);
+    let ans3 = pairing(a, b).pow(&s.0.into_limbs());
 
     assert_eq!(ans1, ans2);
     assert_eq!(ans2, ans3);
@@ -659,7 +1159,7 @@ fn test_bilinearity() {
     assert_ne!(ans2, Fq12::one());
     assert_ne!(ans3, Fq12::one());
 
-    assert_eq!(ans1.pow(Fr::characteristic()), Fq12::one());
-    assert_eq!(ans2.pow(Fr::characteristic()), Fq12::one());
-    assert_eq!(ans3.pow(Fr::characteristic()), Fq12::one());
+    assert_eq!(ans1.pow(&Fr::characteristic().0.into_limbs()), Fq12::one());
+    assert_eq!(ans2.pow(&Fr::characteristic().0.into_limbs()), Fq12::one());
+    assert_eq!(ans3.pow(&Fr::characteristic().0.into_limbs()), Fq12::one());
 }

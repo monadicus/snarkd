@@ -100,49 +100,6 @@ impl Fq6 {
     pub fn new(c0: Fq2, c1: Fq2, c2: Fq2) -> Self {
         Self { c0, c1, c2 }
     }
-
-    pub fn mul_by_01(&mut self, c0: &Fq2, c1: &Fq2) {
-        let mut a_a = self.c0;
-        let mut b_b = self.c1;
-        a_a.mul_assign(c0);
-        b_b.mul_assign(c1);
-
-        let mut t1 = *c1;
-        {
-            let mut tmp = self.c1;
-            tmp.add_assign(self.c2);
-
-            t1.mul_assign(&tmp);
-            t1.sub_assign(&b_b);
-            t1 = Self::mul_fp2_by_nonresidue(&t1);
-            t1.add_assign(a_a);
-        }
-
-        let mut t3 = *c0;
-        {
-            let mut tmp = self.c0;
-            tmp.add_assign(self.c2);
-
-            t3.mul_assign(&tmp);
-            t3.sub_assign(&a_a);
-            t3.add_assign(b_b);
-        }
-
-        let mut t2 = *c0;
-        t2.add_assign(c1);
-        {
-            let mut tmp = self.c0;
-            tmp.add_assign(self.c1);
-
-            t2.mul_assign(&tmp);
-            t2.sub_assign(&a_a);
-            t2.sub_assign(&b_b);
-        }
-
-        self.c0 = t1;
-        self.c1 = t2;
-        self.c2 = t3;
-    }
 }
 
 impl Field for Fq6 {
@@ -485,6 +442,77 @@ impl Fq6 {
         let c1 = fe.c0;
         Fq2 { c0, c1 }
     }
+
+    pub fn mul_by_1(&mut self, c1: &Fq2) {
+        let mut b_b = self.c1;
+        b_b.mul_assign(c1);
+
+        let mut t1 = *c1;
+        {
+            let mut tmp = self.c1;
+            tmp.add_assign(self.c2);
+
+            t1.mul_assign(&tmp);
+            t1.sub_assign(&b_b);
+            t1 = Self::mul_fp2_by_nonresidue(&t1);
+        }
+
+        let mut t2 = *c1;
+        {
+            let mut tmp = self.c0;
+            tmp.add_assign(self.c1);
+
+            t2.mul_assign(&tmp);
+            t2.sub_assign(&b_b);
+        }
+
+        self.c0 = t1;
+        self.c1 = t2;
+        self.c2 = b_b;
+    }
+
+    pub fn mul_by_01(&mut self, c0: &Fq2, c1: &Fq2) {
+        let mut a_a = self.c0;
+        let mut b_b = self.c1;
+        a_a.mul_assign(c0);
+        b_b.mul_assign(c1);
+
+        let mut t1 = *c1;
+        {
+            let mut tmp = self.c1;
+            tmp.add_assign(self.c2);
+
+            t1.mul_assign(&tmp);
+            t1.sub_assign(&b_b);
+            t1 = Self::mul_fp2_by_nonresidue(&t1);
+            t1.add_assign(a_a);
+        }
+
+        let mut t3 = *c0;
+        {
+            let mut tmp = self.c0;
+            tmp.add_assign(self.c2);
+
+            t3.mul_assign(&tmp);
+            t3.sub_assign(&a_a);
+            t3.add_assign(b_b);
+        }
+
+        let mut t2 = *c0;
+        t2.add_assign(c1);
+        {
+            let mut tmp = self.c0;
+            tmp.add_assign(self.c1);
+
+            t2.mul_assign(&tmp);
+            t2.sub_assign(&a_a);
+            t2.sub_assign(&b_b);
+        }
+
+        self.c0 = t1;
+        self.c1 = t2;
+        self.c2 = t3;
+    }
 }
 
 impl Sum<Fq6> for Fq6 {
@@ -497,22 +525,17 @@ impl Sum<Fq6> for Fq6 {
 
 #[cfg(test)]
 mod test {
-    use snarkvm_fields::{One, Zero};
-    use snarkvm_utilities::rand::{TestRng, Uniform};
-
     use super::*;
 
     #[test]
     fn test_fq2_mul_nonresidue() {
-        let mut rng = TestRng::default();
-
         let nqr = Fq2::new(Fq::zero(), Fq::one());
         println!("One: {:?}", Fq::one());
 
         for _ in 0..1000 {
-            let mut a = Fq2::rand(&mut rng);
+            let mut a = Fq2::rand();
             let mut b = a;
-            a *= &Fq6Parameters::NONRESIDUE;
+            a *= &NONRESIDUE;
             b *= &nqr;
 
             assert_eq!(a, b);

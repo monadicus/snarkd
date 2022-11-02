@@ -219,6 +219,22 @@ impl Fq12 {
         self.c1 = e - (a + b);
         self.c0 = a + Self::mul_fp6_by_nonresidue(&b);
     }
+
+    pub fn mul_by_014(&mut self, c0: &Fq2, c1: &Fq2, c4: &Fq2) {
+        let mut aa = self.c0;
+        aa.mul_by_01(c0, c1);
+        let mut bb = self.c1;
+        bb.mul_by_1(c4);
+        let mut o = *c1;
+        o.add_assign(c4);
+        self.c1.add_assign(self.c0);
+        self.c1.mul_by_01(c0, &o);
+        self.c1.sub_assign(&aa);
+        self.c1.sub_assign(&bb);
+        self.c0 = bb;
+        self.c0 = Self::mul_fp6_by_nonresidue(&self.c0);
+        self.c0.add_assign(aa);
+    }
 }
 
 impl Field for Fq12 {

@@ -1,6 +1,6 @@
 use crate::bls12_377::{
-    field::Field, group::Group, templates::short_weierstrass_jacobian::Affine, Fr, B1, B2, HALF_R,
-    Q1, Q2, R128,
+    field::Field, group::Group, sw_affine::SWAffine, Affine, Fr, Projective, B1, B2, HALF_R, Q1,
+    Q2, R128,
 };
 use core::{
     fmt::{Display, Formatter, Result as FmtResult},
@@ -14,50 +14,40 @@ use rand::{
 use ruint::{uint, Uint};
 
 #[derive(Copy, Clone, Debug)]
-pub struct Projective<G: Group> {
+pub struct SWProjective<G: Group> {
     pub x: G::BaseField,
     pub y: G::BaseField,
     pub z: G::BaseField,
 }
 
-impl<G: Group> Projective<G> {
+impl<G: Group> SWProjective<G> {
     pub const fn new(x: G::BaseField, y: G::BaseField, z: G::BaseField) -> Self {
         Self { x, y, z }
     }
-
-    // The point at infinity is always represented by Z = 0.
-    #[inline]
-    pub fn zero() -> Self {
-        Self::new(
-            G::BaseField::zero(),
-            G::BaseField::one(),
-            G::BaseField::zero(),
-        )
-    }
 }
 
-impl<G: Group> Default for Projective<G> {
+impl<G: Group> Default for SWProjective<G> {
     #[inline]
     fn default() -> Self {
         Self::zero()
     }
 }
 
-impl<G: Group> Display for Projective<G> {
+impl<G: Group> Display for SWProjective<G> {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         write!(f, "{}", self.to_affine())
     }
 }
 
-impl<G: Group> Hash for Projective<G> {
+impl<G: Group> Hash for SWProjective<G> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.to_affine().hash(state);
     }
 }
 
-impl<G: Group> Eq for Projective<G> {}
+impl<G: Group> Eq for SWProjective<G> {}
 
-impl<G: Group> PartialEq for Projective<G> {
+impl<G: Group> PartialEq for SWProjective<G> {
     fn eq(&self, other: &Self) -> bool {
         if self.is_zero() {
             return other.is_zero();
@@ -77,8 +67,8 @@ impl<G: Group> PartialEq for Projective<G> {
     }
 }
 
-impl<G: Group> PartialEq<Affine<G>> for Projective<G> {
-    fn eq(&self, other: &Affine<G>) -> bool {
+impl<G: Group> PartialEq<SWAffine<G>> for SWProjective<G> {
+    fn eq(&self, other: &SWAffine<G>) -> bool {
         if self.is_zero() {
             return other.is_zero();
         }
@@ -95,43 +85,60 @@ impl<G: Group> PartialEq<Affine<G>> for Projective<G> {
     }
 }
 
-impl<G: Group> Distribution<Projective<G>> for Standard {
+impl<G: Group> Distribution<SWProjective<G>> for Standard {
     #[inline]
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Projective<G> {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> SWProjective<G> {
         loop {
             let x = G::BaseField::rand();
             let greatest = rng.gen();
 
-            if let Some(p) = Affine::from_x_coordinate(x, greatest) {
+            if let Some(p) = SWAffine::from_x_coordinate(x, greatest) {
                 return p.mul_by_cofactor_to_projective();
             }
         }
     }
 }
 
-impl<G: Group> Projective<G> {
+impl<G: Group> Projective for SWProjective<G> {
+    type Affine = SWAffine<G>;
+    type Parameters = G;
+
+    fn rand() -> Self {
+        rand::thread_rng().sample(Standard)
+    }
+
+    // The point at infinity is always represented by Z = 0.
     #[inline]
-    pub fn is_zero(&self) -> bool {
+    fn zero() -> Self {
+        Self::new(
+            G::BaseField::zero(),
+            G::BaseField::one(),
+            G::BaseField::zero(),
+        )
+    }
+
+    #[inline]
+    fn is_zero(&self) -> bool {
         self.z.is_zero()
     }
 
     #[inline]
-    pub fn prime_subgroup_generator() -> Self {
-        Affine::prime_subgroup_generator().into()
+    fn prime_subgroup_generator() -> Self {
+        SWAffine::prime_subgroup_generator().into()
     }
 
     #[inline]
-    pub fn cofactor() -> &'static [u64] {
+    fn cofactor() -> &'static [u64] {
         G::COFACTOR
     }
 
     #[inline]
-    pub fn is_normalized(&self) -> bool {
+    fn is_normalized(&self) -> bool {
         self.is_zero() || self.z.is_one()
     }
 
     #[inline]
-    pub fn batch_normalization(v: &mut [Self]) {
+    fn batch_normalization(v: &mut [Self]) {
         // Montgomery’s Trick and Fast Implementation of Masked AES
         // Genelle, Prouff and Quisquater
         // Section 3.2
@@ -198,14 +205,14 @@ impl<G: Group> Projective<G> {
     }
 
     /// Adds an affine element to this element.
-    pub fn add_mixed(&self, other: &Affine<G>) -> Self {
+    fn add_mixed(&self, other: &SWAffine<G>) -> Self {
         let mut copy = *self;
         copy.add_assign_mixed(other);
         copy
     }
 
     #[allow(clippy::many_single_char_names)]
-    pub fn add_assign_mixed(&mut self, other: &Affine<G>) {
+    fn add_assign_mixed(&mut self, other: &SWAffine<G>) {
         if other.is_zero() {
             return;
         }
@@ -281,14 +288,14 @@ impl<G: Group> Projective<G> {
 
     #[inline]
     #[must_use]
-    pub fn double(&self) -> Self {
+    fn double(&self) -> Self {
         let mut tmp = *self;
         tmp.double_in_place();
         tmp
     }
 
     #[inline]
-    pub fn double_in_place(&mut self) {
+    fn double_in_place(&mut self) {
         if self.is_zero() {
             return;
         }
@@ -363,12 +370,12 @@ impl<G: Group> Projective<G> {
     }
 
     #[inline]
-    pub fn to_affine(&self) -> Affine<G> {
+    fn to_affine(&self) -> SWAffine<G> {
         (*self).into()
     }
 }
 
-impl<G: Group> Neg for Projective<G> {
+impl<G: Group> Neg for SWProjective<G> {
     type Output = Self;
 
     #[inline]
@@ -381,7 +388,39 @@ impl<G: Group> Neg for Projective<G> {
     }
 }
 
-impl<'a, G: Group> Add<&'a Self> for Projective<G> {
+impl<G: Group> Add<Self> for SWProjective<G> {
+    type Output = Self;
+
+    #[inline]
+    fn add(self, other: Self) -> Self {
+        self + &other
+    }
+}
+
+impl<G: Group> AddAssign<Self> for SWProjective<G> {
+    #[inline]
+    fn add_assign(&mut self, other: Self) {
+        *self += &other;
+    }
+}
+
+impl<G: Group> Sub<Self> for SWProjective<G> {
+    type Output = Self;
+
+    #[inline]
+    fn sub(self, other: Self) -> Self {
+        self - &other
+    }
+}
+
+impl<G: Group> SubAssign<Self> for SWProjective<G> {
+    #[inline]
+    fn sub_assign(&mut self, other: Self) {
+        *self -= &other;
+    }
+}
+
+impl<'a, G: Group> Add<&'a Self> for SWProjective<G> {
     type Output = Self;
 
     #[inline]
@@ -392,7 +431,7 @@ impl<'a, G: Group> Add<&'a Self> for Projective<G> {
     }
 }
 
-impl<'a, G: Group> AddAssign<&'a Self> for Projective<G> {
+impl<'a, G: Group> AddAssign<&'a Self> for SWProjective<G> {
     #[allow(clippy::many_single_char_names)]
     #[allow(clippy::suspicious_op_assign_impl)]
     fn add_assign(&mut self, other: &'a Self) {
@@ -462,7 +501,7 @@ impl<'a, G: Group> AddAssign<&'a Self> for Projective<G> {
     }
 }
 
-impl<'a, G: Group> Sub<&'a Self> for Projective<G> {
+impl<'a, G: Group> Sub<&'a Self> for SWProjective<G> {
     type Output = Self;
 
     #[inline]
@@ -473,13 +512,13 @@ impl<'a, G: Group> Sub<&'a Self> for Projective<G> {
     }
 }
 
-impl<'a, G: Group> SubAssign<&'a Self> for Projective<G> {
+impl<'a, G: Group> SubAssign<&'a Self> for SWProjective<G> {
     fn sub_assign(&mut self, other: &'a Self) {
         *self += &(-(*other));
     }
 }
 
-impl<G: Group> Mul<Fr> for Projective<G> {
+impl<G: Group> Mul<Fr> for SWProjective<G> {
     type Output = Self;
 
     /// Performs scalar multiplication of this element.
@@ -505,7 +544,7 @@ impl<G: Group> Mul<Fr> for Projective<G> {
         for i in 1..L {
             t_1.push(t_1[i - 1].add_mixed(&double));
         }
-        Projective::<G>::batch_normalization(&mut t_1);
+        SWProjective::<G>::batch_normalization(&mut t_1);
         let t_1 = t_1.into_iter().map(|v| v.to_affine()).collect::<Vec<_>>();
 
         let t_2 = t_1
@@ -561,7 +600,7 @@ impl<G: Group> Mul<Fr> for Projective<G> {
             (wnaf_1, wnaf_2)
         };
 
-        let naf_add = |table: &[Affine<G>], naf: i32, acc: &mut Projective<G>| {
+        let naf_add = |table: &[SWAffine<G>], naf: i32, acc: &mut SWProjective<G>| {
             if naf != 0 {
                 let mut p_1 = table[(naf.abs() >> 1) as usize];
                 if naf < 0 {
@@ -579,7 +618,7 @@ impl<G: Group> Mul<Fr> for Projective<G> {
             decomposition.3,
         );
         let max_len = naf_1.len().max(naf_2.len());
-        let mut acc = Projective::<G>::zero();
+        let mut acc = SWProjective::<G>::zero();
         for i in (0..max_len).rev() {
             if i < naf_1.len() {
                 naf_add(&t_1, naf_1[i], &mut acc)
@@ -598,7 +637,7 @@ impl<G: Group> Mul<Fr> for Projective<G> {
     }
 }
 
-impl<G: Group> MulAssign<Fr> for Projective<G> {
+impl<G: Group> MulAssign<Fr> for SWProjective<G> {
     /// Performs scalar multiplication of this element.
     fn mul_assign(&mut self, other: Fr) {
         *self = *self * other
@@ -606,9 +645,9 @@ impl<G: Group> MulAssign<Fr> for Projective<G> {
 }
 
 /// The affine point X, Y is represented in the Jacobian coordinates with Z = 1.
-impl<G: Group> From<Affine<G>> for Projective<G> {
+impl<G: Group> From<SWAffine<G>> for SWProjective<G> {
     #[inline]
-    fn from(p: Affine<G>) -> Projective<G> {
+    fn from(p: SWAffine<G>) -> SWProjective<G> {
         if p.is_zero() {
             Self::zero()
         } else {
