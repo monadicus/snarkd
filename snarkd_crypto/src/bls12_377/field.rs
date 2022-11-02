@@ -1,8 +1,33 @@
 use bitvec::prelude::*;
-use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+use core::{
+    hash::Hash,
+    iter::Sum,
+    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
+};
 
 pub trait Field:
-    Add + AddAssign + Sub + SubAssign + Mul + MulAssign + Neg + Div + DivAssign + Sized
+    Add<Self, Output = Self>
+    + AddAssign<Self>
+    + Sub<Self, Output = Self>
+    + SubAssign<Self>
+    + Mul<Self, Output = Self>
+    + MulAssign<Self>
+    + Div<Self, Output = Self>
+    + DivAssign<Self>
+    + for<'a> Add<&'a Self, Output = Self>
+    + for<'a> AddAssign<&'a Self>
+    + for<'a> Sub<&'a Self, Output = Self>
+    + for<'a> SubAssign<&'a Self>
+    + for<'a> Mul<&'a Self, Output = Self>
+    + for<'a> MulAssign<&'a Self>
+    + for<'a> Div<&'a Self, Output = Self>
+    + for<'a> DivAssign<&'a Self>
+    + Neg<Output = Self>
+    + Sum<Self>
+    + Copy
+    + Eq
+    + Hash
+    + Sized
 {
     const PHI: Self;
 
@@ -17,6 +42,9 @@ pub trait Field:
 
     /// Returns whether or not the given element is one.
     fn is_one(&self) -> bool;
+
+    /// Returns a random field element.
+    fn rand() -> Self;
 
     /// Returns the characteristic of the field.
     fn characteristic<'a>() -> Self;
@@ -33,13 +61,10 @@ pub trait Field:
     fn square(&self) -> Self;
 
     /// Squares `self` in place.
-    fn square_in_place(&mut self) -> &mut Self;
+    fn square_in_place(&mut self);
 
-    fn sum_of_products(
-        a: impl Iterator<Item = Self> + Clone,
-        b: impl Iterator<Item = Self> + Clone,
-    ) -> Self {
-        a.zip(b).map(|(a, b)| *a * b).sum::<Self>()
+    fn sum_of_products(a: impl Iterator<Item = Self>, b: impl Iterator<Item = Self>) -> Self {
+        a.zip(b).map(|(a, b)| a * b).sum::<Self>()
     }
 
     /// Computes the multiplicative inverse of `self` if `self` is nonzero.
@@ -48,6 +73,9 @@ pub trait Field:
 
     /// Sets `self` to `self`'s inverse if it exists. Otherwise it is a no-op.
     fn inverse_in_place(&mut self) -> Option<&mut Self>;
+
+    /// Computes the square root of `self`, and returns `None` if it does not exist.
+    fn sqrt(&self) -> Option<Self>;
 
     /// Exponentiates this element by a power of the base prime modulus via
     /// the Frobenius automorphism.
@@ -59,14 +87,20 @@ pub trait Field:
     /// Exponentiates this element by a number represented with `u64` limbs,
     /// least significant limb first.
     #[must_use]
-    fn pow(&self, exp: Self) -> Self {
+    fn pow(&self, exp: &[u64]) -> Self {
         let mut res = Self::one();
 
         let mut found_one = false;
 
-        for i in BitVec::<Msb0, u8>::from(exp.to_be_bytes()) {
+        for i in exp
+            .iter()
+            .map(|limb| limb.to_be_bytes())
+            .flatten()
+            .collect::<Vec<u8>>()
+            .view_bits::<Msb0>()
+        {
             if !found_one {
-                if i {
+                if *i {
                     found_one = true;
                 } else {
                     continue;
@@ -75,7 +109,7 @@ pub trait Field:
 
             res.square_in_place();
 
-            if i {
+            if *i {
                 res *= self;
             }
         }

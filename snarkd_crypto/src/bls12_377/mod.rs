@@ -51,16 +51,32 @@ pub use group::*;
 #[cfg(test)]
 mod tests;
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub enum LegendreSymbol {
+    Zero,
+    QuadraticNonResidue,
+    QuadraticResidue,
+}
+
+/// Q1 = x^2 * R / q
+const Q1: [u64; 4] = [9183663392111466540, 12968021215939883360, 3, 0];
+
+/// Q2 = R / q = 13
+const Q2: [u64; 4] = [13, 0, 0, 0];
+
 /// B1 = x^2 - 1
-const B1: Fr = uint!(91893752504881257701523279626832445440_U256);
+const B1: Fr = Fr(uint!(91893752504881257701523279626832445440_U256));
 
 /// B2 = x^2
-const B2: Fr = uint!(91893752504881257701523279626832445441_U256);
+const B2: Fr = Fr(uint!(91893752504881257701523279626832445441_U256));
 
 /// R128 = 2^128 - 1
-const R128: Fr = uint!(340282366920938463463374607431768211455_U256);
+const R128: Fr = Fr(uint!(340282366920938463463374607431768211455_U256));
 
-const X: &'static [u64] = &[0x8508c00000000001];
+/// HALF_R = 2^256 / 2
+const HALF_R: [u64; 8] = [0, 0, 0, 0x8000000000000000, 0, 0, 0, 0];
+
+const X: u64 = 0x8508c00000000001;
 /// `x` is positive.
 const X_IS_NEGATIVE: bool = false;
 
@@ -88,16 +104,18 @@ where
 
     let mut f = Fq12::one();
 
-    for i in BitVec::<Msb0, u8>::from(X.to_be_bytes()).skip(1) {
+    for i in X.view_bits::<Msb0>().iter().skip(1) {
         f.square_in_place();
 
         for &mut (p, ref mut coeffs) in &mut pairs {
-            ell(&mut f, coeffs.next().unwrap(), &p.0);
+            let coeffs = coeffs.next().unwrap();
+            ell(&mut f, coeffs.0, coeffs.1, coeffs.2, &p.0);
         }
 
-        if i {
+        if *i {
             for &mut (p, ref mut coeffs) in &mut pairs {
-                ell(&mut f, coeffs.next().unwrap(), &p.0);
+                let coeffs = coeffs.next().unwrap();
+                ell(&mut f, coeffs.0, coeffs.1, coeffs.2, &p.0);
             }
         }
     }

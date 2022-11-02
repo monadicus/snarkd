@@ -1,8 +1,14 @@
-use crate::bls12_377::field::Field;
-use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+use crate::bls12_377::{field::Field, LegendreSymbol};
+use bitvec::prelude::*;
+use core::{
+    fmt::{Display, Formatter, Result as FmtResult},
+    iter::Sum,
+    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
+};
+use rand::{distributions::Standard, Rng};
 use ruint::{uint, Uint};
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Fq(pub Uint<384, 6>);
 
 const POWERS_OF_G: &'static [Uint<384, 6>] = &[
@@ -85,27 +91,52 @@ const T: Uint<384, 6> = uint!(36758425780614216763901358390127929501487857458373
 /// 1837921289030710838195067919506396475074392872918698035817074744121558668640693829665401097909504529
 const T_MINUS_ONE_DIV_TWO: Uint<384, 6> = uint!(1837921289030710838195067919506396475074392872918698035817074744121558668640693829665401097909504529_U384);
 
+impl Fq {
+    #[inline]
+    pub fn legendre(&self) -> LegendreSymbol {
+        // s = self^((MODULUS - 1) // 2)
+        let s = self.pow(&MODULUS_MINUS_ONE_DIV_TWO.into_limbs());
+        if s.is_zero() {
+            LegendreSymbol::Zero
+        } else if s.is_one() {
+            LegendreSymbol::QuadraticResidue
+        } else {
+            LegendreSymbol::QuadraticNonResidue
+        }
+    }
+
+    pub fn half() -> Self {
+        Self((MODULUS + uint!(1_U384)) >> 1)
+    }
+}
+
 impl Field for Fq {
-    const PHI: Fq = uint!(80949648264912719408558363140637477264845294720710499478137287262712535938301461879813459410945_U384);
+    const PHI: Fq = Fq(
+        uint!(80949648264912719408558363140637477264845294720710499478137287262712535938301461879813459410945_U384),
+    );
 
     fn zero() -> Self {
-        uint!(0_U384)
+        Self(uint!(0_U384))
     }
 
     fn is_zero(&self) -> bool {
-        self == self.zero()
+        self.0 == Self::zero().0
     }
 
     fn one() -> Self {
-        uint!(1_U384)
+        Self(uint!(1_U384))
     }
 
     fn is_one(&self) -> bool {
-        self == self.one()
+        self.0 == Self::one().0
+    }
+
+    fn rand() -> Self {
+        Self(rand::thread_rng().sample(Standard))
     }
 
     fn characteristic<'a>() -> Self {
-        MODULUS
+        Self(MODULUS)
     }
 
     fn double(&self) -> Self {
@@ -116,7 +147,7 @@ impl Field for Fq {
 
     // NOTE: check if this is quicker than snarkVM
     fn double_in_place(&mut self) {
-        self.add_mod(&self, &MODULUS);
+        *self = Self(self.0.add_mod(self.0, MODULUS));
     }
 
     fn square(&self) -> Self {
@@ -127,15 +158,138 @@ impl Field for Fq {
 
     // NOTE: Check if this is quicker than snarkvM
     fn square_in_place(&mut self) {
-        self.mul_redc(self, MODULUS, INV);
+        *self = *self * *self
     }
 
     fn inverse(&self) -> Option<Self> {
-        self.inv_mod(MODULUS)
+        if let Some(res) = self.0.inv_mod(MODULUS) {
+            Some(Self(res))
+        } else {
+            None
+        }
     }
 
     fn inverse_in_place(&mut self) -> Option<&mut Self> {
-        self.inverse_in_place()
+        if let Some(res) = self.0.inv_mod(MODULUS) {
+            *self = Self(res);
+            Some(self)
+        } else {
+            None
+        }
+    }
+
+    fn sqrt(&self) -> Option<Self> {
+        // https://eprint.iacr.org/2020/1407.pdf (page 4, algorithm 1)
+        match self.legendre() {
+            LegendreSymbol::Zero => Some(*self),
+            LegendreSymbol::QuadraticNonResidue => None,
+            LegendreSymbol::QuadraticResidue => {
+                let n = TWO_ADICITY as u64;
+                // `T` is equivalent to `m` in the paper.
+                let v = self.pow(&T_MINUS_ONE_DIV_TWO.into_limbs());
+                let x = *self * v.square();
+
+                let k = ((n - 1) as f64).sqrt().floor() as u64;
+                // It's important that k_2 results in a number which makes `l_minus_one_times_k`
+                // divisible by `k`, because the native arithmetic will not match the field
+                // arithmetic otherwise (native numbers will divide and round down, but field
+                // elements will end up nowhere near the native number).
+                let k_2 = if n % 2 == 0 { k / 2 } else { (n - 1) % k };
+                let k_1 = k - k_2;
+                let l_minus_one_times_k = n - 1 - k_2;
+                let l_minus_one = l_minus_one_times_k / k;
+                let l = l_minus_one + 1;
+                let mut l_s: Vec<u64> = Vec::with_capacity(k as usize);
+                l_s.resize(l_s.len() + k_1 as usize, l_minus_one);
+                l_s.resize(l_s.len() + k_2 as usize, l);
+
+                let mut x_s: Vec<Self> = Vec::with_capacity(k as usize);
+                let mut l_sum = 0;
+                l_s.iter().take((k as usize) - 1).for_each(|l| {
+                    l_sum += l;
+                    let x = x.pow(&[2u64.pow((n - 1 - l_sum) as u32)]);
+                    x_s.push(x);
+                });
+                x_s.push(x);
+
+                let find = |delta: Self| -> u64 {
+                    let mut mu = delta;
+                    let mut i = 0;
+                    while mu != -Self::one() {
+                        mu.square_in_place();
+                        i += 1;
+                    }
+                    i
+                };
+
+                let eval = |mut delta: Self| -> u64 {
+                    let mut s = 0u64;
+                    while delta != Self::one() {
+                        let i = find(delta);
+                        let n_minus_one_minus_i = n - 1 - i;
+                        s += 2u64.pow(n_minus_one_minus_i as u32);
+                        if i > 0 {
+                            delta *= Self(POWERS_OF_G[n_minus_one_minus_i as usize])
+                        } else {
+                            delta = -delta;
+                        }
+                    }
+                    s
+                };
+
+                let calc_kappa = |i: usize, j: usize, l_s: &[u64]| -> u64 {
+                    l_s.iter().take(j).sum::<u64>() + 1 + l_s.iter().skip(i + 1).sum::<u64>()
+                };
+
+                let calc_gamma =
+                    |i: usize, q_s: &Vec<BitVec>, last: bool| -> Self {
+                        let mut gamma = Self::one();
+                        if i != 0 {
+                            q_s.iter()
+                                .zip(l_s.iter())
+                                .enumerate()
+                                .for_each(|(j, (q_bits, l))| {
+                                    let mut kappa = calc_kappa(i, j, &l_s);
+                                    if last {
+                                        kappa -= 1;
+                                    }
+                                    q_bits.iter().enumerate().take(*l as usize).for_each(
+                                        |(k, bit)| {
+                                            if *bit {
+                                                gamma *= Self(POWERS_OF_G[(kappa as usize) + k])
+                                            }
+                                        },
+                                    );
+                                });
+                        }
+                        gamma
+                    };
+
+                let mut q_s = Vec::<BitVec>::with_capacity(k as usize);
+                let two_to_n_minus_l = 2u64.pow((n - l) as u32);
+                let two_to_n_minus_l_minus_one = 2u64.pow((n - l_minus_one) as u32);
+                x_s.iter().enumerate().for_each(|(i, x)| {
+                    // Calculate g^t.
+                    // This algorithm deviates from the standard description in the paper, and is
+                    // explained in detail in page 6, in section 2.1.
+                    let gamma = calc_gamma(i, &q_s, false);
+                    let alpha = *x * gamma;
+                    q_s.push(BitVec::from_bitslice(
+                        ((eval(alpha)
+                            / if i < k_1 as usize {
+                                two_to_n_minus_l_minus_one
+                            } else {
+                                two_to_n_minus_l
+                            }) as usize)
+                            .view_bits::<Lsb0>(),
+                    ));
+                });
+
+                // Calculate g^{t/2}.
+                let gamma = calc_gamma(k as usize, &q_s, true);
+                Some(*self * v * gamma)
+            }
+        }
     }
 
     fn frobenius_map(&mut self, _: usize) {
@@ -143,7 +297,7 @@ impl Field for Fq {
     }
 
     fn glv_endomorphism(&self) -> Self {
-        let p = self * &Self::PHI;
+        let p = *self * &Self::PHI;
         p
     }
 }
@@ -152,27 +306,30 @@ impl Add for Fq {
     type Output = Self;
 
     fn add(self, other: Self) -> Self {
-        self.add_mod(other, MODULUS)
+        Self(self.0.add_mod(other.0, MODULUS))
     }
 }
 
 impl AddAssign for Fq {
     fn add_assign(&mut self, other: Self) {
-        *self = self.add_mod(&other, &MODULUS);
+        *self = *self + other
     }
 }
 
 impl Sub for Fq {
     type Output = Self;
 
-    fn sub(self, other: Self) -> Self {
-        self.sub_mod(other, MODULUS)
+    fn sub(mut self, other: Self) -> Self {
+        if other.0 > self.0 {
+            self.0 = self.0 + MODULUS;
+        }
+        Self(self.0 - other.0)
     }
 }
 
 impl SubAssign for Fq {
     fn sub_assign(&mut self, other: Self) {
-        *self = self - other;
+        *self = *self - other;
     }
 }
 
@@ -180,13 +337,13 @@ impl Mul for Fq {
     type Output = Self;
 
     fn mul(self, other: Self) -> Self {
-        self.mul_redc(other, MODULUS, INV)
+        Self(self.0.mul_redc(other.0, MODULUS, INV))
     }
 }
 
 impl MulAssign for Fq {
     fn mul_assign(&mut self, other: Self) {
-        *self = self * other;
+        *self = *self * other;
     }
 }
 
@@ -194,7 +351,7 @@ impl Neg for Fq {
     type Output = Self;
 
     fn neg(self) -> Self {
-        self.neg_mod(MODULUS)
+        Self(MODULUS - self.0)
     }
 }
 
@@ -202,13 +359,87 @@ impl Div for Fq {
     type Output = Self;
 
     fn div(self, other: Self) -> Self {
-        self.mul_redc(other.inverse().unwrap(), MODULUS, INV)
+        Self(self.0.mul_redc(other.inverse().unwrap().0, MODULUS, INV))
     }
 }
 
 impl DivAssign for Fq {
     fn div_assign(&mut self, other: Self) {
-        *self = self / other;
+        *self = *self / other;
+    }
+}
+
+impl<'a> Add<&'a Self> for Fq {
+    type Output = Self;
+
+    fn add(self, other: &Self) -> Self {
+        Self(self.0.add_mod(other.0, MODULUS))
+    }
+}
+
+impl<'a> AddAssign<&'a Self> for Fq {
+    fn add_assign(&mut self, other: &Self) {
+        *self = *self + other;
+    }
+}
+
+impl<'a> Sub<&'a Self> for Fq {
+    type Output = Self;
+
+    fn sub(mut self, other: &Self) -> Self {
+        if other.0 > self.0 {
+            self.0 = self.0 + MODULUS;
+        }
+        Self(self.0 - other.0)
+    }
+}
+
+impl<'a> SubAssign<&'a Self> for Fq {
+    fn sub_assign(&mut self, other: &Self) {
+        *self = *self - other;
+    }
+}
+
+impl<'a> Mul<&'a Self> for Fq {
+    type Output = Self;
+
+    fn mul(self, other: &Self) -> Self {
+        Self(self.0.mul_redc(other.0, MODULUS, INV))
+    }
+}
+
+impl<'a> MulAssign<&'a Self> for Fq {
+    fn mul_assign(&mut self, other: &Self) {
+        *self = *self * other;
+    }
+}
+
+impl<'a> Div<&'a Self> for Fq {
+    type Output = Self;
+
+    fn div(self, other: &Self) -> Self {
+        Self(self.0.mul_redc(other.inverse().unwrap().0, MODULUS, INV))
+    }
+}
+
+impl<'a> DivAssign<&'a Self> for Fq {
+    fn div_assign(&mut self, other: &Self) {
+        *self = *self / other;
+    }
+}
+
+impl Sum<Fq> for Fq {
+    /// Returns the `sum` of `self` and `other`.
+    #[inline]
+    fn sum<I: Iterator<Item = Fq>>(iter: I) -> Self {
+        iter.fold(Fq::zero(), |a, b| a + b)
+    }
+}
+
+impl Display for Fq {
+    #[inline]
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        write!(f, "{}", self.0)
     }
 }
 

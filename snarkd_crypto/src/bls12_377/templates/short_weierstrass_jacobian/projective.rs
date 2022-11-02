@@ -1,5 +1,7 @@
-use crate::bls12_377::{group::Group, templates::short_weierstrass_jacobian::Affine, Fr};
-
+use crate::bls12_377::{
+    field::Field, group::Group, templates::short_weierstrass_jacobian::Affine, Fr, B1, B2, HALF_R,
+    Q1, Q2, R128,
+};
 use core::{
     fmt::{Display, Formatter, Result as FmtResult},
     hash::{Hash, Hasher},
@@ -9,7 +11,7 @@ use rand::{
     distributions::{Distribution, Standard},
     Rng,
 };
-use std::io::Write;
+use ruint::{uint, Uint};
 
 #[derive(Copy, Clone, Debug)]
 pub struct Projective<G: Group> {
@@ -25,7 +27,7 @@ impl<G: Group> Projective<G> {
 
     // The point at infinity is always represented by Z = 0.
     #[inline]
-    pub const fn zero() -> Self {
+    pub fn zero() -> Self {
         Self::new(
             G::BaseField::zero(),
             G::BaseField::one(),
@@ -97,7 +99,7 @@ impl<G: Group> Distribution<Projective<G>> for Standard {
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Projective<G> {
         loop {
-            let x = G::BaseField::rand(rng);
+            let x = G::BaseField::rand();
             let greatest = rng.gen();
 
             if let Some(p) = Affine::from_x_coordinate(x, greatest) {
@@ -109,23 +111,27 @@ impl<G: Group> Distribution<Projective<G>> for Standard {
 
 impl<G: Group> Projective<G> {
     #[inline]
-    fn prime_subgroup_generator() -> Self {
+    pub fn is_zero(&self) -> bool {
+        self.z.is_zero()
+    }
+
+    #[inline]
+    pub fn prime_subgroup_generator() -> Self {
         Affine::prime_subgroup_generator().into()
     }
 
     #[inline]
-    fn cofactor() -> &'static [u64] {
+    pub fn cofactor() -> &'static [u64] {
         G::COFACTOR
     }
 
     #[inline]
-    fn is_normalized(&self) -> bool {
+    pub fn is_normalized(&self) -> bool {
         self.is_zero() || self.z.is_one()
     }
 
-    /// TODO (howardwu): This method can likely be sped up.
     #[inline]
-    fn batch_normalization(v: &mut [Self]) {
+    pub fn batch_normalization(v: &mut [Self]) {
         // Montgomery’s Trick and Fast Implementation of Masked AES
         // Genelle, Prouff and Quisquater
         // Section 3.2
@@ -191,8 +197,15 @@ impl<G: Group> Projective<G> {
         }
     }
 
+    /// Adds an affine element to this element.
+    pub fn add_mixed(&self, other: &Affine<G>) -> Self {
+        let mut copy = *self;
+        copy.add_assign_mixed(other);
+        copy
+    }
+
     #[allow(clippy::many_single_char_names)]
-    fn add_assign_mixed(&mut self, other: &Affine<G>) {
+    pub fn add_assign_mixed(&mut self, other: &Affine<G>) {
         if other.is_zero() {
             return;
         }
@@ -254,8 +267,8 @@ impl<G: Group> Projective<G> {
 
             // Y3 = r*(V-X3)-2*Y1*J
             self.y = G::BaseField::sum_of_products(
-                [r, -self.y.double()].iter(),
-                [(v - self.x), j].iter(),
+                [r, -self.y.double()].into_iter(),
+                [(v - self.x), j].into_iter(),
             );
 
             // Z3 = (Z1+H)^2-Z1Z1-HH
@@ -268,19 +281,19 @@ impl<G: Group> Projective<G> {
 
     #[inline]
     #[must_use]
-    fn double(&self) -> Self {
+    pub fn double(&self) -> Self {
         let mut tmp = *self;
         tmp.double_in_place();
         tmp
     }
 
     #[inline]
-    fn double_in_place(&mut self) {
+    pub fn double_in_place(&mut self) {
         if self.is_zero() {
             return;
         }
 
-        if G::WEIERSTRASS_A.is_zero() {
+        if G::A.is_zero() {
             // A = X1^2
             let mut a = self.x.square();
 
@@ -331,7 +344,7 @@ impl<G: Group> Projective<G> {
             let s = ((self.x + yy).square() - xx - yyyy).double();
 
             // M = 3*XX+a*ZZ^2
-            let m = xx.double() + xx + G::mul_by_a(&zz.square());
+            let m = xx.double() + xx;
 
             // T = M^2-2*S
             let t = m.square() - s.double();
@@ -350,7 +363,7 @@ impl<G: Group> Projective<G> {
     }
 
     #[inline]
-    fn to_affine(&self) -> Affine<G> {
+    pub fn to_affine(&self) -> Affine<G> {
         (*self).into()
     }
 }
@@ -438,8 +451,10 @@ impl<'a, G: Group> AddAssign<&'a Self> for Projective<G> {
             self.x = r.square() - j - (v.double());
 
             // Y3 = r*(V - X3) - 2*S1*J
-            self.y =
-                G::BaseField::sum_of_products([r, -s1.double()].iter(), [(v - self.x), j].iter());
+            self.y = G::BaseField::sum_of_products(
+                [r, -s1.double()].into_iter(),
+                [(v - self.x), j].into_iter(),
+            );
 
             // Z3 = ((Z1+Z2)^2 - Z1Z1 - Z2Z2)*H
             self.z = ((self.z + other.z).square() - z1z1 - z2z2) * h;
@@ -464,13 +479,13 @@ impl<'a, G: Group> SubAssign<&'a Self> for Projective<G> {
     }
 }
 
-impl<G: Group> Mul<G::BaseField> for Projective<G> {
+impl<G: Group> Mul<Fr> for Projective<G> {
     type Output = Self;
 
     /// Performs scalar multiplication of this element.
     #[allow(clippy::suspicious_arithmetic_impl)]
     #[inline]
-    fn mul(self, other: G::BaseField) -> Self {
+    fn mul(self, other: Fr) -> Self {
         /// The scalar multiplication window size.
         const GLV_WINDOW_SIZE: usize = 4;
 
@@ -481,28 +496,25 @@ impl<G: Group> Mul<G::BaseField> for Projective<G> {
         /// The GLV table length.
         const L: usize = 1 << (GLV_WINDOW_SIZE - 1);
 
-        let decomposition = other.decompose(
-            &Self::Q1,
-            &Self::Q2,
-            Self::B1,
-            Self::B2,
-            Self::R128,
-            &Self::HALF_R,
-        );
+        let decomposition = other.decompose(&Q1, &Q2, B1, B2, R128, &HALF_R);
 
         // Prepare tables.
         let mut t_1 = Vec::with_capacity(L);
-        let double = Affine::<Self>::from(self.double());
+        let double = self.double().to_affine();
         t_1.push(self);
         for i in 1..L {
             t_1.push(t_1[i - 1].add_mixed(&double));
         }
-        let t_1 = Projective::<Self>::batch_normalization_into_affine(t_1);
+        Projective::<G>::batch_normalization(&mut t_1);
+        let t_1 = t_1.into_iter().map(|v| v.to_affine()).collect::<Vec<_>>();
 
         let t_2 = t_1
-            .iter()
-            .copied()
-            .map(|v| v.x.glv_endomorphism())
+            .clone()
+            .into_iter()
+            .map(|v| {
+                v.x.glv_endomorphism();
+                v
+            })
             .collect::<Vec<_>>();
 
         let mod_signed = |d| {
@@ -516,29 +528,26 @@ impl<G: Group> Mul<G::BaseField> for Projective<G> {
         let to_wnaf = |mut e: Fr| -> Vec<i32> {
             let mut naf = vec![];
             while !e.is_zero() {
-                let next = if e.is_odd() {
-                    let naf_sign = mod_signed(e.to_le_limbs()[0]);
+                let next = if e.0 % uint!(2_U256) == uint!(1_U256) {
+                    // NOTE: LIMBS NEED TO BE LE
+                    let naf_sign = mod_signed(e.0.into_limbs()[0]);
                     if naf_sign < 0 {
-                        e += -naf_sign as u64;
+                        e.0 += Uint::from(-naf_sign as u64);
                     } else {
-                        e -= naf_sign as u64;
+                        e.0 -= Uint::from(naf_sign as u64);
                     }
                     naf_sign.try_into().unwrap()
                 } else {
                     0
                 };
                 naf.push(next);
-                e.div2();
+                e.0 >>= 1;
             }
 
             naf
         };
 
-        let wnaf = |k1: Self::ScalarField,
-                    k2: Self::ScalarField,
-                    s1: bool,
-                    s2: bool|
-         -> (Vec<i32>, Vec<i32>) {
+        let wnaf = |k1: Fr, k2: Fr, s1: bool, s2: bool| -> (Vec<i32>, Vec<i32>) {
             let mut wnaf_1 = to_wnaf(k1);
             let mut wnaf_2 = to_wnaf(k2);
 
@@ -552,7 +561,7 @@ impl<G: Group> Mul<G::BaseField> for Projective<G> {
             (wnaf_1, wnaf_2)
         };
 
-        let naf_add = |table: &[Affine<Self>], naf: i32, acc: &mut Projective<Self>| {
+        let naf_add = |table: &[Affine<G>], naf: i32, acc: &mut Projective<G>| {
             if naf != 0 {
                 let mut p_1 = table[(naf.abs() >> 1) as usize];
                 if naf < 0 {
@@ -570,7 +579,7 @@ impl<G: Group> Mul<G::BaseField> for Projective<G> {
             decomposition.3,
         );
         let max_len = naf_1.len().max(naf_2.len());
-        let mut acc = Projective::<Self>::zero();
+        let mut acc = Projective::<G>::zero();
         for i in (0..max_len).rev() {
             if i < naf_1.len() {
                 naf_add(&t_1, naf_1[i], &mut acc)
@@ -589,9 +598,9 @@ impl<G: Group> Mul<G::BaseField> for Projective<G> {
     }
 }
 
-impl<G: Group> MulAssign<G::BaseField> for Projective<G> {
+impl<G: Group> MulAssign<Fr> for Projective<G> {
     /// Performs scalar multiplication of this element.
-    fn mul_assign(&mut self, other: G::BaseField) {
+    fn mul_assign(&mut self, other: Fr) {
         *self = *self * other
     }
 }

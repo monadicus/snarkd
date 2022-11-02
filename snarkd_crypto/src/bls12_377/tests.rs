@@ -1,34 +1,10 @@
 #![allow(unused_imports)]
-use crate::{
-    bls12_377::{
-        g1::Bls12_377G1Parameters, g2::Bls12_377G2Parameters, Bls12_377, Fq, Fq12, Fq2,
-        Fq2Parameters, Fq6, Fq6Parameters, FqParameters, Fr, FrParameters, G1Affine, G1Projective,
-        G2Affine, G2Projective,
-    },
-    templates::{
-        short_weierstrass_jacobian::tests::sw_tests, twisted_edwards_extended::tests::edwards_test,
-    },
-    traits::{
-        tests_field::{
-            bench_sqrt, field_serialization_test, field_test, frobenius_test, primefield_test,
-            random_sqrt_tonelli_tests, sqrt_field_test,
-        },
-        tests_group::*,
-        tests_projective::curve_tests,
-        AffineCurve, PairingEngine, ProjectiveCurve, ShortWeierstrassParameters,
-    },
+use crate::bls12_377::{
+    field::Field, Fq, Fq12, Fq2, Fq6, Fr, G1Affine, G1Projective, G2Affine, G2Projective,
+    LegendreSymbol,
 };
-use snarkvm_fields::{
-    fp6_3over2::Fp6Parameters, FftField, FftParameters, Field, FieldParameters, Fp2Parameters,
-    LegendreSymbol::*, One, PrimeField, SquareRootField, Zero,
-};
-use snarkvm_utilities::{
-    biginteger::{BigInteger, BigInteger256, BigInteger384},
-    rand::{TestRng, Uniform},
-    BitIteratorBE,
-};
-
 use rand::Rng;
+use ruint::uint;
 use std::{
     cmp::Ordering,
     ops::{AddAssign, Mul, MulAssign, SubAssign},
@@ -38,7 +14,7 @@ pub(crate) const ITERATIONS: usize = 10;
 
 #[test]
 fn test_bls12_377_fr() {
-    let mut rng = TestRng::default();
+    let mut rng = rand::thread_rng();
 
     for _ in 0..ITERATIONS {
         let a: Fr = rng.gen();
@@ -52,7 +28,7 @@ fn test_bls12_377_fr() {
 
 #[test]
 fn test_bls12_377_fq() {
-    let mut rng = TestRng::default();
+    let mut rng = rand::thread_rng();
 
     for _ in 0..ITERATIONS {
         let a: Fq = rng.gen();
@@ -66,7 +42,7 @@ fn test_bls12_377_fq() {
 
 #[test]
 fn test_bls12_377_fq2() {
-    let mut rng = TestRng::default();
+    let mut rng = rand::thread_rng();
 
     for _ in 0..ITERATIONS {
         let a: Fq2 = rng.gen();
@@ -80,7 +56,7 @@ fn test_bls12_377_fq2() {
 
 #[test]
 fn test_bls12_377_fq6() {
-    let mut rng = TestRng::default();
+    let mut rng = rand::thread_rng();
 
     for _ in 0..ITERATIONS {
         let g: Fq6 = rng.gen();
@@ -93,7 +69,7 @@ fn test_bls12_377_fq6() {
 
 #[test]
 fn test_bls12_377_fq12() {
-    let mut rng = TestRng::default();
+    let mut rng = rand::thread_rng();
 
     for _ in 0..ITERATIONS {
         let g: Fq12 = rng.gen();
@@ -138,7 +114,7 @@ fn test_fq_is_half() {
 
 #[test]
 fn test_fr_sum_of_products() {
-    let mut rng = TestRng::default();
+    let mut rng = rand::thread_rng();
     for i in [2, 4, 8, 16, 32] {
         let a = (0..i).map(|_| rng.gen()).collect::<Vec<_>>();
         let b = (0..i).map(|_| rng.gen()).collect::<Vec<_>>();
@@ -151,7 +127,7 @@ fn test_fr_sum_of_products() {
 
 #[test]
 fn test_fq_sum_of_products() {
-    let mut rng = TestRng::default();
+    let mut rng = rand::thread_rng();
     for i in [2, 4, 8, 16, 32] {
         let a = (0..i).map(|_| rng.gen()).collect::<Vec<_>>();
         let b = (0..i).map(|_| rng.gen()).collect::<Vec<_>>();
@@ -178,13 +154,13 @@ fn test_fq_repr_num_bits() {
 fn test_fq_add_assign() {
     // Test associativity
 
-    let mut rng = TestRng::default();
+    let mut rng = rand::thread_rng();
 
     for _ in 0..1000 {
         // Generate a, b, c and ensure (a + b) + c == a + (b + c).
-        let a = Fq::rand(&mut rng);
-        let b = Fq::rand(&mut rng);
-        let c = Fq::rand(&mut rng);
+        let a = Fq::rand();
+        let b = Fq::rand();
+        let c = Fq::rand();
 
         let mut tmp1 = a;
         tmp1.add_assign(b);
@@ -202,12 +178,12 @@ fn test_fq_add_assign() {
 
 #[test]
 fn test_fq_sub_assign() {
-    let mut rng = TestRng::default();
+    let mut rng = rand::thread_rng();
 
     for _ in 0..1000 {
         // Ensure that (a - b) + (b - a) = 0.
-        let a = Fq::rand(&mut rng);
-        let b = Fq::rand(&mut rng);
+        let a = Fq::rand();
+        let b = Fq::rand();
 
         let mut tmp1 = a;
         tmp1.sub_assign(&b);
@@ -222,13 +198,13 @@ fn test_fq_sub_assign() {
 
 #[test]
 fn test_fq_mul_assign() {
-    let mut rng = TestRng::default();
+    let mut rng = rand::thread_rng();
 
     for _ in 0..1000000 {
         // Ensure that (a * b) * c = a * (b * c)
-        let a = Fq::rand(&mut rng);
-        let b = Fq::rand(&mut rng);
-        let c = Fq::rand(&mut rng);
+        let a = Fq::rand();
+        let b = Fq::rand();
+        let c = Fq::rand();
 
         let mut tmp1 = a;
         tmp1.mul_assign(&b);
@@ -244,10 +220,10 @@ fn test_fq_mul_assign() {
     for _ in 0..1000000 {
         // Ensure that r * (a + b + c) = r*a + r*b + r*c
 
-        let r = Fq::rand(&mut rng);
-        let mut a = Fq::rand(&mut rng);
-        let mut b = Fq::rand(&mut rng);
-        let mut c = Fq::rand(&mut rng);
+        let r = Fq::rand();
+        let mut a = Fq::rand();
+        let mut b = Fq::rand();
+        let mut c = Fq::rand();
 
         let mut tmp1 = a;
         tmp1.add_assign(b);
@@ -267,11 +243,11 @@ fn test_fq_mul_assign() {
 
 #[test]
 fn test_fq_squaring() {
-    let mut rng = TestRng::default();
+    let mut rng = rand::thread_rng();
 
     for _ in 0..1000000 {
         // Ensure that (a * a) = a^2
-        let a = Fq::rand(&mut rng);
+        let a = Fq::rand();
 
         let mut tmp = a;
         tmp.square_in_place();
@@ -287,13 +263,13 @@ fn test_fq_squaring() {
 fn test_fq_inverse() {
     assert!(Fq::zero().inverse().is_none());
 
-    let mut rng = TestRng::default();
+    let mut rng = rand::thread_rng();
 
     let one = Fq::one();
 
     for _ in 0..1000 {
         // Ensure that a * a^-1 = 1
-        let mut a = Fq::rand(&mut rng);
+        let mut a = Fq::rand();
         let ainv = a.inverse().unwrap();
         a.mul_assign(&ainv);
         assert_eq!(a, one);
@@ -302,11 +278,11 @@ fn test_fq_inverse() {
 
 #[test]
 fn test_fq_double_in_place() {
-    let mut rng = TestRng::default();
+    let mut rng = rand::thread_rng();
 
     for _ in 0..1000 {
         // Ensure doubling a is equivalent to adding a to itself.
-        let mut a = Fq::rand(&mut rng);
+        let mut a = Fq::rand();
         let mut b = a;
         b.add_assign(a);
         a.double_in_place();
@@ -322,11 +298,11 @@ fn test_fq_negate() {
         assert!(a.is_zero());
     }
 
-    let mut rng = TestRng::default();
+    let mut rng = rand::thread_rng();
 
     for _ in 0..1000 {
         // Ensure (a - (-a)) = 0.
-        let mut a = Fq::rand(&mut rng);
+        let mut a = Fq::rand();
         let b = -a;
         a.add_assign(b);
 
@@ -336,13 +312,13 @@ fn test_fq_negate() {
 
 #[test]
 fn test_fq_pow() {
-    let mut rng = TestRng::default();
+    let mut rng = rand::thread_rng();
 
     for i in 0..1000 {
         // Exponentiate by various small numbers and ensure it consists with repeated
         // multiplication.
-        let a = Fq::rand(&mut rng);
-        let target = a.pow([i]);
+        let a = Fq::rand();
+        let target = a.pow(&[i]);
         let mut c = Fq::one();
         for _ in 0..i {
             c.mul_assign(&a);
@@ -352,7 +328,7 @@ fn test_fq_pow() {
 
     for _ in 0..1000 {
         // Exponentiating by the modulus should have no effect in a prime field.
-        let a = Fq::rand(&mut rng);
+        let a = Fq::rand();
 
         assert_eq!(a, a.pow(Fq::characteristic()));
     }
@@ -360,13 +336,13 @@ fn test_fq_pow() {
 
 #[test]
 fn test_fq_sqrt() {
-    let mut rng = TestRng::default();
+    let mut rng = rand::thread_rng();
 
     assert_eq!(Fq::zero().sqrt().unwrap(), Fq::zero());
 
     for _ in 0..1000 {
         // Ensure sqrt(a^2) = a or -a
-        let a = Fq::rand(&mut rng);
+        let a = Fq::rand();
         let nega = -a;
         let mut b = a;
         b.square_in_place();
@@ -378,7 +354,7 @@ fn test_fq_sqrt() {
 
     for _ in 0..1000 {
         // Ensure sqrt(a)^2 = a for random a
-        let a = Fq::rand(&mut rng);
+        let a = Fq::rand();
 
         if let Some(mut tmp) = a.sqrt() {
             tmp.square_in_place();
@@ -390,28 +366,28 @@ fn test_fq_sqrt() {
 
 #[test]
 fn test_fq_sqrt_tonelli() {
-    let mut rng = TestRng::default();
+    let mut rng = rand::thread_rng();
 
     random_sqrt_tonelli_tests::<Fq>(&mut rng);
 }
 
 #[test]
 fn test_fr_sqrt_tonelli() {
-    let mut rng = TestRng::default();
+    let mut rng = rand::thread_rng();
 
     random_sqrt_tonelli_tests::<Fr>(&mut rng);
 }
 
 #[test]
 fn test_fq_bench_sqrt() {
-    let mut rng = TestRng::default();
+    let mut rng = rand::thread_rng();
 
     bench_sqrt::<Fq>(&mut rng);
 }
 
 #[test]
 fn test_fr_bench_sqrt() {
-    let mut rng = TestRng::default();
+    let mut rng = rand::thread_rng();
 
     bench_sqrt::<Fr>(&mut rng);
 }
@@ -457,15 +433,15 @@ fn test_fq_ordering() {
 
 #[test]
 fn test_fq_legendre() {
-    assert_eq!(QuadraticResidue, Fq::one().legendre());
+    assert_eq!(LegendreSymbol::QuadraticResidue, Fq::one().legendre());
     assert_eq!(Zero, Fq::zero().legendre());
     assert_eq!(
-        QuadraticResidue,
-        Fq::from_repr(BigInteger384::from(4)).unwrap().legendre()
+        LegendreSymbol::QuadraticResidue,
+        Fq(uint!(4_U384)).legendre()
     );
     assert_eq!(
-        QuadraticNonResidue,
-        Fq::from_repr(BigInteger384::from(5)).unwrap().legendre()
+        LegendreSymbol::QuadraticNonResidue,
+        Fq(uint!(5_U384)).legendre()
     );
 }
 
@@ -503,14 +479,14 @@ fn test_fq2_legendre() {
     assert_eq!(Zero, Fq2::zero().legendre());
     // i^2 = -1
     let mut m1 = -Fq2::one();
-    assert_eq!(QuadraticResidue, m1.legendre());
+    assert_eq!(LegendreSymbol::QuadraticResidue, m1.legendre());
     m1 = Fq6::mul_fp2_by_nonresidue(&m1);
-    assert_eq!(QuadraticNonResidue, m1.legendre());
+    assert_eq!(LegendreSymbol::QuadraticNonResidue, m1.legendre());
 }
 
 #[test]
 fn test_fq2_mul_nonresidue() {
-    let mut rng = TestRng::default();
+    let mut rng = rand::thread_rng();
 
     let nqr = Fq2::new(Fq::zero(), Fq::one());
 
@@ -519,7 +495,7 @@ fn test_fq2_mul_nonresidue() {
         Fq2Parameters::QUADRATIC_NONRESIDUE.1,
     );
     for _ in 0..1000 {
-        let mut a = Fq2::rand(&mut rng);
+        let mut a = Fq2::rand();
         let mut b = a;
         a = quadratic_non_residue * a;
         b.mul_assign(&nqr);
@@ -530,11 +506,11 @@ fn test_fq2_mul_nonresidue() {
 
 #[test]
 fn test_fq6_mul_by_1() {
-    let mut rng = TestRng::default();
+    let mut rng = rand::thread_rng();
 
     for _ in 0..1000 {
-        let c1 = Fq2::rand(&mut rng);
-        let mut a = Fq6::rand(&mut rng);
+        let c1 = Fq2::rand();
+        let mut a = Fq6::rand();
         let mut b = a;
 
         a.mul_by_1(&c1);
@@ -546,12 +522,12 @@ fn test_fq6_mul_by_1() {
 
 #[test]
 fn test_fq6_mul_by_01() {
-    let mut rng = TestRng::default();
+    let mut rng = rand::thread_rng();
 
     for _ in 0..1000 {
-        let c0 = Fq2::rand(&mut rng);
-        let c1 = Fq2::rand(&mut rng);
-        let mut a = Fq6::rand(&mut rng);
+        let c0 = Fq2::rand();
+        let c1 = Fq2::rand();
+        let mut a = Fq6::rand();
         let mut b = a;
 
         a.mul_by_01(&c0, &c1);
@@ -563,13 +539,13 @@ fn test_fq6_mul_by_01() {
 
 #[test]
 fn test_fq12_mul_by_014() {
-    let mut rng = TestRng::default();
+    let mut rng = rand::thread_rng();
 
     for _ in 0..1000 {
-        let c0 = Fq2::rand(&mut rng);
-        let c1 = Fq2::rand(&mut rng);
-        let c5 = Fq2::rand(&mut rng);
-        let mut a = Fq12::rand(&mut rng);
+        let c0 = Fq2::rand();
+        let c1 = Fq2::rand();
+        let c5 = Fq2::rand();
+        let mut a = Fq12::rand();
         let mut b = a;
 
         a.mul_by_014(&c0, &c1, &c5);
@@ -584,13 +560,13 @@ fn test_fq12_mul_by_014() {
 
 #[test]
 fn test_fq12_mul_by_034() {
-    let mut rng = TestRng::default();
+    let mut rng = rand::thread_rng();
 
     for _ in 0..1000 {
-        let c0 = Fq2::rand(&mut rng);
-        let c3 = Fq2::rand(&mut rng);
-        let c4 = Fq2::rand(&mut rng);
-        let mut a = Fq12::rand(&mut rng);
+        let c0 = Fq2::rand();
+        let c3 = Fq2::rand();
+        let c4 = Fq2::rand();
+        let mut a = Fq12::rand();
         let mut b = a;
 
         a.mul_by_034(&c0, &c3, &c4);
@@ -605,10 +581,10 @@ fn test_fq12_mul_by_034() {
 
 #[test]
 fn test_g1_projective_glv() {
-    let mut rng = TestRng::default();
+    let mut rng = rand::thread_rng();
 
-    let point = G1Projective::rand(&mut rng);
-    let scalar = Fr::rand(&mut rng);
+    let point = G1Projective::rand();
+    let scalar = Fr::rand();
     let affine = point.to_affine();
     assert_eq!(point.mul(scalar), affine.mul(scalar));
     assert_eq!(
@@ -619,15 +595,13 @@ fn test_g1_projective_glv() {
 
 #[test]
 fn test_g1_projective_curve() {
-    let mut rng = TestRng::default();
-
+    let mut rng = rand::thread_rng();
     curve_tests::<G1Projective>(&mut rng);
-    sw_tests::<Bls12_377G1Parameters>(&mut rng);
 }
 
 #[test]
 fn test_g1_projective_group() {
-    let mut rng = TestRng::default();
+    let mut rng = rand::thread_rng();
 
     let a: G1Projective = rng.gen();
     let b: G1Projective = rng.gen();
@@ -643,15 +617,13 @@ fn test_g1_generator() {
 
 #[test]
 fn test_g2_projective_curve() {
-    let mut rng = TestRng::default();
-
+    let mut rng = rand::thread_rng();
     curve_tests::<G2Projective>(&mut rng);
-    sw_tests::<Bls12_377G2Parameters>(&mut rng);
 }
 
 #[test]
 fn test_g2_projective_group() {
-    let mut rng = TestRng::default();
+    let mut rng = rand::thread_rng();
 
     let a: G2Projective = rng.gen();
     let b: G2Projective = rng.gen();
@@ -667,7 +639,7 @@ fn test_g2_generator() {
 
 #[test]
 fn test_bilinearity() {
-    let mut rng = TestRng::default();
+    let mut rng = rand::thread_rng();
 
     let a: G1Projective = rng.gen();
     let b: G2Projective = rng.gen();
@@ -678,7 +650,7 @@ fn test_bilinearity() {
 
     let ans1 = Bls12_377::pairing(sa, b);
     let ans2 = Bls12_377::pairing(a, sb);
-    let ans3 = Bls12_377::pairing(a, b).pow(s.to_repr());
+    let ans3 = Bls12_377::pairing(a, b).pow(s.0.into_limbs());
 
     assert_eq!(ans1, ans2);
     assert_eq!(ans2, ans3);

@@ -1,4 +1,6 @@
 use crate::bls12_377::{
+    field::Field,
+    group::Group,
     templates::short_weierstrass_jacobian::{Affine, Projective},
     Fq, Fq2, Fr, G2Parameters, X,
 };
@@ -8,9 +10,14 @@ pub type G2Affine = Affine<G2Parameters>;
 pub type G2Projective = Projective<G2Parameters>;
 
 impl G2Affine {
-    fn is_in_correct_subgroup_assuming_on_curve(&self) -> bool {
-        self.mul_bits(Fr::characteristic().to_be_bytes().into())
-            .is_zero()
+    pub fn is_in_correct_subgroup_assuming_on_curve(&self) -> bool {
+        self.mul_bits(
+            Fr::characteristic()
+                .0
+                .to_be_bytes::<32>()
+                .view_bits::<Msb0>(),
+        )
+        .is_zero()
     }
 }
 
@@ -57,16 +64,16 @@ impl G2Prepared {
             z: Fq2::one(),
         };
 
-        let bit_iterator = BitVec::<Msb0, u8>::from(X.to_be_bytes());
+        let bit_iterator = X.view_bits::<Msb0>();
         let mut ell_coeffs = Vec::with_capacity(bit_iterator.len());
 
         // `one_half` = 1/2 in the field.
         let one_half = Fq::half();
 
-        for i in bit_iterator.skip(1) {
+        for i in bit_iterator.iter().skip(1) {
             ell_coeffs.push(doubling_step(&mut r, &one_half));
 
-            if i {
+            if *i {
                 ell_coeffs.push(addition_step(&mut r, &q));
             }
         }
@@ -87,7 +94,7 @@ fn doubling_step(r: &mut G2HomProjective, two_inv: &Fq) -> CoeffTriplet {
     a.mul_by_fp(two_inv);
     let b = r.y.square();
     let c = r.z.square();
-    let e = G2Parameters::WEIERSTRASS_B * (c.double() + c);
+    let e = G2Parameters::B * (c.double() + c);
     let f = e.double() + e;
     let mut g = b + f;
     g.mul_by_fp(two_inv);

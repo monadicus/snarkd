@@ -1,22 +1,25 @@
 use crate::bls12_377::{
+    field::Field,
     templates::short_weierstrass_jacobian::{Affine, Projective},
-    Fr, G1Parameters, X,
+    Fq, Fr, G1Parameters, X,
 };
 use bitvec::prelude::*;
+use ruint::Uint;
 
 pub type G1Affine = Affine<G1Parameters>;
 pub type G1Projective = Projective<G1Parameters>;
 
 impl G1Affine {
-    fn is_in_correct_subgroup_assuming_on_curve(&self) -> bool {
-        let phi = |mut p: &Self| {
-            debug_assert!(Self::BaseField::PHI.pow([3]).is_one());
-            p.x *= Self::PHI;
+    pub fn is_in_correct_subgroup_assuming_on_curve(&self) -> bool {
+        let phi = |mut p: Self| {
+            debug_assert!(Fq::PHI.pow(&[3]).is_one());
+            p.x *= Fq::PHI;
             p
         };
-        let x_square = Fr::from(X[0]).square();
-        let bits = BitVec::<Msb0, u8>::from(x_square.to_be_bytes());
-        let bits = bits[bits.leading_zeros()..];
+        let x_square = Fr(Uint::from(X)).square();
+        let bytes = x_square.0.to_be_bytes::<32>();
+        let bits = bytes.view_bits::<Msb0>();
+        let bits = &bits[bits.leading_zeros()..];
         (phi(*self).mul_bits(bits).add_mixed(self)).is_zero()
     }
 }
