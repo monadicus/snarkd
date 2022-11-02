@@ -1493,6 +1493,7 @@ dependencies = [
  "prost",
  "prost-build",
  "serde",
+ "snarkd_errors",
 ]
 
 [[package]]
@@ -1506,7 +1507,6 @@ dependencies = [
  "prost",
  "prost-build",
  "snarkd_common",
- "snarkd_errors",
  "tokio",
 ]
 

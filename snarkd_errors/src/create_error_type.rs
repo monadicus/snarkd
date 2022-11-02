@@ -3,7 +3,19 @@ macro_rules! CreateErrorType {
     (@step) => {
 
     };
-    (@step ($(#[$doc:meta])* new, $fn_name:ident, $($arg_name:ident,)*, $($err_msg:expr,)*, $($suggestion:expr,)*), $(($(#[$docs:meta])* $new_or_from:ident, $fn_names:ident, $($arg_names:ident,)*, $($err_msgs:expr,)*, $($suggestions:expr,)*),)* ) => {
+    (@step ($(#[$doc:meta])* unwrapped, $fn_name:ident, $($arg_name:ident,)*, $($err_msg:expr,)*, $($suggestion:expr,)*), $(($(#[$docs:meta])* $error_type:ident, $fn_names:ident, $($arg_names:ident,)*, $($err_msgs:expr,)*, $($suggestions:expr,)*),)* ) => {
+        $(#[$doc])*
+        #[track_caller]
+        pub fn $fn_name($($arg_name: impl core::fmt::Display,)*) -> error_stack::Report<Self>
+        {
+            error_stack::Report::new(Self)
+                $(.attach_printable(super::ErrorMsg::from(format!($err_msg))))*
+                $(.attach_printable(super::Suggestion::from(format!($suggestion))))*
+        }
+
+        CreateErrorType!(@step $(($(#[$docs])* $error_type, $fn_names, $($arg_names,)*, $($err_msgs,)*, $($suggestions,)*),)*);
+    };
+    (@step ($(#[$doc:meta])* new, $fn_name:ident, $($arg_name:ident,)*, $($err_msg:expr,)*, $($suggestion:expr,)*), $(($(#[$docs:meta])* $error_type:ident, $fn_names:ident, $($arg_names:ident,)*, $($err_msgs:expr,)*, $($suggestions:expr,)*),)* ) => {
         $(#[$doc])*
         #[track_caller]
         pub fn $fn_name<C>($($arg_name: impl core::fmt::Display,)*) -> super::Result<C>
@@ -15,9 +27,9 @@ macro_rules! CreateErrorType {
             )?
         }
 
-        CreateErrorType!(@step $(($(#[$docs])* $new_or_from, $fn_names, $($arg_names,)*, $($err_msgs,)*, $($suggestions,)*),)*);
+        CreateErrorType!(@step $(($(#[$docs])* $error_type, $fn_names, $($arg_names,)*, $($err_msgs,)*, $($suggestions,)*),)*);
     };
-    (@step ($(#[$doc:meta])* from, $fn_name:ident, $($arg_name:ident,)*, $($err_msg:expr,)*, $($suggestion:expr,)*), $(($(#[$docs:meta])* $new_or_from:ident, $fn_names:ident, $($arg_names:ident,)*, $($err_msgs:expr,)*, $($suggestions:expr,)*),)* ) => {
+    (@step ($(#[$doc:meta])* from_error, $fn_name:ident, $($arg_name:ident,)*, $($err_msg:expr,)*, $($suggestion:expr,)*), $(($(#[$docs:meta])* $error_type:ident, $fn_names:ident, $($arg_names:ident,)*, $($err_msgs:expr,)*, $($suggestions:expr,)*),)* ) => {
         $(#[$doc])*
         #[track_caller]
         pub fn $fn_name<F, C>(into_report: F, $($arg_name: impl core::fmt::Display,)*) -> super::Result<C>
@@ -36,9 +48,9 @@ macro_rules! CreateErrorType {
             )
         }
 
-        CreateErrorType!(@step $(($(#[$docs])* $new_or_from, $fn_names, $($arg_names,)*, $($err_msgs,)*, $($suggestions,)*),)*);
+        CreateErrorType!(@step $(($(#[$docs])* $error_type, $fn_names, $($arg_names,)*, $($err_msgs,)*, $($suggestions,)*),)*);
     };
-    ($struct_name:ident $($(#[$docs:meta])* $new_or_from:ident $fn_names:ident { args: ($($arg_names:ident$(,)?)*), error_msgs: [$($err_msgs:expr$(,)?)*], suggestions: [$($suggestions:expr$(,)?)*], })* ) => {
+    ($struct_name:ident $($(#[$docs:meta])* $error_type:ident $fn_names:ident { args: ($($arg_names:ident$(,)?)*), error_msgs: [$($err_msgs:expr$(,)?)*], suggestions: [$($suggestions:expr$(,)?)*], })* ) => {
         use colored::Colorize;
 
         #[derive(Debug, Default, thiserror::Error)]
@@ -59,7 +71,7 @@ macro_rules! CreateErrorType {
         }
 
         impl $struct_name {
-            CreateErrorType!(@step $(($(#[$docs])* $new_or_from, $fn_names, $($arg_names,)*, $($err_msgs,)*, $($suggestions,)*),)*);
+            CreateErrorType!(@step $(($(#[$docs])* $error_type, $fn_names, $($arg_names,)*, $($err_msgs,)*, $($suggestions,)*),)*);
         }
     };
 

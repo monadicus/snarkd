@@ -13,10 +13,10 @@ impl TryFrom<ir::operand::VisibleData> for VisibleData {
         Ok(Self {
             value: (*value
                 .value
-                .ok_or_else(|| anyhow!("record data value unset"))?)
+                .ok_or_else(|| IRError::unset("Record data value unset."))?)
             .try_into()?,
             visibility: ir::operand::Visibility::from_i32(value.visibility)
-                .ok_or_else(|| anyhow!("invalid visibility for VisibleData"))?,
+                .ok_or_else(|| IRError::invalid_visibility("VisibleData"))?,
         })
     }
 }
@@ -54,19 +54,19 @@ impl TryFrom<ir::operand::Record> for Record {
     fn try_from(value: ir::operand::Record) -> Result<Self> {
         // TODO this restriction should be conveyed in the protobuf
         let owner =
-            VisibleData::try_from(*(value.owner.ok_or_else(|| anyhow!("record owner unset")))?)?;
+            VisibleData::try_from(*(value.owner.ok_or_else(|| IRError::unset("Record owner")))?)?;
         if !matches!(owner.value, Operand::Address(_)) {
-            bail!("owner must be an address");
+            todo!("owner must be an address");
         }
         let gates =
-            VisibleData::try_from(*(value.gates.ok_or_else(|| anyhow!("record gates unset")))?)?;
+            VisibleData::try_from(*(value.gates.ok_or_else(|| IRError::unset("Record gates")))?)?;
         if !matches!(gates.value, Operand::U64(_)) {
-            bail!("gates must be a u64");
+            todo!("gates must be a u64");
         }
         let nonce =
-            VisibleData::try_from(*(value.nonce.ok_or_else(|| anyhow!("record nonce unset")))?)?;
+            VisibleData::try_from(*(value.nonce.ok_or_else(|| IRError::unset("Record nonce")))?)?;
         if !matches!(nonce.value, Operand::Group(_)) {
-            bail!("nonce must be a group");
+            todo!("nonce must be a group");
         }
         Ok(Self {
             owner,

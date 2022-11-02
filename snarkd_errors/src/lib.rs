@@ -22,7 +22,7 @@ pub enum Error {
 
 pub type Result<T, E = Error> = core::result::Result<T, E>;
 
-pub trait IntoSnarkError<Err>: Sized {
+pub trait IntoSnarkdError<Err>: Sized {
     type Ok;
     type InitErr;
 
@@ -31,7 +31,7 @@ pub trait IntoSnarkError<Err>: Sized {
         O: FnOnce(Self) -> core::result::Result<Self::Ok, Err>;
 }
 
-impl<Ok, InitErr, Err> IntoSnarkError<Err> for core::result::Result<Ok, InitErr> {
+impl<Ok, InitErr, Err> IntoSnarkdError<Err> for core::result::Result<Ok, InitErr> {
     type Ok = Ok;
     type InitErr = InitErr;
 

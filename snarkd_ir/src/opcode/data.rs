@@ -2,7 +2,8 @@ use std::fmt;
 
 use super::ir;
 use crate::Operand;
-use anyhow::{anyhow, Error, Result};
+
+use snarkd_errors::{Error, IRError, Result};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UnaryData {
@@ -17,7 +18,7 @@ impl TryFrom<ir::UnaryData> for UnaryData {
         Ok(Self {
             operand: value
                 .operand
-                .ok_or_else(|| anyhow!("missing operand for unary operation"))?
+                .ok_or_else(|| IRError::missing_operand("unary operation"))?
                 .try_into()?,
             dest: value.dest,
         })
@@ -53,11 +54,11 @@ impl TryFrom<ir::BinaryData> for BinaryData {
         Ok(Self {
             lhs: value
                 .lhs
-                .ok_or_else(|| anyhow!("missing lhs for binary operation"))?
+                .ok_or_else(|| IRError::missing_operand("binary operation lhs"))?
                 .try_into()?,
             rhs: value
                 .rhs
-                .ok_or_else(|| anyhow!("missing rhs for binary operation"))?
+                .ok_or_else(|| IRError::missing_operand("binary operation rhs"))?
                 .try_into()?,
             dest: value.dest,
         })
@@ -95,15 +96,15 @@ impl TryFrom<ir::TernaryData> for TernaryData {
         Ok(Self {
             cond: value
                 .cond
-                .ok_or_else(|| anyhow!("missing cond for ternary operation"))?
+                .ok_or_else(|| IRError::missing_operand("ternary operation condition"))?
                 .try_into()?,
             lhs: value
                 .lhs
-                .ok_or_else(|| anyhow!("missing lhs for ternary operation"))?
+                .ok_or_else(|| IRError::missing_operand("ternary operation lhs"))?
                 .try_into()?,
             rhs: value
                 .rhs
-                .ok_or_else(|| anyhow!("missing rhs for ternary operation"))?
+                .ok_or_else(|| IRError::missing_operand("ternary operation rhs"))?
                 .try_into()?,
             dest: value.dest,
         })
@@ -144,11 +145,11 @@ impl TryFrom<ir::AssertData> for AssertData {
         Ok(Self {
             lhs: value
                 .lhs
-                .ok_or_else(|| anyhow!("missing lhs for assert operation"))?
+                .ok_or_else(|| IRError::missing_operand("assert operation lhs"))?
                 .try_into()?,
             rhs: value
                 .rhs
-                .ok_or_else(|| anyhow!("missing rhs for assert operation"))?
+                .ok_or_else(|| IRError::missing_operand("assert operation rhs"))?
                 .try_into()?,
         })
     }

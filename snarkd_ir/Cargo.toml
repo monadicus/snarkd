@@ -10,6 +10,7 @@ indexmap = { workspace = true }
 num_enum = { workspace = true }
 serde = { workspace = true }
 prost = { workspace = true }
+snarkd_errors = { workspace = true }
 
 [build-dependencies]
 prost-build = { workspace = true }
