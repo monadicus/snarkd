@@ -15,7 +15,7 @@ macro_rules! CreateErrorType {
 
         CreateErrorType!(@step $(($(#[$docs])* $error_type, $fn_names, $($arg_names,)*, $($err_msgs,)*, $($suggestions,)*),)*);
     };
-    (@step ($(#[$doc:meta])* new, $fn_name:ident, $($arg_name:ident,)*, $($err_msg:expr,)*, $($suggestion:expr,)*), $(($(#[$docs:meta])* $error_type:ident, $fn_names:ident, $($arg_names:ident,)*, $($err_msgs:expr,)*, $($suggestions:expr,)*),)* ) => {
+    (@step ($(#[$doc:meta])* wrapped, $fn_name:ident, $($arg_name:ident,)*, $($err_msg:expr,)*, $($suggestion:expr,)*), $(($(#[$docs:meta])* $error_type:ident, $fn_names:ident, $($arg_names:ident,)*, $($err_msgs:expr,)*, $($suggestions:expr,)*),)* ) => {
         $(#[$doc])*
         #[track_caller]
         pub fn $fn_name<C>($($arg_name: impl core::fmt::Display,)*) -> super::Result<C>

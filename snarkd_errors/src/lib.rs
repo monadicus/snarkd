@@ -42,3 +42,10 @@ impl<Ok, InitErr, Err> IntoSnarkdError<Err> for core::result::Result<Ok, InitErr
         op(self)
     }
 }
+
+#[cfg(test)]
+mod test {
+    fn test() {
+        todo!("write tests")
+    }
+}

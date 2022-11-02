@@ -50,11 +50,11 @@ fn example_program() -> Program {
     }
 }
 
-fn zero_group() -> Operand {
-    Operand::Group(Group::Single(Field {
+fn zero_group() -> Group {
+    Group::Single(Field {
         negate: false,
         values: vec![0],
-    }))
+    })
 }
 
 fn example_basic_record_program() -> Program {
@@ -64,82 +64,28 @@ fn example_basic_record_program() -> Program {
             argument_start_variable: 0,
             instructions: vec![Instruction::IsEq(BinaryData {
                 lhs: Operand::Record(Box::new(Record {
-                    owner: VisibleData {
-                        value: Operand::Address(Address { address: vec![0] }),
-                        visibility: Visibility::Constant,
-                    },
-                    gates: VisibleData {
-                        value: Operand::U64(0),
-                        visibility: Visibility::Constant,
-                    },
+                    owner: Address { address: vec![0] },
+                    owner_visibility: Visibility::Constant,
+                    gates: 0,
+                    gates_visibility: Visibility::Constant,
                     data: vec![VisibleData {
                         value: Operand::Boolean(false),
                         visibility: Visibility::Constant,
                     }],
-                    nonce: VisibleData {
-                        value: zero_group(),
-                        visibility: Visibility::Constant,
-                    },
+                    nonce: zero_group(),
+                    nonce_visibility: Visibility::Constant,
                 })),
                 rhs: Operand::Record(Box::new(Record {
-                    owner: VisibleData {
-                        value: Operand::Address(Address { address: vec![0] }),
-                        visibility: Visibility::Constant,
-                    },
-                    gates: VisibleData {
-                        value: Operand::U64(0),
-                        visibility: Visibility::Constant,
-                    },
+                    owner: Address { address: vec![0] },
+                    owner_visibility: Visibility::Constant,
+                    gates: 0,
+                    gates_visibility: Visibility::Constant,
                     data: vec![VisibleData {
                         value: Operand::Boolean(false),
                         visibility: Visibility::Constant,
                     }],
-                    nonce: VisibleData {
-                        value: zero_group(),
-                        visibility: Visibility::Constant,
-                    },
-                })),
-                dest: 2,
-            })],
-        }],
-    }
-}
-
-fn incorrect_record_owner_type() -> Program {
-    Program {
-        header: example_header(),
-        functions: vec![Function {
-            argument_start_variable: 0,
-            instructions: vec![Instruction::IsEq(BinaryData {
-                lhs: Operand::Record(Box::new(Record {
-                    owner: VisibleData {
-                        value: zero_group(),
-                        visibility: Visibility::Constant,
-                    },
-                    gates: VisibleData {
-                        value: Operand::U64(0),
-                        visibility: Visibility::Constant,
-                    },
-                    data: Vec::new(),
-                    nonce: VisibleData {
-                        value: zero_group(),
-                        visibility: Visibility::Constant,
-                    },
-                })),
-                rhs: Operand::Record(Box::new(Record {
-                    owner: VisibleData {
-                        value: Operand::Address(Address { address: vec![0] }),
-                        visibility: Visibility::Constant,
-                    },
-                    gates: VisibleData {
-                        value: Operand::U64(0),
-                        visibility: Visibility::Constant,
-                    },
-                    data: Vec::new(),
-                    nonce: VisibleData {
-                        value: zero_group(),
-                        visibility: Visibility::Constant,
-                    },
+                    nonce: zero_group(),
+                    nonce_visibility: Visibility::Constant,
                 })),
                 dest: 2,
             })],
@@ -193,11 +139,4 @@ fn struct_test() {
 #[test]
 fn basic_record_test() {
     test_program(example_basic_record_program())
-}
-
-// TODO this restriction should be conveyed in the protobuf
-#[test]
-#[should_panic]
-fn record_wrong_owner_type_test() {
-    test_program(incorrect_record_owner_type())
 }
