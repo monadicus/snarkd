@@ -13,7 +13,7 @@ pub struct Fq2 {
 }
 
 /// Coefficients for the Frobenius automorphism.
-const FROBENIUS_COEFF_FP2_C1: [Fq; 2] = [
+pub const FROBENIUS_COEFF_FP2_C1: [Fq; 2] = [
     // NONRESIDUE**(((q^0) - 1) / 2)
     Fq(uint!(1_U384)),
     // NONRESIDUE**(((q^1) - 1) / 2)
@@ -23,12 +23,12 @@ const FROBENIUS_COEFF_FP2_C1: [Fq; 2] = [
 ];
 
 /// NONRESIDUE = -5
-const NONRESIDUE: Fq = Fq(
+pub const NONRESIDUE: Fq = Fq(
     uint!(258664426012969094010652733694893533536393512754914660539884262666720468348340822774968888139573360124440321458172_U384),
 );
 
 /// QUADRATIC_NONRESIDUE = U
-const QUADRATIC_NONRESIDUE: (Fq, Fq) = (Fq(uint!(0_U384)), Fq(uint!(1_U384)));
+pub const QUADRATIC_NONRESIDUE: (Fq, Fq) = (Fq(uint!(0_U384)), Fq(uint!(1_U384)));
 
 impl Fq2 {
     pub fn new(c0: Fq, c1: Fq) -> Self {

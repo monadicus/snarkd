@@ -3,7 +3,7 @@ use core::{
     iter::Sum,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
-use ruint::{uint, Uint};
+use ruint::uint;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Fq6 {
@@ -343,10 +343,11 @@ impl Neg for Fq6 {
     type Output = Self;
 
     fn neg(self) -> Self {
-        self.c0.neg();
-        self.c1.neg();
-        self.c2.neg();
-        self
+        Fq6 {
+            c0: self.c0.neg(),
+            c1: self.c1.neg(),
+            c2: self.c2.neg(),
+        }
     }
 }
 

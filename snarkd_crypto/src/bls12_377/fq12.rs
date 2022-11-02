@@ -4,7 +4,7 @@ use core::{
     iter::Sum,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
-use ruint::{uint, Uint};
+use ruint::uint;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Fq12 {

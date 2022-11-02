@@ -77,8 +77,6 @@ const R128: Fr = Fr(uint!(340282366920938463463374607431768211455_U256));
 const HALF_R: [u64; 8] = [0, 0, 0, 0x8000000000000000, 0, 0, 0, 0];
 
 const X: u64 = 0x8508c00000000001;
-/// `x` is positive.
-const X_IS_NEGATIVE: bool = false;
 
 /// Evaluate the line function at point p.
 fn ell(f: &mut Fq12, c0: Fq2, c1: Fq2, c2: Fq2, p: &G1Affine) {
