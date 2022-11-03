@@ -47,5 +47,7 @@ tokio = { version = "1.0", features = ["full"] }
 tokio-rusqlite = "0.3.0"
 uuid = { version = "1.2", features = ["serde", "v4"] }
 
+snarkd_crypto = { path = "./snarkd_crypto" }
 snarkd_common = { path = "./snarkd_common" }
 snarkd_errors = { path = "./snarkd_errors" }
+snarkd_ir = { path = "./snarkd_ir" }

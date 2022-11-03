@@ -1578,6 +1578,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "indexmap",
+ "snarkd_crypto",
  "snarkd_ir",
 ]
 

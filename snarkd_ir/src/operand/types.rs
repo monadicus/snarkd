@@ -29,6 +29,12 @@ impl From<StructTypeEntry> for ir::operand::StructTypeEntry {
     }
 }
 
+impl fmt::Display for StructTypeEntry {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        todo!()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StructType {
     pub fields: Vec<StructTypeEntry>,
@@ -53,6 +59,21 @@ impl From<StructType> for ir::operand::StructType {
         Self {
             fields: value.fields.into_iter().map(|f| f.into()).collect(),
         }
+    }
+}
+
+impl fmt::Display for StructType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "struct(")?;
+        for (i, item) in self.fields.iter().enumerate() {
+            write!(
+                f,
+                "{}{}",
+                item,
+                if i == self.fields.len() - 1 { "" } else { ", " }
+            )?;
+        }
+        write!(f, ")")
     }
 }
 
@@ -86,6 +107,12 @@ impl From<RecordTypeEntry> for ir::operand::RecordTypeEntry {
             r#type: Some(value.type_.into()),
             visibility: value.visibility as i32,
         }
+    }
+}
+
+impl fmt::Display for RecordTypeEntry {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}: {}.{}", self.name, self.type_, self.visibility)
     }
 }
 
@@ -128,6 +155,20 @@ impl From<RecordType> for ir::operand::RecordType {
     }
 }
 
+impl fmt::Display for RecordType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "record(owner: {}, gates: {}, data: (",
+            self.owner, self.gates
+        )?;
+        for item in self.data.iter() {
+            write!(f, "{item},")?;
+        }
+        write!(f, "), nonce: {})", self.nonce)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Type {
     Address,
@@ -148,6 +189,31 @@ pub enum Type {
     String,
     Struct(StructType),
     Record(RecordType),
+}
+
+impl fmt::Display for Type {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Type::Address => write!(f, "address"),
+            Type::Boolean => write!(f, "boolean"),
+            Type::Field => write!(f, "field"),
+            Type::Group => write!(f, "group"),
+            Type::U8 => write!(f, "u8"),
+            Type::U16 => write!(f, "u16"),
+            Type::U32 => write!(f, "u32"),
+            Type::U64 => write!(f, "u64"),
+            Type::U128 => write!(f, "u128"),
+            Type::I8 => write!(f, "i8"),
+            Type::I16 => write!(f, "i16"),
+            Type::I32 => write!(f, "i32"),
+            Type::I64 => write!(f, "i64"),
+            Type::I128 => write!(f, "i128"),
+            Type::Scalar => write!(f, "scalar"),
+            Type::String => write!(f, "string"),
+            Type::Struct(s) => s.fmt(f),
+            Type::Record(r) => r.fmt(f),
+        }
+    }
 }
 
 impl TryFrom<ir::operand::Type> for Type {

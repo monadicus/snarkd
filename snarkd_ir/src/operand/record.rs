@@ -94,11 +94,10 @@ impl fmt::Display for Record {
             "record(owner: {}, gates: {}, data: (",
             self.owner, self.gates
         )?;
-        for (i, item) in self.data.iter().enumerate() {
+        for item in self.data.iter() {
             write!(
                 f,
-                "{item}{}",
-                if i == self.data.len() - 1 { "" } else { ", " }
+                "{item},",
             )?;
         }
         write!(f, "), nonce: {})", self.nonce)

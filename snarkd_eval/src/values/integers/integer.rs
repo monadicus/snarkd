@@ -2,7 +2,7 @@ use crate::Todo;
 
 /// An integer type enum wrapping the integer value.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd)]
-pub enum Integer {
+pub enum ConstrainedInteger {
     U8(Todo),
     U16(Todo),
     U32(Todo),

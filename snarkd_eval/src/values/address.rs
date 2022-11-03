@@ -1,7 +1,7 @@
-use crate::Todo;
+use super::*;
 
 #[derive(Clone, Debug)]
-pub struct Address {
-    pub address: Address,
+pub struct ConstrainedAddress<G: Group> {
+    pub address: G,
     pub bytes: Vec<u8>,
 }

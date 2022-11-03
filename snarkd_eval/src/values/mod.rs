@@ -9,16 +9,19 @@ mod string;
 mod structure;
 mod value;
 
-use address::*;
-use boolean::*;
-use field::*;
-use group::*;
-use integers::*;
-use record::*;
-use scalar::*;
-use string::*;
-use structure::*;
-use value::*;
+pub use address::*;
+pub use boolean::*;
+pub use field::*;
+pub use group::*;
+pub use integers::*;
+pub use record::*;
+pub use scalar::*;
+pub use string::*;
+pub use structure::*;
+pub use value::*;
+
+use snarkd_crypto::*;
+use snarkd_ir::*;
 
 /*
 Address(Address),

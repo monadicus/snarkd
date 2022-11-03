@@ -1,8 +1,8 @@
 use indexmap::IndexMap;
 
-use super::{value::ConstrainedValue, group::GroupType};
+use super::*;
 
 #[derive(Clone, Debug)]
-pub struct Structure<F, G: GroupType<F>> {
+pub struct ConstrainedStructure<F: Field, G: Group> {
     values: IndexMap<String, ConstrainedValue<F, G>>,
 }

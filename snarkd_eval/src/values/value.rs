@@ -1,16 +1,14 @@
-use crate::Todo;
-
 use super::*;
 
 #[derive(Clone, Debug)]
-pub enum ConstrainedValue<Todo, G: GroupType<Todo>> {
-    Address(Address),
-    Boolean(Todo),
-    Field(FieldType<Todo>),
-    Group(G),
-    Integer(Integer),
-    Scalar(Scalar),
-    String(String),
-    Struct(Structure<Todo, G>),
-    Record(Record<Todo, G>),
+pub enum ConstrainedValue<F: Field, G: Group> {
+    Address(ConstrainedAddress<G>),
+    Boolean(ConstrainedBool),
+    Field(ConstrainedField<F>),
+    Group(ConstrainedGroup<G>),
+    Integer(ConstrainedInteger),
+    Scalar(ConstrainedScalar),
+    String(ConstrainedString),
+    Struct(ConstrainedStructure<F, G>),
+    Record(ConstrainedRecord<F, G>),
 }

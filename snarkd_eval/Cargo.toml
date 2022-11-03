@@ -6,4 +6,5 @@ edition = "2021"
 [dependencies]
 anyhow = { workspace = true }
 indexmap = { workspace = true }
-snarkd_ir = { path = "../snarkd_ir" }
+snarkd_crypto = { workspace = true }
+snarkd_ir = { workspace = true }
