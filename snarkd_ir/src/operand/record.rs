@@ -11,12 +11,12 @@ impl TryFrom<ir::operand::VisibleData> for VisibleData {
 
     fn try_from(value: ir::operand::VisibleData) -> Result<Self> {
         Ok(Self {
-            value: (*value
+            value: value
                 .value
-                .ok_or_else(|| anyhow!("record data value unset"))?)
-            .try_into()?,
+                .ok_or_else(|| IRError::unset("Record data value"))?
+                .try_into()?,
             visibility: ir::operand::Visibility::from_i32(value.visibility)
-                .ok_or_else(|| anyhow!("invalid visibility for VisibleData"))?,
+                .ok_or_else(|| IRError::invalid_visibility("VisibleData"))?,
         })
     }
 }
@@ -24,7 +24,7 @@ impl TryFrom<ir::operand::VisibleData> for VisibleData {
 impl From<VisibleData> for ir::operand::VisibleData {
     fn from(value: VisibleData) -> Self {
         Self {
-            value: Some(Box::new(value.value.into())),
+            value: Some(value.value.into()),
             visibility: value.visibility as i32,
         }
     }
@@ -38,45 +38,37 @@ impl fmt::Display for VisibleData {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Record {
-    /// address
-    pub owner: VisibleData,
-    /// u64
-    pub gates: VisibleData,
-    /// any type
+    pub owner: Address,
+    pub owner_visibility: Visibility,
+    pub gates: u64,
+    pub gates_visibility: Visibility,
     pub data: Vec<VisibleData>,
-    /// group
-    pub nonce: VisibleData,
+    pub nonce: Group,
+    pub nonce_visibility: Visibility,
 }
 
 impl TryFrom<ir::operand::Record> for Record {
     type Error = Error;
 
     fn try_from(value: ir::operand::Record) -> Result<Self> {
-        // TODO this restriction should be conveyed in the protobuf
-        let owner =
-            VisibleData::try_from(*(value.owner.ok_or_else(|| anyhow!("record owner unset")))?)?;
-        if !matches!(owner.value, Operand::Address(_)) {
-            bail!("owner must be an address");
-        }
-        let gates =
-            VisibleData::try_from(*(value.gates.ok_or_else(|| anyhow!("record gates unset")))?)?;
-        if !matches!(gates.value, Operand::U64(_)) {
-            bail!("gates must be a u64");
-        }
-        let nonce =
-            VisibleData::try_from(*(value.nonce.ok_or_else(|| anyhow!("record nonce unset")))?)?;
-        if !matches!(nonce.value, Operand::Group(_)) {
-            bail!("nonce must be a group");
-        }
         Ok(Self {
-            owner,
-            gates,
+            owner: value.owner.ok_or_else(|| IRError::unset("Record owner"))?,
+            owner_visibility: Visibility::from_i32(value.owner_visibility)
+                .ok_or_else(|| IRError::invalid_visibility("Record owner"))?,
+            gates: value.gates,
+            gates_visibility: Visibility::from_i32(value.gates_visibility)
+                .ok_or_else(|| IRError::invalid_visibility("Record gates"))?,
             data: value
                 .data
                 .into_iter()
                 .map(|i| i.try_into())
                 .collect::<Result<_>>()?,
-            nonce,
+            nonce: value
+                .nonce
+                .ok_or_else(|| IRError::unset("Record nonce"))?
+                .try_into()?,
+            nonce_visibility: Visibility::from_i32(value.nonce_visibility)
+                .ok_or_else(|| IRError::invalid_visibility("Record nonce"))?,
         })
     }
 }
@@ -84,10 +76,13 @@ impl TryFrom<ir::operand::Record> for Record {
 impl From<Record> for ir::operand::Record {
     fn from(value: Record) -> Self {
         Self {
-            owner: Some(Box::new(value.owner.into())),
-            gates: Some(Box::new(value.gates.into())),
+            owner: Some(value.owner),
+            owner_visibility: value.owner_visibility as i32,
+            gates: value.gates,
+            gates_visibility: value.gates_visibility as i32,
             data: value.data.into_iter().map(|v| v.into()).collect(),
-            nonce: Some(Box::new(value.nonce.into())),
+            nonce: Some(value.nonce.into()),
+            nonce_visibility: value.nonce_visibility as i32,
         }
     }
 }

@@ -178,13 +178,19 @@ message VisibleData {
 // An arbitrary collection of user-owned state
 message Record {
   // The owner of the record. This must always be an address
-  VisibleData owner = 1;
+  Address owner = 1;
+  // The visibility status of the owner address
+  Visibility owner_visibility = 2;
   // The amount of Aleo credits held by the record
-  VisibleData gates = 2;
+  uint64 gates = 3;
+  // The visibility status of the gates
+  Visibility gates_visibility = 4;
   // The values held by the record
-  repeated VisibleData data = 3;
+  repeated VisibleData data = 5;
   // Encryption metadata
-  VisibleData nonce = 4;
+  Group nonce = 6;
+  // The visibility status of the nonce group
+  Visibility nonce_visibility = 7;
 }
 
 // An instance of a Snarkd value

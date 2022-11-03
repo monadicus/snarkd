@@ -14,7 +14,7 @@ impl TryFrom<ir::operand::StructTypeEntry> for StructTypeEntry {
             name: value.name,
             type_: value
                 .r#type
-                .ok_or_else(|| anyhow!("StructTypeEntry type unset"))?
+                .ok_or_else(|| IRError::unset("StructTypeEntry type"))?
                 .try_into()?,
         })
     }
@@ -71,10 +71,10 @@ impl TryFrom<ir::operand::RecordTypeEntry> for RecordTypeEntry {
             name: value.name,
             type_: value
                 .r#type
-                .ok_or_else(|| anyhow!("RecordTypeEntry type unset"))?
+                .ok_or_else(|| IRError::unset("RecordTypeEntry type"))?
                 .try_into()?,
             visibility: Visibility::from_i32(value.visibility)
-                .ok_or_else(|| anyhow!("RecordTypeEntry invalid visibility"))?,
+                .ok_or_else(|| IRError::invalid_visibility("RecordTypeEntry"))?,
         })
     }
 }
@@ -103,16 +103,16 @@ impl TryFrom<ir::operand::RecordType> for RecordType {
     fn try_from(value: ir::operand::RecordType) -> Result<Self> {
         Ok(RecordType {
             owner: Visibility::from_i32(value.owner)
-                .ok_or_else(|| anyhow!("invalid owner visibility"))?,
+                .ok_or_else(|| IRError::invalid_visibility("owner"))?,
             gates: Visibility::from_i32(value.gates)
-                .ok_or_else(|| anyhow!("invalid gates visibility"))?,
+                .ok_or_else(|| IRError::invalid_visibility("gates"))?,
             data: value
                 .data
                 .into_iter()
                 .map(|v| v.try_into())
                 .collect::<Result<_>>()?,
             nonce: Visibility::from_i32(value.nonce)
-                .ok_or_else(|| anyhow!("invalid visibility"))?,
+                .ok_or_else(|| IRError::invalid_visibility("nonce"))?,
         })
     }
 }
@@ -155,7 +155,7 @@ impl TryFrom<ir::operand::Type> for Type {
 
     fn try_from(value: ir::operand::Type) -> Result<Self> {
         Ok(
-            match value.r#type.ok_or_else(|| anyhow!("type value not set"))? {
+            match value.r#type.ok_or_else(|| IRError::unset("type value"))? {
                 ir::operand::r#type::Type::Address(_) => Self::Address,
                 ir::operand::r#type::Type::Boolean(_) => Self::Boolean,
                 ir::operand::r#type::Type::Field(_) => Self::Field,

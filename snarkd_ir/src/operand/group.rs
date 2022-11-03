@@ -15,10 +15,10 @@ impl TryFrom<ir::operand::GroupCoordinate> for GroupCoordinate {
         Ok(
             match value
                 .group_coordinate
-                .ok_or_else(|| anyhow!("group coordinate unset"))?
+                .ok_or_else(|| IRError::unset("Group coordinate"))?
             {
                 ir::operand::group_coordinate::GroupCoordinate::GroupField(v) => {
-                    Self::GroupField(v.try_into()?)
+                    Self::GroupField(v)
                 }
                 ir::operand::group_coordinate::GroupCoordinate::SignHigh(_) => Self::SignHigh,
                 ir::operand::group_coordinate::GroupCoordinate::SignLow(_) => Self::SignLow,
@@ -33,7 +33,7 @@ impl From<GroupCoordinate> for ir::operand::GroupCoordinate {
         Self {
             group_coordinate: Some(match v {
                 GroupCoordinate::GroupField(v) => {
-                    ir::operand::group_coordinate::GroupCoordinate::GroupField(v.into())
+                    ir::operand::group_coordinate::GroupCoordinate::GroupField(v)
                 }
                 GroupCoordinate::SignHigh => {
                     ir::operand::group_coordinate::GroupCoordinate::SignHigh(Default::default())
@@ -73,11 +73,11 @@ impl TryFrom<ir::operand::TupleGroup> for TupleGroup {
         Ok(Self {
             left: value
                 .left
-                .ok_or_else(|| anyhow!("left value of TupleGroup unset"))?
+                .ok_or_else(|| IRError::tuple_group_set_side_unset("left"))?
                 .try_into()?,
             right: value
                 .right
-                .ok_or_else(|| anyhow!("right value of TupleGroup unset"))?
+                .ok_or_else(|| IRError::tuple_group_set_side_unset("right"))?
                 .try_into()?,
         })
     }
@@ -100,7 +100,7 @@ impl fmt::Display for TupleGroup {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Group {
-    Single(Field),
+    Single(ir::operand::Field),
     Tuple(TupleGroup),
 }
 
@@ -109,8 +109,8 @@ impl TryFrom<ir::operand::Group> for Group {
 
     fn try_from(value: ir::operand::Group) -> Result<Self> {
         Ok(
-            match value.group.ok_or_else(|| anyhow!("group value unset"))? {
-                ir::operand::group::Group::Single(v) => Self::Single(v.try_into()?),
+            match value.group.ok_or_else(|| IRError::unset("Group value"))? {
+                ir::operand::group::Group::Single(v) => Self::Single(v),
                 ir::operand::group::Group::Tuple(v) => Self::Tuple(v.try_into()?),
             },
         )
@@ -121,7 +121,7 @@ impl From<Group> for ir::operand::Group {
     fn from(value: Group) -> Self {
         Self {
             group: Some(match value {
-                Group::Single(v) => ir::operand::group::Group::Single(v.into()),
+                Group::Single(v) => ir::operand::group::Group::Single(v),
                 Group::Tuple(v) => ir::operand::group::Group::Tuple(v.into()),
             }),
         }

@@ -4,14 +4,14 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-prost = { workspace = true }
-async-trait = { workspace = true }
 anyhow = { workspace = true }
-tokio = { workspace = true }
-log = { workspace = true }
+async-trait = { workspace = true }
 dashmap = { workspace = true }
+log = { workspace = true }
+prost = { workspace = true }
+tokio = { workspace = true }
 
-snarkd_common = { path = "../snarkd_common" }
+snarkd_common = { workspace = true }
 
 [build-dependencies]
 prost-build = { workspace = true }
