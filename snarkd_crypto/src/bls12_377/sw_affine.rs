@@ -107,7 +107,7 @@ impl<G: Group> Affine for SWAffine<G> {
         unimplemented!()
     }
 
-    fn mul_bits(&self, bits: &BitSlice<u8, Msb0>) -> SWProjective<G> {
+    fn mul_bits(&self, bits: Vec<bool>) -> SWProjective<G> {
         let mut output = SWProjective::zero();
         for i in bits.iter().skip_while(|b| !(*b.clone())) {
             output.double_in_place();
@@ -122,10 +122,11 @@ impl<G: Group> Affine for SWAffine<G> {
         self.mul_bits(
             G::COFACTOR
                 .iter()
-                .map(|limb| limb.to_be_bytes())
+                .map(|limb| limb.view_bits::<Lsb0>())
                 .flatten()
-                .collect::<Vec<u8>>()
-                .view_bits::<Msb0>(),
+                .map(|b| *b)
+                .rev()
+                .collect::<Vec<bool>>(),
         )
     }
 

@@ -62,9 +62,15 @@ impl G1Affine {
             p
         };
         let x_square = Fr(Uint::from(X)).square();
-        let bytes = x_square.0.to_be_bytes::<32>();
-        let bits = bytes.view_bits::<Msb0>();
-        let bits = &bits[bits.leading_zeros()..];
+        let bits = x_square
+            .0
+            .into_limbs()
+            .iter()
+            .map(|x| x.view_bits::<Lsb0>())
+            .flatten()
+            .map(|b| *b)
+            .rev()
+            .collect::<Vec<_>>();
         (phi(*self).mul_bits(bits).add_mixed(self)).is_zero()
     }
 }
@@ -107,8 +113,13 @@ mod tests {
                     p.mul_bits(
                         Fr::characteristic()
                             .0
-                            .to_be_bytes::<32>()
-                            .view_bits::<Msb0>()
+                            .into_limbs()
+                            .iter()
+                            .map(|limb| limb.view_bits::<Lsb0>())
+                            .flatten()
+                            .map(|b| *b)
+                            .rev()
+                            .collect::<Vec<_>>()
                     )
                     .is_zero(),
                 );

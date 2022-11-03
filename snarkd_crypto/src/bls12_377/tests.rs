@@ -1097,7 +1097,17 @@ fn test_g1_projective_glv() {
     assert_eq!(point.mul(scalar), affine.mul(scalar));
     assert_eq!(
         affine.mul(scalar),
-        affine.mul_bits(scalar.0.to_be_bytes::<32>().view_bits::<Msb0>())
+        affine.mul_bits(
+            scalar
+                .0
+                .into_limbs()
+                .iter()
+                .map(|limb| limb.view_bits::<Lsb0>())
+                .flatten()
+                .map(|bit| *bit)
+                .rev()
+                .collect::<Vec<_>>()
+        )
     );
 }
 

@@ -270,7 +270,6 @@ impl Field for Fr {
         res
     }
 
-    // NOTE: check if this is quicker than snarkVM
     fn double_in_place(&mut self) {
         *self = Self(self.0.add_mod(self.0, MODULUS));
     }
@@ -281,7 +280,6 @@ impl Field for Fr {
         res
     }
 
-    // NOTE: Check if this is quicker than snarkvM
     fn square_in_place(&mut self) {
         *self = Self(self.0.mul_mod(self.0, MODULUS));
     }

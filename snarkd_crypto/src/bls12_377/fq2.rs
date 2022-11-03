@@ -38,10 +38,7 @@ impl Fq2 {
 
     #[inline(always)]
     pub fn mul_fp_by_nonresidue(fe: &Fq) -> Fq {
-        let original = fe;
-        let mut fe = -fe.double();
-        fe.double_in_place();
-        fe - original
+        NONRESIDUE * fe
     }
 
     pub fn mul_by_fp(&mut self, other: &Fq) {
