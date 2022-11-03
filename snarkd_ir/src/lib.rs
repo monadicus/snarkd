@@ -1,34 +1,15 @@
-#![warn(clippy::todo, clippy::use_debug)]
-
-mod function;
-pub use function::*;
-
-mod header;
-pub use header::*;
-
-mod input;
-pub use input::*;
-
-mod instructions;
-pub use instructions::*;
+#![warn(clippy::todo, clippy::dbg_macro)]
 
 mod ir;
 
 mod program;
 pub use program::*;
 
-mod types;
-pub use types::*;
+mod opcode;
+pub use opcode::*;
 
-mod values;
-pub use values::*;
+mod operand;
+pub use operand::*;
 
-mod visibility;
-pub use visibility::*;
-#[path = ""]
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    mod program_test;
-}
+mod tests;

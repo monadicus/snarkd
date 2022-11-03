@@ -1,207 +1,99 @@
+// markdown doc generation command
+/*
+protoc
+--plugin=protoc-gen-doc=D:\Downloads\protoc-gen-doc_1.5.1_windows_amd64.tar\protoc-gen-doc_1.5.1_windows_amd64\protoc-gen-doc.exe
+--proto_path=snarkd_ir\proto\ --doc_out=docs --doc_opt=markdown,bytecode-spec.md
+snarkd_ir\proto\*.proto
+*/
+
+// html doc generation command
+/*
+protoc
+--plugin=protoc-gen-doc=D:\Downloads\protoc-gen-doc_1.5.1_windows_amd64.tar\protoc-gen-doc_1.5.1_windows_amd64\protoc-gen-doc.exe
+--proto_path=snarkd_ir\proto\ --doc_out=docs --doc_opt=html,bytecode-spec.html
+snarkd_ir\proto\*.proto
+*/
+
+// The structure of a Snarkd program
 syntax = "proto3";
 
-package snarkd.ir;
+import public "opcode.proto";
+import public "operand.proto";
 
-message Instruction {
-    uint32 opcode = 1;
-    repeated Operand operands = 2;
+package ir;
+
+// A value being input to a program
+message InputValue {
+  // The name of the value
+  string name = 1;
+  // The value contained by the value
+  operand.Operand value = 2;
 }
 
-enum GroupCoordinateType {
-    GroupField = 0;
-    SignHigh = 1;
-    SignLow = 2;
-    Inferred = 3;
-}
-
-message GroupCoordinate {
-    GroupCoordinateType coordinate_type = 1;
-    Field field = 2;
-}
-
-message Group {
-    GroupCoordinate left = 1;
-    GroupCoordinate right = 2;
-}
-
-message Address {
-    bytes address = 1;
-}
-
-message Bool {
-    bool boolean = 1;
-}
-
-message U8 {
-    uint32 u8 = 1;
-}
-
-message U16 {
-    uint32 u16 = 1;
-}
-
-message U32 {
-    uint32 u32 = 1;
-}
-
-message U64 {
-    uint64 u64 = 1;
-}
-
-message U128 {
-    bytes u128 = 1;
-}
-
-message I8 {
-    sint32 i8 = 1;
-}
-
-message I16 {
-    sint32 i16 = 1;
-}
-
-message I32 {
-    sint32 i32 = 1;
-}
-
-message I64 {
-    sint64 i64 = 1;
-}
-
-message I128 {
-    bytes i128 = 1;
-}
-
-message VariableRef {
-    uint32 variable_ref = 1;
-}
-
-message Field {
-    bool negate = 1;
-    repeated fixed64 values = 2;
-}
-
-message Scalar {
-    repeated fixed64 values = 1;
-}
-
-message String {
-    string string = 1;
-}
-
-message Struct {
-    repeated Operand values = 1;
-}
-
-enum Visibility {
-   Constant = 0;
-   Private = 1;
-   Public = 2;
-}
-
-message Data {
-    Operand value = 1;
-    Visibility visibility = 2;
-}
-
-message Record {
-    Data owner = 1;
-    Data gates = 2;
-    repeated Data data = 3;
-    Data nonce = 4;
-}
-
-message Operand {
-    Address address = 1;
-    Bool boolean = 2;
-    Field field = 3;
-    Field group_single = 4;
-    Group group_tuple = 5;
-    U8 u8 = 6;
-    U16 u16 = 7;
-    U32 u32 = 8;
-    U64 u64 = 9;
-    U128 u128 = 10;
-    I8 i8 = 11;
-    I16 i16 = 12;
-    I32 i32 = 13;
-    I64 i64 = 14;
-    I128 i128 = 15;
-    VariableRef variable_ref = 16;
-    Scalar scalar = 17;
-    String string = 18;
-    Record record = 19;
-    Struct structure = 20;
-}
-
-message Type {
-    TypeClass class = 1;
-    repeated Type subtypes = 2;
-    repeated string subtype_names = 3;
-    repeated Visibility visibilities = 4;
-}
-
-message Input {
-    uint32 variable = 1;
-    string name = 2;
-    Type type = 3;
-}
-
-message InputDataItem {
-    string name = 1;
-    Operand value = 2;
-}
-
+// The input values for a program
 message InputData {
-    repeated InputDataItem main = 1;
-    repeated InputDataItem constants = 2;
-    repeated InputDataItem registers = 3;
-    repeated InputDataItem public_state = 4;
-    repeated InputDataItem private_leaf_state = 5;
-    repeated InputDataItem private_record_state = 6;
+  // A list of constant input registers
+  repeated InputValue constants = 1;
+  // A list of private registers inputs
+  repeated InputValue privates = 2;
+  // A list of public registers inputs
+  repeated InputValue publics = 3;
+  // A list of registers inputs
+  repeated InputValue registers = 5;
+  // A list of public state inputs
+  repeated InputValue public_state = 6;
+  // A list of private record state inputs
+  repeated InputValue private_leaf_state = 7;
+  // A list of private leaf state inputs
+  repeated InputValue private_record_state = 8;
 }
 
-enum TypeClass {
-    TypeAddress = 0;
-    TypeBoolean = 1;
-    TypeField = 2;
-    TypeGroup = 3;
-
-    TypeU8 = 4;
-    TypeU16 = 5;
-    TypeU32 = 6;
-    TypeU64 = 7;
-    TypeU128 = 8;
-    TypeI8 = 9;
-    TypeI16 = 10;
-    TypeI32 = 11;
-    TypeI64 = 12;
-    TypeI128 = 13;
-
-    TypeScalar = 14;
-    TypeString = 15;
-    TypeStruct = 16;
-    TypeRecord = 17;
+// A register input for a program
+message InputType {
+  // The ID of the register
+  uint32 variable = 1;
+  // The name of the register, used for debugging purposes
+  string name = 2;
+  // The type of the register
+  operand.Type type = 3;
 }
 
+// The metadata of a Snarkd program
 message Header {
-    uint32 snarkd_major = 1;
-    uint32 snarkd_minor = 2;
-    uint32 snarkd_patch = 3;
-    repeated Input main_inputs = 4;
-    repeated Input constant_inputs = 5;
-    repeated Input register_inputs = 6;
-    repeated Input public_states = 7;
-    repeated Input private_record_states = 8;
-    repeated Input private_leaf_states = 9;
+  // The major release version of snarkd this programn was made for
+  uint32 snarkd_major = 1;
+  // The minor release version of snarkd this programn was made for
+  uint32 snarkd_minor = 2;
+  // The patch release version of snarkd this programn was made for
+  uint32 snarkd_patch = 3;
+  // A list of constant input registers
+  repeated InputType constant_inputs = 4;
+  // A list of private input registers
+  repeated InputType private_inputs = 5;
+  // A list of public inputs
+  repeated InputType public_inputs = 6;
+  // A list of register inputs
+  repeated InputType register_inputs = 7;
+  // A list of public state inputs
+  repeated InputType public_states = 8;
+  // A list of private record state inputs
+  repeated InputType private_record_states = 9;
+  // A list of private leaf state inputs
+  repeated InputType private_leaf_states = 10;
 }
 
+// A function in a Snarkd program
 message Function {
-    uint32 argument_start_variable = 1;
-    repeated Instruction instructions = 2;
+  // The ID of the function
+  uint32 argument_start_variable = 1;
+  // The instructions contained within the function
+  repeated opcode.Instruction instructions = 2;
 }
 
+// A Snarkd program
 message Program {
-    Header header = 1;
-    repeated Function functions = 2;
+  // The metadata of the program
+  Header header = 1;
+  // The functions within the program
+  repeated Function functions = 2;
 }
