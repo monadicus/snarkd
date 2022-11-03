@@ -49,6 +49,7 @@ CREATE INDEX blocks_time_lookup ON blocks(time);
 CREATE TABLE IF NOT EXISTS peers(
     id INTEGER PRIMARY KEY,
     address TEXT NOT NULL,
+    last_peer_direction TEXT NOT NULL,
     block_height INTEGER NOT NULL,
     first_seen INTEGER,
     last_seen INTEGER,
@@ -57,9 +58,8 @@ CREATE TABLE IF NOT EXISTS peers(
     blocks_synced_from INTEGER NOT NULL,
     blocks_received_from INTEGER NOT NULL,
     blocks_sent_to INTEGER NOT NULL,
-    connection_attempt_count INTEGER NOT NULL,
-    connection_success_count INTEGER NOT NULL,
-    connection_transient_fail_count INTEGER NOT NULL
+    connection_fail_count INTEGER NOT NULL,
+    connection_success_count INTEGER NOT NULL
 );
 CREATE UNIQUE INDEX peer_address_lookup ON peers(address);
 CREATE INDEX peer_last_seen_lookup ON peers(last_seen);

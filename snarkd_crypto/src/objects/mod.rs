@@ -1,15 +1,18 @@
 // NOTE: placeholder
-type Scalar = [u8; 32];
-type Group = [u8; 48];
-type Field = [u8; 32];
-type VerifyingKey = [u8; 32];
-type Certificate = [u8; 32];
+type Scalar = Digest32;
+type Group = Digest48;
+type Field = Digest32;
+type VerifyingKey = Digest32;
+type Certificate = Digest32;
 
 type Identifier = (Field, u8);
 
+type Instruction = ();
+type LiteralType = ();
+
 mod address;
 mod block;
-use block::*;
+
 mod block_header;
 use block_header::*;
 mod closure;
@@ -31,12 +34,8 @@ use function::*;
 mod graph_key;
 mod input;
 use input::*;
-mod instruction;
-use instruction::*;
 mod interface;
 use interface::*;
-mod literal_type;
-use literal_type::*;
 mod locator;
 use locator::*;
 mod map_object;
@@ -67,6 +66,7 @@ use register_type::*;
 mod signature;
 use signature::*;
 mod transaction;
+use snarkd_common::{Digest32, Digest48};
 use transaction::*;
 mod transition;
 use transition::*;

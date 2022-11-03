@@ -21,9 +21,9 @@ enum ResponseCode {
     // success
     OK = 1;
     // error message in packet_body
-    PROTOCOL_ERROR = 3;
+    PROTOCOL_ERROR = 2;
     // error message in packet_body
-    INTERNAL_ERROR = 4;
+    INTERNAL_ERROR = 3;
 }
 
 message BlockHeader {
@@ -82,7 +82,13 @@ message Transactions {
 message Introduction {
     string target_address = 1;
     string version = 2;
-    string instance_id = 3;
+    bytes instance_id = 3;
+    uint32 inbound_port = 4;
+}
+
+message Ping {
+    uint64 timestamp = 1;
+    uint32 block_height = 2;
 }
 
 message Packet {
@@ -94,7 +100,7 @@ message Packet {
         Blocks blocks = 5;
         Transactions transactions = 6;
         DigestList digests = 7;
-        uint64 ping_pong = 8;
+        Ping ping_pong = 8;
         PeerList peers = 9;
         Introduction introduction = 10;
         string error_message = 11;

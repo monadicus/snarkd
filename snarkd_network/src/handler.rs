@@ -38,12 +38,12 @@ impl<'a> ResponseHandle<'a> {
     }
 }
 
-impl<'a> Into<ResponseHandleOwned> for ResponseHandle<'a> {
-    fn into(self) -> ResponseHandleOwned {
+impl<'a> From<ResponseHandle<'a>> for ResponseHandleOwned {
+    fn from(val: ResponseHandle<'a>) -> Self {
         ResponseHandleOwned {
-            command: self.command,
-            id: self.id,
-            sender: self.sender.clone(),
+            command: val.command,
+            id: val.id,
+            sender: val.sender.clone(),
         }
     }
 }
@@ -63,7 +63,7 @@ impl ResponseHandleOwned {
 // This handles inbound request packets, this can block receiving future packets so should defer quickly.
 // All errors result in an error log and connection closure.
 #[async_trait::async_trait]
-pub trait RequestHandler {
+pub trait RequestHandler: Send + Sync + 'static {
     async fn on_introduction(
         &mut self,
         introduction: Introduction,
@@ -107,8 +107,9 @@ pub trait RequestHandler {
         response: Option<ResponseHandle<'_>>,
     ) -> Result<()>;
 
-    async fn on_ping(&mut self, timestamp: u64, response: Option<ResponseHandle<'_>>)
-        -> Result<()>;
+    async fn on_ping(&mut self, ping: Ping, response: Option<ResponseHandle<'_>>) -> Result<()>;
+
+    async fn on_disconnect(&mut self) -> Result<()>;
 
     async fn on_packet(&mut self, packet: ProcessedPacket<'_>) -> Result<()> {
         assert!(matches!(packet.response_code, ResponseCode::NotAResponse));
