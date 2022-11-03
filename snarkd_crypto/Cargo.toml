@@ -4,6 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+anyhow = "1.0"
+bitvec = "1.0"
 indexmap = "1.9"
-
+num-bigint = "0.4"
+rand = "0.8"
+rand_xorshift = "0.3"
+ruint = { version = "1.7", features = [ "rand" ] }
 snarkd_common = { path = "../snarkd_common" }
+thiserror = "1.0"
