@@ -11,16 +11,6 @@ use std::{
 
 pub(crate) const ITERATIONS: usize = 10;
 
-#[test]
-fn test_inverse() {
-    let a = Fq2::new(Fq(uint!(1_U384)), Fq(uint!(2_U384)));
-    let a_inv = a.inverse().unwrap();
-    println!("a = {}", a);
-    println!("a_inv = {}", a_inv);
-
-    println!("{}", a * a_inv);
-}
-
 fn random_addition_test<G: Projective>() {
     for _ in 0..ITERATIONS {
         let a = G::rand();
