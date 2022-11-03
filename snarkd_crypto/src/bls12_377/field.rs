@@ -94,13 +94,12 @@ pub trait Field:
 
         let mut found_one = false;
 
-        for i in exp
+        let bits = exp
             .iter()
-            .map(|limb| limb.to_be_bytes())
+            .map(|limb| limb.view_bits::<Lsb0>())
             .flatten()
-            .collect::<Vec<u8>>()
-            .view_bits::<Msb0>()
-        {
+            .collect::<Vec<_>>();
+        for i in bits.into_iter().rev() {
             if !found_one {
                 if *i {
                     found_one = true;
