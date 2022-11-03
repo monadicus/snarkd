@@ -945,10 +945,10 @@ fn test_fq_root_of_unity() {
             0xe9185f1443ab18ec,
             0x6b8
         ]),
-        Fq(fq::TWO_ADIC_ROOT_OF_UNITY)
+        fq::TWO_ADIC_ROOT_OF_UNITY_AS_FIELD
     );
     assert_eq!(
-        Fq(fq::TWO_ADIC_ROOT_OF_UNITY).pow(&[1 << fq::TWO_ADICITY]),
+        fq::TWO_ADIC_ROOT_OF_UNITY_AS_FIELD.pow(&[1 << fq::TWO_ADICITY]),
         Fq::one()
     );
     assert!(Fq::multiplicative_generator().sqrt().is_none());

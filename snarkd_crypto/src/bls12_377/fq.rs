@@ -61,12 +61,20 @@ pub const POWERS_OF_G: &'static [Uint<384, 6>] = &[
 
 pub const TWO_ADICITY: u32 = 46u32;
 
-pub const TWO_ADIC_ROOT_OF_UNITY: Uint<384, 6> = uint!(224889470004741437790876857038605399989314902261086046762625433320979911756295853335464037764645098727193119245337_U384);
+pub const TWO_ADIC_ROOT_OF_UNITY: Uint<384, 6> = uint!(146552004846884389553264564610149105174701957497228680529098805315416492923550540437026734404078567406251254115855_U384);
+
+pub const TWO_ADIC_ROOT_OF_UNITY_AS_FIELD: Fq = Fq(
+    uint!(224889470004741437790876857038605399989314902261086046762625433320979911756295853335464037764645098727193119245337_U384),
+);
 
 pub const CAPACITY: u32 = MODULUS_BITS - 1;
 
 /// GENERATOR = -5
-pub const GENERATOR: Uint<384, 6> = uint!(258664426012969094010652733694893533536393512754914660539884262666720468348340822774968888139573360124440321458172_U384);
+pub const GENERATOR: Uint<384, 6> = uint!(92261639910053574722182574790803529333160366917737991650341130812388023949653897454961487930322210790384999596794_U384);
+
+pub const GENERATOR_AS_FIELD: Fq = Fq(
+    uint!(258664426012969094010652733694893533536393512754914660539884262666720468348340822774968888139573360124440321458172_U384),
+);
 
 pub const INV: u64 = 9586122913090633727u64;
 
@@ -109,7 +117,7 @@ impl Fq {
     }
 
     pub fn multiplicative_generator() -> Self {
-        Self(GENERATOR)
+        GENERATOR_AS_FIELD
     }
 
     pub fn is_valid(&self) -> bool {
@@ -455,5 +463,31 @@ impl Sum<Fq> for Fq {
 impl Display for Fq {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         write!(f, "{}", self.0)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_powers_of_g() {
+        let two = Fq(uint!(2_U384));
+
+        // Compute the expected powers of G.
+        let g = Fq(GENERATOR).pow(&T.into_limbs());
+        let powers = (0..TWO_ADICITY - 1)
+            .map(|i| g.pow(&two.pow(&[i as u64]).0.into_limbs()))
+            .collect::<Vec<_>>();
+
+        // Ensure the correct number of powers of G are present.
+        assert_eq!(POWERS_OF_G.len() as u64, (TWO_ADICITY - 1) as u64);
+        assert_eq!(POWERS_OF_G.len(), powers.len());
+
+        // Ensure the expected and candidate powers match.
+        for (expected, candidate) in powers.iter().zip(POWERS_OF_G.iter()) {
+            println!("{:?} =?= {:?}", expected, candidate);
+            assert_eq!(*expected, Fq(*candidate));
+        }
     }
 }

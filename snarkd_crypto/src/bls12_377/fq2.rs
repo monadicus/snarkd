@@ -1,12 +1,13 @@
 use crate::bls12_377::{field::Field, Fq, LegendreSymbol};
 use core::{
+    cmp::Ordering,
     iter::Sum,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 use rand::{distributions::Standard, Rng};
 use ruint::uint;
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, PartialOrd, Ord)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Fq2 {
     pub c0: Fq,
     pub c1: Fq,
@@ -366,5 +367,24 @@ impl Sum<Fq2> for Fq2 {
 impl std::fmt::Display for Fq2 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Fp2({} + {} * u)", self.c0, self.c1)
+    }
+}
+
+/// `Fp2` elements are ordered lexicographically.
+impl Ord for Fq2 {
+    #[inline(always)]
+    fn cmp(&self, other: &Self) -> Ordering {
+        match self.c1.cmp(&other.c1) {
+            Ordering::Greater => Ordering::Greater,
+            Ordering::Less => Ordering::Less,
+            Ordering::Equal => self.c0.cmp(&other.c0),
+        }
+    }
+}
+
+impl PartialOrd for Fq2 {
+    #[inline(always)]
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
     }
 }
