@@ -289,73 +289,38 @@ impl<G: Group> Projective for SWProjective<G> {
             return;
         }
 
-        if G::A.is_zero() {
-            // A = X1^2
-            let mut a = self.x.square();
+        // A = X1^2
+        let mut a = self.x.square();
 
-            // B = Y1^2
-            let b = self.y.square();
+        // B = Y1^2
+        let b = self.y.square();
 
-            // C = B^2
-            let mut c = b.square();
+        // C = B^2
+        let mut c = b.square();
 
-            // D = 2*((X1+B)2-A-C)
-            let d = ((self.x + b).square() - a - c).double();
+        // D = 2*((X1+B)2-A-C)
+        let d = ((self.x + b).square() - a - c).double();
 
-            // E = 3*A
-            let old_a = a;
-            a.double_in_place();
-            let e = old_a + a;
+        // E = 3*A
+        let old_a = a;
+        a.double_in_place();
+        let e = old_a + a;
 
-            // F = E^2
-            let f = e.square();
+        // F = E^2
+        let f = e.square();
 
-            // Z3 = 2*Y1*Z1
-            self.z *= &self.y;
-            self.z.double_in_place();
+        // Z3 = 2*Y1*Z1
+        self.z *= &self.y;
+        self.z.double_in_place();
 
-            // X3 = F-2*D
-            self.x = f - d.double();
+        // X3 = F-2*D
+        self.x = f - d.double();
 
-            // Y3 = E*(D-X3)-8*C
-            c.double_in_place();
-            c.double_in_place();
-            c.double_in_place();
-            self.y = (d - self.x) * e - c;
-        } else {
-            // http://www.hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-0.html#doubling-dbl-2009-l
-            // XX = X1^2
-            let xx = self.x.square();
-
-            // YY = Y1^2
-            let yy = self.y.square();
-
-            // YYYY = YY^2
-            let mut yyyy = yy.square();
-
-            // ZZ = Z1^2
-            let zz = self.z.square();
-
-            // S = 2*((X1+YY)^2-XX-YYYY)
-            let s = ((self.x + yy).square() - xx - yyyy).double();
-
-            // M = 3*XX+a*ZZ^2
-            let m = xx.double() + xx;
-
-            // T = M^2-2*S
-            let t = m.square() - s.double();
-
-            // X3 = T
-            self.x = t;
-            // Y3 = M*(S-T)-8*YYYY
-            let old_y = self.y;
-            yyyy.double_in_place();
-            yyyy.double_in_place();
-            yyyy.double_in_place();
-            self.y = m * (s - t) - yyyy;
-            // Z3 = (Y1+Z1)^2-YY-ZZ
-            self.z = (old_y + self.z).square() - yy - zz;
-        }
+        // Y3 = E*(D-X3)-8*C
+        c.double_in_place();
+        c.double_in_place();
+        c.double_in_place();
+        self.y = (d - self.x) * e - c;
     }
 
     fn to_affine(&self) -> SWAffine<G> {
