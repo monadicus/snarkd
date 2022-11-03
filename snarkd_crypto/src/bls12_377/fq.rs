@@ -61,12 +61,12 @@ pub const POWERS_OF_G: &'static [Uint<384, 6>] = &[
 
 pub const TWO_ADICITY: u32 = 46u32;
 
-pub const TWO_ADIC_ROOT_OF_UNITY: Uint<384, 6> = uint!(146552004846884389553264564610149105174701957497228680529098805315416492923550540437026734404078567406251254115855_U384);
+pub const TWO_ADIC_ROOT_OF_UNITY: Uint<384, 6> = uint!(224889470004741437790876857038605399989314902261086046762625433320979911756295853335464037764645098727193119245337_U384);
 
 pub const CAPACITY: u32 = MODULUS_BITS - 1;
 
 /// GENERATOR = -5
-pub const GENERATOR: Uint<384, 6> = uint!(92261639910053574722182574790803529333160366917737991650341130812388023949653897454961487930322210790384999596794_U384);
+pub const GENERATOR: Uint<384, 6> = uint!(258664426012969094010652733694893533536393512754914660539884262666720468348340822774968888139573360124440321458172_U384);
 
 pub const INV: u64 = 9586122913090633727u64;
 
@@ -92,7 +92,6 @@ pub const T: Uint<384, 6> = uint!(3675842578061421676390135839012792950148785745
 pub const T_MINUS_ONE_DIV_TWO: Uint<384, 6> = uint!(1837921289030710838195067919506396475074392872918698035817074744121558668640693829665401097909504529_U384);
 
 impl Fq {
-    #[inline]
     pub fn legendre(&self) -> LegendreSymbol {
         // s = self^((MODULUS - 1) // 2)
         let s = self.pow(&MODULUS_MINUS_ONE_DIV_TWO.into_limbs());
@@ -115,6 +114,12 @@ impl Fq {
 
     pub fn is_valid(&self) -> bool {
         self.0 < MODULUS
+    }
+
+    fn reduce(&mut self) {
+        while self.0 >= MODULUS {
+            self.0 -= MODULUS;
+        }
     }
 }
 
@@ -140,7 +145,9 @@ impl Field for Fq {
     }
 
     fn rand() -> Self {
-        Self(rand::thread_rng().sample(Standard))
+        let mut a = Self(rand::thread_rng().sample(Standard));
+        a.reduce();
+        a
     }
 
     fn characteristic<'a>() -> Self {
@@ -345,7 +352,7 @@ impl Mul for Fq {
     type Output = Self;
 
     fn mul(self, other: Self) -> Self {
-        Self(self.0.mul_redc(other.0, MODULUS, INV))
+        Self(self.0.mul_mod(other.0, MODULUS))
     }
 }
 
@@ -359,7 +366,9 @@ impl Neg for Fq {
     type Output = Self;
 
     fn neg(self) -> Self {
-        Self(MODULUS - self.0)
+        let mut a = Self(MODULUS - self.0);
+        a.reduce();
+        a
     }
 }
 
@@ -367,7 +376,7 @@ impl Div for Fq {
     type Output = Self;
 
     fn div(self, other: Self) -> Self {
-        Self(self.0.mul_redc(other.inverse().unwrap().0, MODULUS, INV))
+        Self(self.0.mul_mod(other.inverse().unwrap().0, MODULUS))
     }
 }
 
@@ -412,7 +421,7 @@ impl<'a> Mul<&'a Self> for Fq {
     type Output = Self;
 
     fn mul(self, other: &Self) -> Self {
-        Self(self.0.mul_redc(other.0, MODULUS, INV))
+        Self(self.0.mul_mod(other.0, MODULUS))
     }
 }
 
@@ -426,7 +435,7 @@ impl<'a> Div<&'a Self> for Fq {
     type Output = Self;
 
     fn div(self, other: &Self) -> Self {
-        Self(self.0.mul_redc(other.inverse().unwrap().0, MODULUS, INV))
+        Self(self.0.mul_mod(other.inverse().unwrap().0, MODULUS))
     }
 }
 
@@ -438,41 +447,13 @@ impl<'a> DivAssign<&'a Self> for Fq {
 
 impl Sum<Fq> for Fq {
     /// Returns the `sum` of `self` and `other`.
-    #[inline]
     fn sum<I: Iterator<Item = Fq>>(iter: I) -> Self {
         iter.fold(Fq::zero(), |a, b| a + b)
     }
 }
 
 impl Display for Fq {
-    #[inline]
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         write!(f, "{}", self.0)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_powers_of_g() {
-        let two = Fq(uint!(2_U384));
-
-        // Compute the expected powers of G.
-        let g = Fq(GENERATOR).pow(&T.into_limbs());
-        let powers = (0..TWO_ADICITY - 1)
-            .map(|i| g.pow(&two.pow(&[i as u64]).0.into_limbs()))
-            .collect::<Vec<_>>();
-
-        // Ensure the correct number of powers of G are present.
-        assert_eq!(POWERS_OF_G.len() as u64, (TWO_ADICITY - 1) as u64);
-        assert_eq!(POWERS_OF_G.len(), powers.len());
-
-        // Ensure the expected and candidate powers match.
-        for (expected, candidate) in powers.iter().zip(POWERS_OF_G.iter()) {
-            println!("{:?} =?= {:?}", expected, candidate);
-            assert_eq!(*expected, Fq(*candidate));
-        }
     }
 }
