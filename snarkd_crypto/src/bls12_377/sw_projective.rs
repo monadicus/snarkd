@@ -530,8 +530,8 @@ impl<G: Group> Mul<Fr> for SWProjective<G> {
         let t_2 = t_1
             .clone()
             .into_iter()
-            .map(|v| {
-                v.x.glv_endomorphism();
+            .map(|mut v| {
+                v.x = v.x.glv_endomorphism();
                 v
             })
             .collect::<Vec<_>>();
