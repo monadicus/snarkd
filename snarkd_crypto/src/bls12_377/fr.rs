@@ -1,4 +1,4 @@
-use super::{field::Field, LegendreSymbol};
+use super::{adc, field::Field, mac_with_carry, LegendreSymbol};
 use bitvec::prelude::*;
 use core::{
     fmt::{Display, Formatter, Result as FmtResult},
@@ -134,7 +134,7 @@ pub const T_MINUS_ONE_DIV_TWO: Uint<256, 4> =
 impl Fr {
     pub fn legendre(&self) -> LegendreSymbol {
         // s = self^((MODULUS - 1) // 2)
-        let mut s = self.pow(&MODULUS_MINUS_ONE_DIV_TWO.into_limbs());
+        let mut s = self.pow(MODULUS_MINUS_ONE_DIV_TWO.as_limbs());
         s.reduce();
 
         if s.is_zero() {
@@ -200,7 +200,7 @@ impl Fr {
         };
 
         let alpha = |x: &Self, q: &[u64; 4]| -> Self {
-            let mut a = mul_short(&x.0.into_limbs(), q);
+            let mut a = mul_short(x.0.as_limbs(), q);
             round(&mut a)
         };
 
@@ -305,7 +305,7 @@ impl Field for Fr {
             LegendreSymbol::QuadraticResidue => {
                 let n = TWO_ADICITY as u64;
                 // `T` is equivalent to `m` in the paper.
-                let v = self.pow(&T_MINUS_ONE_DIV_TWO.into_limbs());
+                let v = self.pow(T_MINUS_ONE_DIV_TWO.as_limbs());
                 let x = *self * v.square();
 
                 let k = ((n - 1) as f64).sqrt().floor() as u64;
@@ -563,26 +563,6 @@ impl Display for Fr {
     }
 }
 
-/// Calculate a + (b * c) + carry, returning the least significant digit
-/// and setting carry to the most significant digit.
-#[inline(always)]
-pub fn mac_with_carry(a: u64, b: u64, c: u64, carry: &mut u64) -> u64 {
-    let tmp = (u128::from(a)) + u128::from(b) * u128::from(c) + u128::from(*carry);
-
-    *carry = (tmp >> 64) as u64;
-
-    tmp as u64
-}
-
-/// Calculate a + b + carry, returning the sum and modifying the
-/// carry value.
-#[inline(always)]
-pub fn adc(a: &mut u64, b: u64, carry: u64) -> u64 {
-    let tmp = u128::from(*a) + u128::from(b) + u128::from(carry);
-    *a = tmp as u64;
-    (tmp >> 64) as u64
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -592,9 +572,9 @@ mod tests {
         let two = Fr(uint!(2_U256));
 
         // Compute the expected powers of G.
-        let g = Fr(GENERATOR).pow(&T.into_limbs());
+        let g = Fr(GENERATOR).pow(T.as_limbs());
         let powers = (0..TWO_ADICITY - 1)
-            .map(|i| g.pow(&two.pow(&[i as u64]).0.into_limbs()))
+            .map(|i| g.pow(two.pow(&[i as u64]).0.as_limbs()))
             .collect::<Vec<_>>();
 
         // Ensure the correct number of powers of G are present.

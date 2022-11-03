@@ -103,7 +103,7 @@ impl G2Affine {
         self.mul_bits(
             Fr::characteristic()
                 .0
-                .into_limbs()
+                .as_limbs()
                 .iter()
                 .map(|limb| limb.view_bits::<Lsb0>())
                 .flatten()

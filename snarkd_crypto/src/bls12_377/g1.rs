@@ -64,7 +64,7 @@ impl G1Affine {
         let x_square = Fr(Uint::from(X)).square();
         let bits = x_square
             .0
-            .into_limbs()
+            .as_limbs()
             .iter()
             .map(|x| x.view_bits::<Lsb0>())
             .flatten()
@@ -113,7 +113,7 @@ mod tests {
                     p.mul_bits(
                         Fr::characteristic()
                             .0
-                            .into_limbs()
+                            .as_limbs()
                             .iter()
                             .map(|limb| limb.view_bits::<Lsb0>())
                             .flatten()

@@ -11,6 +11,16 @@ use std::{
 
 pub(crate) const ITERATIONS: usize = 10;
 
+#[test]
+fn test_inverse() {
+    let a = Fq2::new(Fq(uint!(1_U384)), Fq(uint!(2_U384)));
+    let a_inv = a.inverse().unwrap();
+    println!("a = {}", a);
+    println!("a_inv = {}", a_inv);
+
+    println!("{}", a * a_inv);
+}
+
 fn random_addition_test<G: Projective>() {
     for _ in 0..ITERATIONS {
         let a = G::rand();
@@ -679,7 +689,7 @@ fn test_bls12_377_fq2() {
         field_test(a, b);
         sqrt_field_test(a);
     }
-    frobenius_test::<Fq2>(&Fq::characteristic().0.into_limbs(), 13);
+    frobenius_test::<Fq2>(Fq::characteristic().0.as_limbs(), 13);
 }
 
 #[test]
@@ -689,7 +699,7 @@ fn test_bls12_377_fq6() {
         let h = Fq6::rand();
         field_test(g, h);
     }
-    frobenius_test::<Fq6>(&Fq::characteristic().0.into_limbs(), 13);
+    frobenius_test::<Fq6>(Fq::characteristic().0.as_limbs(), 13);
 }
 
 #[test]
@@ -699,7 +709,7 @@ fn test_bls12_377_fq12() {
         let h = Fq12::rand();
         field_test(g, h);
     }
-    frobenius_test::<Fq12>(&Fq::characteristic().0.into_limbs(), 13);
+    frobenius_test::<Fq12>(Fq::characteristic().0.as_limbs(), 13);
 }
 
 #[test]
@@ -895,7 +905,7 @@ fn test_fq_pow() {
         // Exponentiating by the modulus should have no effect in a prime field.
         let a = Fq::rand();
 
-        assert_eq!(a, a.pow(&Fq::characteristic().0.into_limbs()));
+        assert_eq!(a, a.pow(Fq::characteristic().0.as_limbs()));
     }
 }
 
@@ -1100,7 +1110,7 @@ fn test_g1_projective_glv() {
         affine.mul_bits(
             scalar
                 .0
-                .into_limbs()
+                .as_limbs()
                 .iter()
                 .map(|limb| limb.view_bits::<Lsb0>())
                 .flatten()
@@ -1160,7 +1170,7 @@ fn test_bilinearity() {
 
     let ans1 = pairing(sa, b);
     let ans2 = pairing(a, sb);
-    let ans3 = pairing(a, b).pow(&s.0.into_limbs());
+    let ans3 = pairing(a, b).pow(s.0.as_limbs());
 
     assert_eq!(ans1, ans2);
     assert_eq!(ans2, ans3);
@@ -1169,8 +1179,7 @@ fn test_bilinearity() {
     assert_ne!(ans2, Fq12::one());
     assert_ne!(ans3, Fq12::one());
 
-    let mut by = Fr::characteristic().0.into_limbs();
-    assert_eq!(ans1.pow(&by), Fq12::one());
-    assert_eq!(ans2.pow(&by), Fq12::one());
-    assert_eq!(ans3.pow(&by), Fq12::one());
+    assert_eq!(ans1.pow(Fr::characteristic().0.as_limbs()), Fq12::one());
+    assert_eq!(ans2.pow(Fr::characteristic().0.as_limbs()), Fq12::one());
+    assert_eq!(ans3.pow(Fr::characteristic().0.as_limbs()), Fq12::one());
 }

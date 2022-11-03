@@ -1,3 +1,4 @@
+use super::{adc, mac_with_carry};
 use crate::bls12_377::{field::Field, LegendreSymbol};
 use bitvec::prelude::*;
 use core::{
@@ -102,7 +103,7 @@ pub const T_MINUS_ONE_DIV_TWO: Uint<384, 6> = uint!(1837921289030710838195067919
 impl Fq {
     pub fn legendre(&self) -> LegendreSymbol {
         // s = self^((MODULUS - 1) // 2)
-        let s = self.pow(&MODULUS_MINUS_ONE_DIV_TWO.into_limbs());
+        let s = self.pow(MODULUS_MINUS_ONE_DIV_TWO.as_limbs());
         if s.is_zero() {
             LegendreSymbol::Zero
         } else if s.is_one() {
@@ -179,7 +180,7 @@ impl Field for Fq {
     }
 
     fn square_in_place(&mut self) {
-        *self = *self * *self
+        self.0 = self.0.pow_mod(uint!(2_U384), MODULUS);
     }
 
     fn inverse(&self) -> Option<Self> {
@@ -207,7 +208,7 @@ impl Field for Fq {
             LegendreSymbol::QuadraticResidue => {
                 let n = TWO_ADICITY as u64;
                 // `T` is equivalent to `m` in the paper.
-                let v = self.pow(&T_MINUS_ONE_DIV_TWO.into_limbs());
+                let v = self.pow(T_MINUS_ONE_DIV_TWO.as_limbs());
                 let x = *self * v.square();
 
                 let k = ((n - 1) as f64).sqrt().floor() as u64;
@@ -473,9 +474,9 @@ mod tests {
         let two = Fq(uint!(2_U384));
 
         // Compute the expected powers of G.
-        let g = Fq(GENERATOR).pow(&T.into_limbs());
+        let g = Fq(GENERATOR).pow(T.as_limbs());
         let powers = (0..TWO_ADICITY - 1)
-            .map(|i| g.pow(&two.pow(&[i as u64]).0.into_limbs()))
+            .map(|i| g.pow(two.pow(&[i as u64]).0.as_limbs()))
             .collect::<Vec<_>>();
 
         // Ensure the correct number of powers of G are present.

@@ -569,7 +569,7 @@ impl<G: Group> Mul<Fr> for SWProjective<G> {
             while !e.is_zero() {
                 let next = if e.0 % uint!(2_U256) == uint!(1_U256) {
                     // NOTE: LIMBS NEED TO BE LE
-                    let naf_sign = mod_signed(e.0.into_limbs()[0]);
+                    let naf_sign = mod_signed(e.0.as_limbs()[0]);
                     if naf_sign < 0 {
                         e.0 += Uint::from(-naf_sign as u64);
                     } else {

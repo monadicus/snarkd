@@ -259,13 +259,16 @@ impl Mul for Fq2 {
 
 impl MulAssign for Fq2 {
     fn mul_assign(&mut self, other: Self) {
-        let c0 = self.c0;
-        let c1 = self.c1;
-        let c2 = other.c0;
-        let c3 = other.c1;
-
-        self.c0 = c0 * c2 - (c1 * c3 * NONRESIDUE);
-        self.c1 = (c0 + c1) * (c2 + c3) - c0 * c2 - c1 * c3;
+        *self = Self::new(
+            Fq::sum_of_products(
+                [self.c0, Self::mul_fp_by_nonresidue(&self.c1)].into_iter(),
+                [other.c0, other.c1].into_iter(),
+            ),
+            Fq::sum_of_products(
+                [self.c0, self.c1].into_iter(),
+                [other.c1, other.c0].into_iter(),
+            ),
+        );
     }
 }
 
@@ -329,13 +332,16 @@ impl<'a> Mul<&'a Self> for Fq2 {
 
 impl<'a> MulAssign<&'a Self> for Fq2 {
     fn mul_assign(&mut self, other: &Self) {
-        let c0 = self.c0;
-        let c1 = self.c1;
-        let c2 = other.c0;
-        let c3 = other.c1;
-
-        self.c0 = c0 * c2 - (c1 * c3 * NONRESIDUE);
-        self.c1 = (c0 + c1) * (c2 + c3) - c0 * c2 - c1 * c3;
+        *self = Self::new(
+            Fq::sum_of_products(
+                [self.c0, Self::mul_fp_by_nonresidue(&self.c1)].into_iter(),
+                [other.c0, other.c1].into_iter(),
+            ),
+            Fq::sum_of_products(
+                [self.c0, self.c1].into_iter(),
+                [other.c1, other.c0].into_iter(),
+            ),
+        );
     }
 }
 

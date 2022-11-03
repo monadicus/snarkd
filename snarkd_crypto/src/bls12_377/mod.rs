@@ -193,3 +193,23 @@ fn final_exponentiation(f: &Fq12) -> Option<Fq12> {
         None => None,
     }
 }
+
+/// Calculate a + (b * c) + carry, returning the least significant digit
+/// and setting carry to the most significant digit.
+#[inline(always)]
+pub fn mac_with_carry(a: u64, b: u64, c: u64, carry: &mut u64) -> u64 {
+    let tmp = (u128::from(a)) + u128::from(b) * u128::from(c) + u128::from(*carry);
+
+    *carry = (tmp >> 64) as u64;
+
+    tmp as u64
+}
+
+/// Calculate a + b + carry, returning the sum and modifying the
+/// carry value.
+#[inline(always)]
+pub fn adc(a: &mut u64, b: u64, carry: u64) -> u64 {
+    let tmp = u128::from(*a) + u128::from(b) + u128::from(carry);
+    *a = tmp as u64;
+    (tmp >> 64) as u64
+}
