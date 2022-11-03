@@ -94,8 +94,8 @@ impl Field for Fq2 {
 
     fn rand() -> Self {
         Self {
-            c0: Fq(rand::thread_rng().sample(Standard)),
-            c1: Fq(rand::thread_rng().sample(Standard)),
+            c0: Fq::rand(),
+            c1: Fq::rand(),
         }
     }
 
@@ -140,17 +140,22 @@ impl Field for Fq2 {
     }
 
     fn inverse(&self) -> Option<Self> {
-        let mut t0 = self.c0.square();
-        let mut t1 = self.c1.square();
-        t1 *= NONRESIDUE;
-        t0 -= t1;
-        t0.inverse().map(|t0| {
-            let mut tmp = *self;
-            tmp.c0 *= t0;
-            tmp.c1 *= t0;
-            tmp.c1 = -tmp.c1;
-            tmp
-        })
+        if self.is_zero() {
+            None
+        } else {
+            // Guide to Pairing-based Cryptography, Algorithm 5.19.
+            // v0 = c0.square()
+            let mut v0 = self.c0.square();
+            // v1 = c1.square()
+            let v1 = self.c1.square();
+            // v0 = v0 - beta * v1
+            v0 -= Self::mul_fp_by_nonresidue(&v1);
+            v0.inverse().map(|v1| {
+                let c0 = self.c0 * v1;
+                let c1 = -(self.c1 * v1);
+                Self::new(c0, c1)
+            })
+        }
     }
 
     fn inverse_in_place(&mut self) -> Option<&mut Self> {

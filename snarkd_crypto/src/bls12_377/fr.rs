@@ -132,7 +132,6 @@ pub const T_MINUS_ONE_DIV_TWO: Uint<256, 4> =
     uint!(30000754767301779765804869764101946328252876608481130304309777_U256);
 
 impl Fr {
-    #[inline]
     pub fn legendre(&self) -> LegendreSymbol {
         // s = self^((MODULUS - 1) // 2)
         let mut s = self.pow(&MODULUS_MINUS_ONE_DIV_TWO.into_limbs());
@@ -197,7 +196,7 @@ impl Fr {
             carry = adc(&mut a[5], half_r[5], carry);
             carry = adc(&mut a[6], half_r[6], carry);
             _ = adc(&mut a[7], half_r[7], carry);
-            Self(Uint::from_base_le(10, [a[4], a[5], a[6], a[7]]).unwrap())
+            Self(Uint::from_limbs([a[4], a[5], a[6], a[7]]))
         };
 
         let alpha = |x: &Self, q: &[u64; 4]| -> Self {
@@ -229,7 +228,7 @@ impl Fr {
     }
 
     fn reduce(&mut self) {
-        if self.0 > MODULUS {
+        while self.0 >= MODULUS {
             self.0 -= MODULUS;
         }
     }
@@ -256,7 +255,9 @@ impl Field for Fr {
     }
 
     fn rand() -> Self {
-        Self(rand::thread_rng().sample(Standard))
+        let mut a = Self(rand::thread_rng().sample(Standard));
+        a.reduce();
+        a
     }
 
     fn characteristic() -> Self {
@@ -282,7 +283,7 @@ impl Field for Fr {
 
     // NOTE: Check if this is quicker than snarkvM
     fn square_in_place(&mut self) {
-        *self = Self(self.0.mul_redc(self.0, MODULUS, INV));
+        *self = Self(self.0.mul_mod(self.0, MODULUS));
     }
 
     fn inverse(&self) -> Option<Self> {
@@ -456,7 +457,7 @@ impl Mul for Fr {
     type Output = Self;
 
     fn mul(self, other: Self) -> Self {
-        Self(self.0.mul_redc(other.0, MODULUS, INV))
+        Self(self.0.mul_mod(other.0, MODULUS))
     }
 }
 
@@ -470,7 +471,9 @@ impl Neg for Fr {
     type Output = Self;
 
     fn neg(self) -> Self {
-        Self(MODULUS - self.0)
+        let mut a = Self(MODULUS - self.0);
+        a.reduce();
+        a
     }
 }
 
@@ -478,7 +481,7 @@ impl Div for Fr {
     type Output = Self;
 
     fn div(self, other: Self) -> Self {
-        Self(self.0.mul_redc(other.inverse().unwrap().0, MODULUS, INV))
+        Self(self.0.mul_mod(other.inverse().unwrap().0, MODULUS))
     }
 }
 
@@ -523,7 +526,7 @@ impl<'a> Mul<&'a Self> for Fr {
     type Output = Self;
 
     fn mul(self, other: &Self) -> Self {
-        Self(self.0.mul_redc(other.0, MODULUS, INV))
+        Self(self.0.mul_mod(other.0, MODULUS))
     }
 }
 
@@ -537,7 +540,7 @@ impl<'a> Div<&'a Self> for Fr {
     type Output = Self;
 
     fn div(self, other: &Self) -> Self {
-        Self(self.0.mul_redc(other.inverse().unwrap().0, MODULUS, INV))
+        Self(self.0.mul_mod(other.inverse().unwrap().0, MODULUS))
     }
 }
 

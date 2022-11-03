@@ -1,5 +1,5 @@
 use crate::bls12_377::{
-    field::Field, fq, fq2, pairing, Affine, Fq, Fq12, Fq2, Fq6, Fr, G1Affine, G1Projective,
+    field::Field, fq, fq2, fr, pairing, Affine, Fq, Fq12, Fq2, Fq6, Fr, G1Affine, G1Projective,
     G2Affine, G2Projective, LegendreSymbol, Projective,
 };
 use bitvec::prelude::*;
@@ -1159,7 +1159,8 @@ fn test_bilinearity() {
     assert_ne!(ans2, Fq12::one());
     assert_ne!(ans3, Fq12::one());
 
-    assert_eq!(ans1.pow(&Fr::characteristic().0.into_limbs()), Fq12::one());
-    assert_eq!(ans2.pow(&Fr::characteristic().0.into_limbs()), Fq12::one());
-    assert_eq!(ans3.pow(&Fr::characteristic().0.into_limbs()), Fq12::one());
+    let mut by = Fr::characteristic().0.into_limbs();
+    assert_eq!(ans1.pow(&by), Fq12::one());
+    assert_eq!(ans2.pow(&by), Fq12::one());
+    assert_eq!(ans3.pow(&by), Fq12::one());
 }

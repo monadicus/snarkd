@@ -325,7 +325,6 @@ impl Field for Fq12 {
     }
 
     fn square_in_place(&mut self) {
-        *self = self.square();
         let mut ab = self.c0;
         ab.mul_assign(&self.c1);
         let mut c0c1 = self.c0;
