@@ -459,6 +459,7 @@ impl Div for Fq12 {
 }
 
 impl DivAssign for Fq12 {
+    #[allow(clippy::suspicious_op_assign_impl)]
     fn div_assign(&mut self, other: Self) {
         *self *= other.inverse().unwrap();
     }
@@ -524,6 +525,7 @@ impl<'a> Div<&'a Self> for Fq12 {
 }
 
 impl<'a> DivAssign<&'a Self> for Fq12 {
+    #[allow(clippy::suspicious_op_assign_impl)]
     fn div_assign(&mut self, other: &Self) {
         *self *= other.inverse().unwrap();
     }

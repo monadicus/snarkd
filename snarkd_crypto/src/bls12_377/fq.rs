@@ -1,4 +1,3 @@
-use super::{adc, mac_with_carry};
 use crate::bls12_377::{field::Field, LegendreSymbol};
 use bitvec::prelude::*;
 use core::{
@@ -12,7 +11,7 @@ use ruint::{uint, Uint};
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Fq(pub Uint<384, 6>);
 
-pub const POWERS_OF_G: &'static [Uint<384, 6>] = &[
+pub const POWERS_OF_G: &[Uint<384, 6>] = &[
     uint!(11759432984210757955515102394259421622842731805301722003778799460755806109766954778381794158916389006258470283894_U384),
     uint!(76728627332054330107215521437663829484089413964084084888354490166669576688184173341868214290394688896870888326044_U384),
     uint!(50482501805661069943992631757164962942571953595228286301055053972545162690184639599216443159769039353792100390129_U384),
@@ -184,11 +183,7 @@ impl Field for Fq {
     }
 
     fn inverse(&self) -> Option<Self> {
-        if let Some(res) = self.0.inv_mod(MODULUS) {
-            Some(Self(res))
-        } else {
-            None
-        }
+        self.0.inv_mod(MODULUS).map(Self)
     }
 
     fn inverse_in_place(&mut self) -> Option<&mut Self> {
@@ -319,8 +314,7 @@ impl Field for Fq {
     }
 
     fn glv_endomorphism(&self) -> Self {
-        let p = *self * &Self::PHI;
-        p
+        *self * Self::PHI
     }
 }
 
@@ -343,7 +337,7 @@ impl Sub for Fq {
 
     fn sub(mut self, other: Self) -> Self {
         if other.0 > self.0 {
-            self.0 = self.0 + MODULUS;
+            self.0 += MODULUS;
         }
         Self(self.0 - other.0)
     }
@@ -412,7 +406,7 @@ impl<'a> Sub<&'a Self> for Fq {
 
     fn sub(mut self, other: &Self) -> Self {
         if other.0 > self.0 {
-            self.0 = self.0 + MODULUS;
+            self.0 += MODULUS;
         }
         Self(self.0 - other.0)
     }

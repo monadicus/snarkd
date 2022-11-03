@@ -3,7 +3,7 @@ use crate::bls12_377::{
     Projective, X,
 };
 use bitvec::prelude::*;
-use rand::Rng;
+
 use ruint::{uint, Uint};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
@@ -66,8 +66,7 @@ impl G1Affine {
             .0
             .as_limbs()
             .iter()
-            .map(|x| x.view_bits::<Lsb0>())
-            .flatten()
+            .flat_map(|x| x.view_bits::<Lsb0>())
             .map(|b| *b)
             .rev()
             .collect::<Vec<_>>();
@@ -96,6 +95,8 @@ impl Default for G1Prepared {
 
 #[cfg(test)]
 mod tests {
+    use rand::Rng;
+
     use super::{super::G1Affine, *};
     use crate::bls12_377::field::Field;
 
@@ -115,8 +116,7 @@ mod tests {
                             .0
                             .as_limbs()
                             .iter()
-                            .map(|limb| limb.view_bits::<Lsb0>())
-                            .flatten()
+                            .flat_map(|limb| limb.view_bits::<Lsb0>())
                             .map(|b| *b)
                             .rev()
                             .collect::<Vec<_>>()

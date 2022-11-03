@@ -4,7 +4,7 @@ use core::{
     iter::Sum,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
-use rand::{distributions::Standard, Rng};
+
 use ruint::uint;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
@@ -274,12 +274,14 @@ impl MulAssign for Fq2 {
 impl Div for Fq2 {
     type Output = Self;
 
+    #[allow(clippy::suspicious_arithmetic_impl)]
     fn div(self, other: Self) -> Self {
         self * other.inverse().unwrap()
     }
 }
 
 impl DivAssign for Fq2 {
+    #[allow(clippy::suspicious_op_assign_impl)]
     fn div_assign(&mut self, other: Self) {
         *self *= other.inverse().unwrap();
     }
@@ -347,12 +349,14 @@ impl<'a> MulAssign<&'a Self> for Fq2 {
 impl<'a> Div<&'a Self> for Fq2 {
     type Output = Self;
 
+    #[allow(clippy::suspicious_arithmetic_impl)]
     fn div(self, other: &Self) -> Self {
         self * other.inverse().unwrap()
     }
 }
 
 impl<'a> DivAssign<&'a Self> for Fq2 {
+    #[allow(clippy::suspicious_op_assign_impl)]
     fn div_assign(&mut self, other: &Self) {
         *self *= other.inverse().unwrap();
     }

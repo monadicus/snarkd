@@ -429,6 +429,7 @@ impl<'a> DivAssign<&'a Self> for Fq6 {
 }
 
 /// NONRESIDUE = U
+#[allow(dead_code)]
 const NONRESIDUE: Fq2 = Fq2 {
     c0: Fq(uint!(0_U384)),
     c1: Fq(uint!(1_U384)),

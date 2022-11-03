@@ -378,8 +378,9 @@ impl<G: Group> Neg for SWProjective<G> {
 impl<G: Group> Add<Self> for SWProjective<G> {
     type Output = Self;
 
-    fn add(self, other: Self) -> Self {
-        self + &other
+    fn add(mut self, other: Self) -> Self {
+        self += other;
+        self
     }
 }
 
@@ -392,8 +393,9 @@ impl<G: Group> AddAssign<Self> for SWProjective<G> {
 impl<G: Group> Sub<Self> for SWProjective<G> {
     type Output = Self;
 
-    fn sub(self, other: Self) -> Self {
-        self - &other
+    fn sub(mut self, other: Self) -> Self {
+        self -= other;
+        self
     }
 }
 

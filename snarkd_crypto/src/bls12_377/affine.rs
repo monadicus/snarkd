@@ -1,8 +1,8 @@
 use super::{Fr, Group, Projective};
-use bitvec::prelude::*;
+
 use core::{
     fmt::{Debug, Display},
-    ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
+    ops::{Mul, Neg},
 };
 
 pub trait Affine:

@@ -49,7 +49,7 @@ pub trait Field:
     fn rand() -> Self;
 
     /// Returns the characteristic of the field.
-    fn characteristic<'a>() -> Self;
+    fn characteristic() -> Self;
 
     /// Returns `self + self`.
     #[must_use]
@@ -96,8 +96,7 @@ pub trait Field:
 
         let bits = exp
             .iter()
-            .map(|limb| limb.view_bits::<Lsb0>())
-            .flatten()
+            .flat_map(|limb| limb.view_bits::<Lsb0>())
             .collect::<Vec<_>>();
         for i in bits.into_iter().rev() {
             if !found_one {

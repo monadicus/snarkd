@@ -1,5 +1,5 @@
 use crate::bls12_377::{
-    field::Field, fq, fq2, fr, pairing, Affine, Fq, Fq12, Fq2, Fq6, Fr, G1Affine, G1Projective,
+    field::Field, fq, fq2, pairing, Affine, Fq, Fq12, Fq2, Fq6, Fr, G1Affine, G1Projective,
     G2Affine, G2Projective, LegendreSymbol, Projective,
 };
 use bitvec::prelude::*;
@@ -368,13 +368,13 @@ pub fn frobenius_test<F: Field>(characteristic: &[u64], maxpower: usize) {
         a_0.frobenius_map(0);
         assert_eq!(a, a_0);
 
-        let mut a_q = a.pow(&characteristic);
+        let mut a_q = a.pow(characteristic);
         for power in 1..maxpower {
             let mut a_qi = a;
             a_qi.frobenius_map(power);
             assert_eq!(a_qi, a_q);
 
-            a_q = a_q.pow(&characteristic);
+            a_q = a_q.pow(characteristic);
         }
     }
 }
@@ -1102,8 +1102,7 @@ fn test_g1_projective_glv() {
                 .0
                 .as_limbs()
                 .iter()
-                .map(|limb| limb.view_bits::<Lsb0>())
-                .flatten()
+                .flat_map(|limb| limb.view_bits::<Lsb0>())
                 .map(|bit| *bit)
                 .rev()
                 .collect::<Vec<_>>()

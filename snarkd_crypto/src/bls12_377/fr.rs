@@ -34,7 +34,7 @@ use ruint::{uint, Uint};
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Fr(pub Uint<256, 4>);
 
-pub const POWERS_OF_G: &'static [Uint<256, 4>] = &[
+pub const POWERS_OF_G: &[Uint<256, 4>] = &[
     uint!(7550553103602024334975125493733701741804725558747959317959731134235635147227_U256),
     uint!(2426736712223096716690040454781163745329121217182105961450780095846454806933_U256),
     uint!(7262145565060860359900199261463709015779508115142628947528384917326026416094_U256),
@@ -438,7 +438,7 @@ impl Sub for Fr {
 
     fn sub(mut self, other: Self) -> Self {
         if other.0 > self.0 {
-            self.0 = self.0 + MODULUS;
+            self.0 += MODULUS;
         }
         Self(self.0 - other.0)
     }
@@ -507,7 +507,7 @@ impl<'a> Sub<&'a Self> for Fr {
 
     fn sub(mut self, other: &Self) -> Self {
         if other.0 > self.0 {
-            self.0 = self.0 + MODULUS;
+            self.0 += MODULUS;
         }
         Self(self.0 - other.0)
     }

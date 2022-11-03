@@ -105,8 +105,7 @@ impl G2Affine {
                 .0
                 .as_limbs()
                 .iter()
-                .map(|limb| limb.view_bits::<Lsb0>())
-                .flatten()
+                .flat_map(|limb| limb.view_bits::<Lsb0>())
                 .map(|b| *b)
                 .rev()
                 .collect::<Vec<_>>(),
