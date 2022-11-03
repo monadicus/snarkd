@@ -103,7 +103,6 @@ impl Fq12 {
     }
 
     /// Multiply by quadratic nonresidue v.
-    #[inline(always)]
     pub(crate) fn mul_fp6_by_nonresidue(fe: &Fq6) -> Fq6 {
         let new_c0 = Fq6::mul_fp2_by_nonresidue(&fe.c2);
         let new_c1 = fe.c0;
@@ -532,7 +531,6 @@ impl<'a> DivAssign<&'a Self> for Fq12 {
 
 impl Sum<Fq12> for Fq12 {
     /// Returns the `sum` of `self` and `other`.
-    #[inline]
     fn sum<I: Iterator<Item = Fq12>>(iter: I) -> Self {
         iter.fold(Fq12::zero(), |a, b| a + b)
     }

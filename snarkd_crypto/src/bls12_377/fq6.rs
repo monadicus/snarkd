@@ -435,7 +435,6 @@ const NONRESIDUE: Fq2 = Fq2 {
 };
 
 impl Fq6 {
-    #[inline(always)]
     pub fn mul_fp2_by_nonresidue(fe: &Fq2) -> Fq2 {
         // Karatsuba multiplication with constant other = u.
         let c0 = Fq2::mul_fp_by_nonresidue(&fe.c1);
@@ -517,7 +516,6 @@ impl Fq6 {
 
 impl Sum<Fq6> for Fq6 {
     /// Returns the `sum` of `self` and `other`.
-    #[inline]
     fn sum<I: Iterator<Item = Fq6>>(iter: I) -> Self {
         iter.fold(Fq6::zero(), |a, b| a + b)
     }

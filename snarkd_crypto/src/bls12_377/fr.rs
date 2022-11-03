@@ -146,7 +146,6 @@ impl Fr {
         }
     }
 
-    #[inline]
     pub fn decompose(
         &self,
         q1: &[u64; 4],
@@ -550,14 +549,12 @@ impl<'a> DivAssign<&'a Self> for Fr {
 
 impl Sum<Fr> for Fr {
     /// Returns the `sum` of `self` and `other`.
-    #[inline]
     fn sum<I: Iterator<Item = Fr>>(iter: I) -> Self {
         iter.fold(Fr::zero(), |a, b| a + b)
     }
 }
 
 impl Display for Fr {
-    #[inline]
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         write!(f, "{}", self.0)
     }

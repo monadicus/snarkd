@@ -11,31 +11,24 @@ pub mod field;
 pub use field::*;
 
 pub mod fr;
-#[doc(inline)]
 pub use fr::*;
 
 pub mod fq;
-#[doc(inline)]
 pub use fq::*;
 
 pub mod fq2;
-#[doc(inline)]
 pub use fq2::*;
 
 pub mod fq6;
-#[doc(inline)]
 pub use fq6::*;
 
 pub mod fq12;
-#[doc(inline)]
 pub use fq12::*;
 
 pub mod g1;
-#[doc(inline)]
 pub use g1::*;
 
 pub mod g2;
-#[doc(inline)]
 pub use g2::*;
 
 pub mod group;
@@ -196,7 +189,6 @@ fn final_exponentiation(f: &Fq12) -> Option<Fq12> {
 
 /// Calculate a + (b * c) + carry, returning the least significant digit
 /// and setting carry to the most significant digit.
-#[inline(always)]
 pub fn mac_with_carry(a: u64, b: u64, c: u64, carry: &mut u64) -> u64 {
     let tmp = (u128::from(a)) + u128::from(b) * u128::from(c) + u128::from(*carry);
 
@@ -207,7 +199,6 @@ pub fn mac_with_carry(a: u64, b: u64, c: u64, carry: &mut u64) -> u64 {
 
 /// Calculate a + b + carry, returning the sum and modifying the
 /// carry value.
-#[inline(always)]
 pub fn adc(a: &mut u64, b: u64, carry: u64) -> u64 {
     let tmp = u128::from(*a) + u128::from(b) + u128::from(carry);
     *a = tmp as u64;

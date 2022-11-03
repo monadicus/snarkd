@@ -19,14 +19,12 @@ pub struct SWAffine<G: Group> {
 }
 
 impl<G: Group> SWAffine<G> {
-    #[inline]
     pub const fn new(x: G::BaseField, y: G::BaseField, infinity: bool) -> Self {
         Self { x, y, infinity }
     }
 }
 
 impl<G: Group> Default for SWAffine<G> {
-    #[inline]
     fn default() -> Self {
         Self::zero()
     }
@@ -46,12 +44,10 @@ impl<G: Group> Affine for SWAffine<G> {
     type Projective = SWProjective<G>;
     type Parameters = G;
 
-    #[inline]
     fn zero() -> Self {
         Self::new(G::BaseField::zero(), G::BaseField::one(), true)
     }
 
-    #[inline]
     fn is_zero(&self) -> bool {
         self.infinity
     }
@@ -67,12 +63,10 @@ impl<G: Group> Affine for SWAffine<G> {
         rand::thread_rng().sample(Standard)
     }
 
-    #[inline]
     fn cofactor() -> &'static [u64] {
         G::COFACTOR
     }
 
-    #[inline]
     fn prime_subgroup_generator() -> Self {
         Self::new(
             G::AFFINE_GENERATOR_COEFFS.0,
@@ -138,7 +132,6 @@ impl<G: Group> Affine for SWAffine<G> {
         (*self * G::COFACTOR_INV).into()
     }
 
-    #[inline]
     fn to_projective(&self) -> SWProjective<G> {
         (*self).into()
     }
@@ -218,7 +211,6 @@ impl<G: Group> Affine for SWAffine<G> {
 impl<G: Group> Neg for SWAffine<G> {
     type Output = Self;
 
-    #[inline]
     fn neg(self) -> Self {
         if !self.is_zero() {
             Self::new(self.x, -self.y, false)
@@ -237,7 +229,6 @@ impl<G: Group> Mul<Fr> for SWAffine<G> {
 }
 
 impl<G: Group> Distribution<SWAffine<G>> for Standard {
-    #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> SWAffine<G> {
         loop {
             let x = G::BaseField::rand();
@@ -252,7 +243,6 @@ impl<G: Group> Distribution<SWAffine<G>> for Standard {
 
 // The projective point X, Y, Z is represented in the affine coordinates as X/Z^2, Y/Z^3.
 impl<G: Group> From<SWProjective<G>> for SWAffine<G> {
-    #[inline]
     fn from(p: SWProjective<G>) -> SWAffine<G> {
         if p.is_zero() {
             SWAffine::zero()

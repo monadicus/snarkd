@@ -36,7 +36,6 @@ impl Fq2 {
         Self { c0, c1 }
     }
 
-    #[inline(always)]
     pub fn mul_fp_by_nonresidue(fe: &Fq) -> Fq {
         NONRESIDUE * fe
     }
@@ -361,7 +360,6 @@ impl<'a> DivAssign<&'a Self> for Fq2 {
 
 impl Sum<Fq2> for Fq2 {
     /// Returns the `sum` of `self` and `other`.
-    #[inline]
     fn sum<I: Iterator<Item = Fq2>>(iter: I) -> Self {
         iter.fold(Fq2::zero(), |a, b| a + b)
     }
@@ -375,7 +373,6 @@ impl std::fmt::Display for Fq2 {
 
 /// `Fp2` elements are ordered lexicographically.
 impl Ord for Fq2 {
-    #[inline(always)]
     fn cmp(&self, other: &Self) -> Ordering {
         match self.c1.cmp(&other.c1) {
             Ordering::Greater => Ordering::Greater,
@@ -386,7 +383,6 @@ impl Ord for Fq2 {
 }
 
 impl PartialOrd for Fq2 {
-    #[inline(always)]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }

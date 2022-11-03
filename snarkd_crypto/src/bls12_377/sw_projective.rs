@@ -27,7 +27,6 @@ impl<G: Group> SWProjective<G> {
 }
 
 impl<G: Group> Default for SWProjective<G> {
-    #[inline]
     fn default() -> Self {
         Self::zero()
     }
@@ -86,7 +85,6 @@ impl<G: Group> PartialEq<SWAffine<G>> for SWProjective<G> {
 }
 
 impl<G: Group> Distribution<SWProjective<G>> for Standard {
-    #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> SWProjective<G> {
         loop {
             let x = G::BaseField::rand();
@@ -108,7 +106,6 @@ impl<G: Group> Projective for SWProjective<G> {
     }
 
     // The point at infinity is always represented by Z = 0.
-    #[inline]
     fn zero() -> Self {
         Self::new(
             G::BaseField::zero(),
@@ -117,27 +114,22 @@ impl<G: Group> Projective for SWProjective<G> {
         )
     }
 
-    #[inline]
     fn is_zero(&self) -> bool {
         self.z.is_zero()
     }
 
-    #[inline]
     fn prime_subgroup_generator() -> Self {
         SWAffine::prime_subgroup_generator().into()
     }
 
-    #[inline]
     fn cofactor() -> &'static [u64] {
         G::COFACTOR
     }
 
-    #[inline]
     fn is_normalized(&self) -> bool {
         self.is_zero() || self.z.is_one()
     }
 
-    #[inline]
     fn batch_normalization(v: &mut [Self]) {
         // Montgomery’s Trick and Fast Implementation of Masked AES
         // Genelle, Prouff and Quisquater
@@ -286,15 +278,12 @@ impl<G: Group> Projective for SWProjective<G> {
         }
     }
 
-    #[inline]
-    #[must_use]
     fn double(&self) -> Self {
         let mut tmp = *self;
         tmp.double_in_place();
         tmp
     }
 
-    #[inline]
     fn double_in_place(&mut self) {
         if self.is_zero() {
             return;
@@ -369,7 +358,6 @@ impl<G: Group> Projective for SWProjective<G> {
         }
     }
 
-    #[inline]
     fn to_affine(&self) -> SWAffine<G> {
         (*self).into()
     }
@@ -378,7 +366,6 @@ impl<G: Group> Projective for SWProjective<G> {
 impl<G: Group> Neg for SWProjective<G> {
     type Output = Self;
 
-    #[inline]
     fn neg(self) -> Self {
         if !self.is_zero() {
             Self::new(self.x, -self.y, self.z)
@@ -391,14 +378,12 @@ impl<G: Group> Neg for SWProjective<G> {
 impl<G: Group> Add<Self> for SWProjective<G> {
     type Output = Self;
 
-    #[inline]
     fn add(self, other: Self) -> Self {
         self + &other
     }
 }
 
 impl<G: Group> AddAssign<Self> for SWProjective<G> {
-    #[inline]
     fn add_assign(&mut self, other: Self) {
         *self += &other;
     }
@@ -407,14 +392,12 @@ impl<G: Group> AddAssign<Self> for SWProjective<G> {
 impl<G: Group> Sub<Self> for SWProjective<G> {
     type Output = Self;
 
-    #[inline]
     fn sub(self, other: Self) -> Self {
         self - &other
     }
 }
 
 impl<G: Group> SubAssign<Self> for SWProjective<G> {
-    #[inline]
     fn sub_assign(&mut self, other: Self) {
         *self -= &other;
     }
@@ -423,7 +406,6 @@ impl<G: Group> SubAssign<Self> for SWProjective<G> {
 impl<'a, G: Group> Add<&'a Self> for SWProjective<G> {
     type Output = Self;
 
-    #[inline]
     fn add(self, other: &'a Self) -> Self {
         let mut copy = self;
         copy += other;
@@ -504,7 +486,6 @@ impl<'a, G: Group> AddAssign<&'a Self> for SWProjective<G> {
 impl<'a, G: Group> Sub<&'a Self> for SWProjective<G> {
     type Output = Self;
 
-    #[inline]
     fn sub(self, other: &'a Self) -> Self {
         let mut copy = self;
         copy -= other;
@@ -523,7 +504,6 @@ impl<G: Group> Mul<Fr> for SWProjective<G> {
 
     /// Performs scalar multiplication of this element.
     #[allow(clippy::suspicious_arithmetic_impl)]
-    #[inline]
     fn mul(self, other: Fr) -> Self {
         /// The scalar multiplication window size.
         const GLV_WINDOW_SIZE: usize = 4;
@@ -568,7 +548,6 @@ impl<G: Group> Mul<Fr> for SWProjective<G> {
             let mut naf = vec![];
             while !e.is_zero() {
                 let next = if e.0 % uint!(2_U256) == uint!(1_U256) {
-                    // NOTE: LIMBS NEED TO BE LE
                     let naf_sign = mod_signed(e.0.as_limbs()[0]);
                     if naf_sign < 0 {
                         e.0 += Uint::from(-naf_sign as u64);
@@ -646,7 +625,6 @@ impl<G: Group> MulAssign<Fr> for SWProjective<G> {
 
 /// The affine point X, Y is represented in the Jacobian coordinates with Z = 1.
 impl<G: Group> From<SWAffine<G>> for SWProjective<G> {
-    #[inline]
     fn from(p: SWAffine<G>) -> SWProjective<G> {
         if p.is_zero() {
             Self::zero()
