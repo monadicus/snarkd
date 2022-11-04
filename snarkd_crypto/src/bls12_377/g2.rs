@@ -34,12 +34,6 @@ impl Group for G2Parameters {
     const AFFINE_GENERATOR_COEFFS: (Self::BaseField, Self::BaseField) =
         (G2_GENERATOR_X, G2_GENERATOR_Y);
 
-    /// WEIERSTRASS_A = [0, 0]
-    const A: Fq2 = Fq2 {
-        c0: G1Parameters::A,
-        c1: G1Parameters::A,
-    };
-
     // As per https://eprint.iacr.org/2012/072.pdf,
     // this curve has b' = b/i, where b is the COEFF_B of G1, and x^6 -i is
     // the irreducible poly used to extend from Fp2 to Fp12.

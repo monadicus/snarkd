@@ -169,9 +169,9 @@ impl<G: Group> Affine for SWAffine<G> {
                 let x_sq = b.x.square();
                 b.x -= &b.y; // x - y
                 a.x = b.y.double(); // denominator = 2y
-                a.y = x_sq.double() + x_sq + G::A; // numerator = 3x^2 + a
-                b.y -= &(a.y * half); // y - (3x^2 + a)/2
-                a.y *= *inversion_tmp; // (3x^2 + a) * tmp
+                a.y = x_sq.double() + x_sq; // numerator = 3x^2
+                b.y -= &(a.y * half); // y - (3x^2)/2
+                a.y *= *inversion_tmp; // (3x^2) * tmp
                 *inversion_tmp *= &a.x; // update tmp
             } else {
                 // No inversions take place if either operand is zero

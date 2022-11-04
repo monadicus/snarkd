@@ -10,6 +10,5 @@ pub trait Group: Hash + Clone + Copy + Debug + PartialEq + Eq {
     const COFACTOR: &'static [u64];
     const COFACTOR_INV: Fr;
     const AFFINE_GENERATOR_COEFFS: (Self::BaseField, Self::BaseField);
-    const A: Self::BaseField;
     const B: Self::BaseField;
 }
