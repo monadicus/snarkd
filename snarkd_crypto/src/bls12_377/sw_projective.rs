@@ -1,6 +1,6 @@
 use crate::bls12_377::{
-    field::Field, group::Group, sw_affine::SWAffine, Affine, Fr, Projective, B1, B2, HALF_R, Q1,
-    Q2, R128,
+    field::Field, group::Group, sw_affine::SWAffine, Affine, Projective, Scalar, B1, B2, HALF_R,
+    Q1, Q2, R128,
 };
 use core::{
     fmt::{Display, Formatter, Result as FmtResult},
@@ -466,12 +466,12 @@ impl<'a, G: Group> SubAssign<&'a Self> for SWProjective<G> {
     }
 }
 
-impl<G: Group> Mul<Fr> for SWProjective<G> {
+impl<G: Group> Mul<Scalar> for SWProjective<G> {
     type Output = Self;
 
     /// Performs scalar multiplication of this element.
     #[allow(clippy::suspicious_arithmetic_impl)]
-    fn mul(self, other: Fr) -> Self {
+    fn mul(self, other: Scalar) -> Self {
         /// The scalar multiplication window size.
         const GLV_WINDOW_SIZE: usize = 4;
 
@@ -511,7 +511,7 @@ impl<G: Group> Mul<Fr> for SWProjective<G> {
                 d_mod_window_size
             }
         };
-        let to_wnaf = |mut e: Fr| -> Vec<i32> {
+        let to_wnaf = |mut e: Scalar| -> Vec<i32> {
             let mut naf = vec![];
             while !e.is_zero() {
                 let next = if e.0 % uint!(2_U256) == uint!(1_U256) {
@@ -532,7 +532,7 @@ impl<G: Group> Mul<Fr> for SWProjective<G> {
             naf
         };
 
-        let wnaf = |k1: Fr, k2: Fr, s1: bool, s2: bool| -> (Vec<i32>, Vec<i32>) {
+        let wnaf = |k1: Scalar, k2: Scalar, s1: bool, s2: bool| -> (Vec<i32>, Vec<i32>) {
             let mut wnaf_1 = to_wnaf(k1);
             let mut wnaf_2 = to_wnaf(k2);
 
@@ -583,9 +583,9 @@ impl<G: Group> Mul<Fr> for SWProjective<G> {
     }
 }
 
-impl<G: Group> MulAssign<Fr> for SWProjective<G> {
+impl<G: Group> MulAssign<Scalar> for SWProjective<G> {
     /// Performs scalar multiplication of this element.
-    fn mul_assign(&mut self, other: Fr) {
+    fn mul_assign(&mut self, other: Scalar) {
         *self = *self * other
     }
 }

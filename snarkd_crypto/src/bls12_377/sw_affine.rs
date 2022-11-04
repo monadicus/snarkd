@@ -1,5 +1,5 @@
 use crate::bls12_377::{
-    field::Field, group::Group, sw_projective::SWProjective, Affine, Fr, Projective,
+    field::Field, group::Group, sw_projective::SWProjective, Affine, Projective, Scalar,
 };
 use bitvec::prelude::*;
 use core::{
@@ -219,10 +219,10 @@ impl<G: Group> Neg for SWAffine<G> {
     }
 }
 
-impl<G: Group> Mul<Fr> for SWAffine<G> {
+impl<G: Group> Mul<Scalar> for SWAffine<G> {
     type Output = SWProjective<G>;
 
-    fn mul(self, other: Fr) -> Self::Output {
+    fn mul(self, other: Scalar) -> Self::Output {
         self.to_projective().mul(other)
     }
 }

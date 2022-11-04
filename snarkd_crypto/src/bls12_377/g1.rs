@@ -1,6 +1,6 @@
 use crate::bls12_377::{
-    field::Field, group::Group, sw_affine::SWAffine, sw_projective::SWProjective, Affine, Fq, Fr,
-    Projective, X,
+    field::Field, group::Group, sw_affine::SWAffine, sw_projective::SWProjective, Affine, Fq,
+    Projective, Scalar, X,
 };
 use bitvec::prelude::*;
 
@@ -17,8 +17,8 @@ impl Group for G1Parameters {
 
     /// COFACTOR_INV = COFACTOR^{-1} mod r
     ///              = 5285428838741532253824584287042945485047145357130994810877
-    const COFACTOR_INV: Fr =
-        Fr(uint!(5285428838741532253824584287042945485047145357130994810877_U256));
+    const COFACTOR_INV: Scalar =
+        Scalar(uint!(5285428838741532253824584287042945485047145357130994810877_U256));
 
     /// AFFINE_GENERATOR_COEFFS = (G1_GENERATOR_X, G1_GENERATOR_Y)
     const AFFINE_GENERATOR_COEFFS: (Self::BaseField, Self::BaseField) =
@@ -46,7 +46,7 @@ impl G1Affine {
             p.x *= Fq::PHI;
             p
         };
-        let x_square = Fr(Uint::from(X)).square();
+        let x_square = Scalar(Uint::from(X)).square();
         let bits = x_square
             .0
             .as_limbs()
@@ -97,7 +97,7 @@ mod tests {
                 assert_eq!(
                     p.is_in_correct_subgroup_assuming_on_curve(),
                     p.mul_bits(
-                        Fr::characteristic()
+                        Scalar::characteristic()
                             .0
                             .as_limbs()
                             .iter()

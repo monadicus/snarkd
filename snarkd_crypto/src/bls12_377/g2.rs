@@ -1,6 +1,6 @@
 use crate::bls12_377::{
     field::Field, group::Group, sw_affine::SWAffine, sw_projective::SWProjective, Affine, Fq, Fq2,
-    Fr, G1Parameters, Projective, X,
+    G1Parameters, Projective, Scalar, X,
 };
 use bitvec::prelude::*;
 use ruint::uint;
@@ -26,7 +26,7 @@ impl Group for G2Parameters {
 
     /// COFACTOR_INV = COFACTOR^{-1} mod r
     ///              = 6764900296503390671038341982857278410319949526107311149686707033187604810669
-    const COFACTOR_INV: Fr = Fr(
+    const COFACTOR_INV: Scalar = Scalar(
         uint!(6764900296503390671038341982857278410319949526107311149686707033187604810669_U256),
     );
 
@@ -95,7 +95,7 @@ pub type G2Projective = SWProjective<G2Parameters>;
 impl G2Affine {
     pub fn is_in_correct_subgroup_assuming_on_curve(&self) -> bool {
         self.mul_bits(
-            Fr::characteristic()
+            Scalar::characteristic()
                 .0
                 .as_limbs()
                 .iter()

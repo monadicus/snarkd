@@ -32,7 +32,7 @@ use ruint::{uint, Uint};
 /// print("2-adic gen into_chunks(g2 * R % q): ", into_chunks(g2 * R % q, 64, 4))
 /// ```
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct Fr(pub Uint<256, 4>);
+pub struct Scalar(pub Uint<256, 4>);
 
 pub const POWERS_OF_G: &[Uint<256, 4>] = &[
     uint!(7550553103602024334975125493733701741804725558747959317959731134235635147227_U256),
@@ -131,7 +131,7 @@ pub const T: Uint<256, 4> =
 pub const T_MINUS_ONE_DIV_TWO: Uint<256, 4> =
     uint!(30000754767301779765804869764101946328252876608481130304309777_U256);
 
-impl Fr {
+impl Scalar {
     pub fn legendre(&self) -> LegendreSymbol {
         // s = self^((MODULUS - 1) // 2)
         let mut s = self.pow(MODULUS_MINUS_ONE_DIV_TWO.as_limbs());
@@ -233,7 +233,7 @@ impl Fr {
     }
 }
 
-impl Field for Fr {
+impl Field for Scalar {
     // We don't need GLV endomorphisms for the scalar field.
     const PHI: Self = Self(uint!(0_U256));
 
@@ -419,7 +419,7 @@ impl Field for Fr {
     }
 }
 
-impl Add for Fr {
+impl Add for Scalar {
     type Output = Self;
 
     fn add(self, other: Self) -> Self {
@@ -427,13 +427,13 @@ impl Add for Fr {
     }
 }
 
-impl AddAssign for Fr {
+impl AddAssign for Scalar {
     fn add_assign(&mut self, other: Self) {
         *self = *self + other
     }
 }
 
-impl Sub for Fr {
+impl Sub for Scalar {
     type Output = Self;
 
     fn sub(mut self, other: Self) -> Self {
@@ -444,13 +444,13 @@ impl Sub for Fr {
     }
 }
 
-impl SubAssign for Fr {
+impl SubAssign for Scalar {
     fn sub_assign(&mut self, other: Self) {
         *self = *self - other;
     }
 }
 
-impl Mul for Fr {
+impl Mul for Scalar {
     type Output = Self;
 
     fn mul(self, other: Self) -> Self {
@@ -458,13 +458,13 @@ impl Mul for Fr {
     }
 }
 
-impl MulAssign for Fr {
+impl MulAssign for Scalar {
     fn mul_assign(&mut self, other: Self) {
         *self = *self * other;
     }
 }
 
-impl Neg for Fr {
+impl Neg for Scalar {
     type Output = Self;
 
     fn neg(self) -> Self {
@@ -474,7 +474,7 @@ impl Neg for Fr {
     }
 }
 
-impl Div for Fr {
+impl Div for Scalar {
     type Output = Self;
 
     fn div(self, other: Self) -> Self {
@@ -482,13 +482,13 @@ impl Div for Fr {
     }
 }
 
-impl DivAssign for Fr {
+impl DivAssign for Scalar {
     fn div_assign(&mut self, other: Self) {
         *self = *self / other;
     }
 }
 
-impl<'a> Add<&'a Self> for Fr {
+impl<'a> Add<&'a Self> for Scalar {
     type Output = Self;
 
     fn add(self, other: &Self) -> Self {
@@ -496,13 +496,13 @@ impl<'a> Add<&'a Self> for Fr {
     }
 }
 
-impl<'a> AddAssign<&'a Self> for Fr {
+impl<'a> AddAssign<&'a Self> for Scalar {
     fn add_assign(&mut self, other: &Self) {
         *self = *self + other
     }
 }
 
-impl<'a> Sub<&'a Self> for Fr {
+impl<'a> Sub<&'a Self> for Scalar {
     type Output = Self;
 
     fn sub(mut self, other: &Self) -> Self {
@@ -513,13 +513,13 @@ impl<'a> Sub<&'a Self> for Fr {
     }
 }
 
-impl<'a> SubAssign<&'a Self> for Fr {
+impl<'a> SubAssign<&'a Self> for Scalar {
     fn sub_assign(&mut self, other: &Self) {
         *self = *self - other;
     }
 }
 
-impl<'a> Mul<&'a Self> for Fr {
+impl<'a> Mul<&'a Self> for Scalar {
     type Output = Self;
 
     fn mul(self, other: &Self) -> Self {
@@ -527,13 +527,13 @@ impl<'a> Mul<&'a Self> for Fr {
     }
 }
 
-impl<'a> MulAssign<&'a Self> for Fr {
+impl<'a> MulAssign<&'a Self> for Scalar {
     fn mul_assign(&mut self, other: &Self) {
         *self = *self * other;
     }
 }
 
-impl<'a> Div<&'a Self> for Fr {
+impl<'a> Div<&'a Self> for Scalar {
     type Output = Self;
 
     fn div(self, other: &Self) -> Self {
@@ -541,20 +541,20 @@ impl<'a> Div<&'a Self> for Fr {
     }
 }
 
-impl<'a> DivAssign<&'a Self> for Fr {
+impl<'a> DivAssign<&'a Self> for Scalar {
     fn div_assign(&mut self, other: &Self) {
         *self = *self / other;
     }
 }
 
-impl Sum<Fr> for Fr {
+impl Sum<Scalar> for Scalar {
     /// Returns the `sum` of `self` and `other`.
-    fn sum<I: Iterator<Item = Fr>>(iter: I) -> Self {
-        iter.fold(Fr::zero(), |a, b| a + b)
+    fn sum<I: Iterator<Item = Scalar>>(iter: I) -> Self {
+        iter.fold(Scalar::zero(), |a, b| a + b)
     }
 }
 
-impl Display for Fr {
+impl Display for Scalar {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         write!(f, "{}", self.0)
     }
@@ -566,10 +566,10 @@ mod tests {
 
     #[test]
     fn test_powers_of_g() {
-        let two = Fr(uint!(2_U256));
+        let two = Scalar(uint!(2_U256));
 
         // Compute the expected powers of G.
-        let g = Fr(GENERATOR).pow(T.as_limbs());
+        let g = Scalar(GENERATOR).pow(T.as_limbs());
         let powers = (0..TWO_ADICITY - 1)
             .map(|i| g.pow(two.pow(&[i as u64]).0.as_limbs()))
             .collect::<Vec<_>>();
@@ -581,7 +581,7 @@ mod tests {
         // Ensure the expected and candidate powers match.
         for (expected, candidate) in powers.iter().zip(POWERS_OF_G.iter()) {
             println!("{:?} =?= {:?}", expected, candidate);
-            assert_eq!(*expected, Fr(*candidate));
+            assert_eq!(*expected, Scalar(*candidate));
         }
     }
 }

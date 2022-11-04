@@ -1,4 +1,4 @@
-use super::{Affine, Fr, Group};
+use super::{Affine, Group, Scalar};
 use core::{
     fmt::{Debug, Display},
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
@@ -14,8 +14,8 @@ pub trait Projective:
     + for<'a> AddAssign<&'a Self>
     + for<'a> Sub<&'a Self, Output = Self>
     + for<'a> SubAssign<&'a Self>
-    + Mul<Fr, Output = Self>
-    + MulAssign<Fr>
+    + Mul<Scalar, Output = Self>
+    + MulAssign<Scalar>
     + Copy
     + Clone
     + PartialEq

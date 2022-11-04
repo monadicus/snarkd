@@ -1,6 +1,6 @@
 use crate::bls12_377::{
-    field::Field, fq, fq2, pairing, Affine, Fq, Fq12, Fq2, Fq6, Fr, G1Affine, G1Projective,
-    G2Affine, G2Projective, LegendreSymbol, Projective,
+    field::Field, fq, fq2, pairing, Affine, Fq, Fq12, Fq2, Fq6, G1Affine, G1Projective, G2Affine,
+    G2Projective, LegendreSymbol, Projective, Scalar,
 };
 use bitvec::prelude::*;
 use ruint::uint;
@@ -95,7 +95,7 @@ fn random_multiplication_test<G: Projective>() {
         let a_affine = a.to_affine();
         let b_affine = b.to_affine();
 
-        let s = Fr::rand();
+        let s = Scalar::rand();
 
         // s ( a + b )
         let mut tmp1 = a;
@@ -147,7 +147,7 @@ fn random_negation_test<G: Projective>() {
     for _ in 0..ITERATIONS {
         let r = G::rand();
 
-        let s = Fr::rand();
+        let s = Scalar::rand();
         let sneg = -s;
         assert!((s + sneg).is_zero());
 
@@ -584,8 +584,8 @@ pub fn curve_tests<G: Projective>() {
 #[allow(clippy::eq_op)]
 pub fn projective_test<G: Projective>(a: G, mut b: G) {
     let zero = G::zero();
-    let fr_zero = Fr::zero();
-    let fr_one = Fr::one();
+    let fr_zero = Scalar::zero();
+    let fr_one = Scalar::one();
     let fr_two = fr_one + fr_one;
     assert!(zero == zero);
     assert!(zero.is_zero()); // true
@@ -624,8 +624,8 @@ pub fn projective_test<G: Projective>(a: G, mut b: G) {
     b.double_in_place();
     assert_eq!(original_b.double(), b);
 
-    let fr_rand1 = Fr::rand();
-    let fr_rand2 = Fr::rand();
+    let fr_rand1 = Scalar::rand();
+    let fr_rand2 = Scalar::rand();
     let a_rand1 = a.mul(fr_rand1);
     let a_rand2 = a.mul(fr_rand2);
     let fr_three = fr_two + fr_rand1;
@@ -654,8 +654,8 @@ pub fn projective_test<G: Projective>(a: G, mut b: G) {
 #[test]
 fn test_bls12_377_fr() {
     for _ in 0..ITERATIONS {
-        let a = Fr::rand();
-        let b = Fr::rand();
+        let a = Scalar::rand();
+        let b = Scalar::rand();
         field_test(a, b);
         sqrt_field_test(b);
     }
@@ -710,10 +710,10 @@ fn test_fq_is_half() {
 #[test]
 fn test_fr_sum_of_products() {
     for i in [2, 4, 8, 16, 32] {
-        let a = (0..i).map(|_| Fr::rand()).collect::<Vec<_>>();
-        let b = (0..i).map(|_| Fr::rand()).collect::<Vec<_>>();
+        let a = (0..i).map(|_| Scalar::rand()).collect::<Vec<_>>();
+        let b = (0..i).map(|_| Scalar::rand()).collect::<Vec<_>>();
         assert_eq!(
-            Fr::sum_of_products(a.clone().into_iter(), b.clone().into_iter()),
+            Scalar::sum_of_products(a.clone().into_iter(), b.clone().into_iter()),
             a.into_iter().zip(b).map(|(a, b)| a * b).sum()
         );
     }
@@ -1092,7 +1092,7 @@ fn test_fq12_mul_by_034() {
 #[test]
 fn test_g1_projective_glv() {
     let point = G1Projective::rand();
-    let scalar = Fr::rand();
+    let scalar = Scalar::rand();
     let affine = point.to_affine();
     assert_eq!(point.mul(scalar), affine.mul(scalar));
     assert_eq!(
@@ -1152,7 +1152,7 @@ fn test_g2_generator() {
 fn test_bilinearity() {
     let a = G1Projective::rand();
     let b = G2Projective::rand();
-    let s = Fr::rand();
+    let s = Scalar::rand();
 
     let sa = a * s;
     let sb = b * s;
@@ -1168,7 +1168,7 @@ fn test_bilinearity() {
     assert_ne!(ans2, Fq12::one());
     assert_ne!(ans3, Fq12::one());
 
-    assert_eq!(ans1.pow(Fr::characteristic().0.as_limbs()), Fq12::one());
-    assert_eq!(ans2.pow(Fr::characteristic().0.as_limbs()), Fq12::one());
-    assert_eq!(ans3.pow(Fr::characteristic().0.as_limbs()), Fq12::one());
+    assert_eq!(ans1.pow(Scalar::characteristic().0.as_limbs()), Fq12::one());
+    assert_eq!(ans2.pow(Scalar::characteristic().0.as_limbs()), Fq12::one());
+    assert_eq!(ans3.pow(Scalar::characteristic().0.as_limbs()), Fq12::one());
 }

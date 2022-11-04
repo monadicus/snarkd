@@ -10,8 +10,8 @@ pub use errors::*;
 pub mod field;
 pub use field::*;
 
-pub mod fr;
-pub use fr::*;
+pub mod scalar;
+pub use scalar::*;
 
 pub mod fq;
 pub use fq::*;
@@ -60,13 +60,13 @@ const Q1: [u64; 4] = [9183663392111466540, 12968021215939883360, 3, 0];
 const Q2: [u64; 4] = [13, 0, 0, 0];
 
 /// B1 = x^2 - 1
-const B1: Fr = Fr(uint!(91893752504881257701523279626832445440_U256));
+const B1: Scalar = Scalar(uint!(91893752504881257701523279626832445440_U256));
 
 /// B2 = x^2
-const B2: Fr = Fr(uint!(91893752504881257701523279626832445441_U256));
+const B2: Scalar = Scalar(uint!(91893752504881257701523279626832445441_U256));
 
 /// R128 = 2^128 - 1
-const R128: Fr = Fr(uint!(340282366920938463463374607431768211455_U256));
+const R128: Scalar = Scalar(uint!(340282366920938463463374607431768211455_U256));
 
 /// HALF_R = 2^256 / 2
 const HALF_R: [u64; 8] = [0, 0, 0, 0x8000000000000000, 0, 0, 0, 0];

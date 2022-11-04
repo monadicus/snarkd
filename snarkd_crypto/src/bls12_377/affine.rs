@@ -1,4 +1,4 @@
-use super::{Fr, Group, Projective};
+use super::{Group, Projective, Scalar};
 
 use core::{
     fmt::{Debug, Display},
@@ -6,7 +6,13 @@ use core::{
 };
 
 pub trait Affine:
-    Neg<Output = Self> + Mul<Fr, Output = Self::Projective> + Debug + Display + PartialEq + Eq + Sized
+    Neg<Output = Self>
+    + Mul<Scalar, Output = Self::Projective>
+    + Debug
+    + Display
+    + PartialEq
+    + Eq
+    + Sized
 {
     type Projective: Projective<Affine = Self>;
     type Parameters: Group;
