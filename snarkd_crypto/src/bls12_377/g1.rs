@@ -89,7 +89,7 @@ impl G1Prepared {
 
 impl Default for G1Prepared {
     fn default() -> Self {
-        unreachable!("unhit");
+        panic!("unhit");
         G1Prepared(G1Affine::prime_subgroup_generator())
     }
 }

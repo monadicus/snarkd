@@ -134,7 +134,7 @@ struct G2HomProjective {
 
 impl Default for G2Prepared {
     fn default() -> Self {
-        unreachable!("unhit");
+        panic!("unhit");
         Self::from_affine(G2Affine::prime_subgroup_generator())
     }
 }
@@ -146,7 +146,7 @@ impl G2Prepared {
 
     pub fn from_affine(q: G2Affine) -> Self {
         if q.is_zero() {
-            unreachable!("unhit");
+            panic!("unhit");
             return Self {
                 ell_coeffs: vec![],
                 infinity: true,

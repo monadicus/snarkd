@@ -138,7 +138,7 @@ impl Fr {
         s.reduce();
 
         if s.is_zero() {
-            unreachable!("unhit");
+            panic!("unhit");
             LegendreSymbol::Zero
         } else if s.is_one() {
             LegendreSymbol::QuadraticResidue
@@ -290,11 +290,11 @@ impl Field for Fr {
 
     fn inverse_in_place(&mut self) -> Option<&mut Self> {
         if let Some(inv) = self.0.inv_mod(MODULUS) {
-            unreachable!("unhit");
+            panic!("unhit");
             *self = Self(inv);
             Some(self)
         } else {
-            unreachable!("unhit");
+            panic!("unhit");
             None
         }
     }
@@ -302,7 +302,7 @@ impl Field for Fr {
     fn sqrt(&self) -> Option<Self> {
         // https://eprint.iacr.org/2020/1407.pdf (page 4, algorithm 1)
         match self.legendre() {
-            LegendreSymbol::Zero => unreachable!("unhit"), // Some(*self),
+            LegendreSymbol::Zero => panic!("unhit"), // Some(*self),
             LegendreSymbol::QuadraticNonResidue => None,
             LegendreSymbol::QuadraticResidue => {
                 let n = TWO_ADICITY as u64;
@@ -414,12 +414,12 @@ impl Field for Fr {
     }
 
     fn frobenius_map(&mut self, _: usize) {
-        unreachable!("unhit");
+        panic!("unhit");
         // No-op
     }
 
     fn glv_endomorphism(&self) -> Self {
-        unreachable!("unhit");
+        panic!("unhit");
         Self::zero()
     }
 }
@@ -434,7 +434,7 @@ impl Add for Fr {
 
 impl AddAssign for Fr {
     fn add_assign(&mut self, other: Self) {
-        unreachable!("unhit");
+        panic!("unhit");
         *self = *self + other
     }
 }
@@ -452,7 +452,7 @@ impl Sub for Fr {
 
 impl SubAssign for Fr {
     fn sub_assign(&mut self, other: Self) {
-        unreachable!("unhit");
+        panic!("unhit");
         *self = *self - other;
     }
 }
@@ -485,14 +485,14 @@ impl Div for Fr {
     type Output = Self;
 
     fn div(self, other: Self) -> Self {
-        unreachable!("unhit");
+        panic!("unhit");
         Self(self.0.mul_mod(other.inverse().unwrap().0, MODULUS))
     }
 }
 
 impl DivAssign for Fr {
     fn div_assign(&mut self, other: Self) {
-        unreachable!("unhit");
+        panic!("unhit");
         *self = *self / other;
     }
 }
@@ -546,14 +546,14 @@ impl<'a> Div<&'a Self> for Fr {
     type Output = Self;
 
     fn div(self, other: &Self) -> Self {
-        unreachable!("unhit");
+        panic!("unhit");
         Self(self.0.mul_mod(other.inverse().unwrap().0, MODULUS))
     }
 }
 
 impl<'a> DivAssign<&'a Self> for Fr {
     fn div_assign(&mut self, other: &Self) {
-        unreachable!("unhit");
+        panic!("unhit");
         *self = *self / other;
     }
 }
@@ -567,7 +567,7 @@ impl Sum<Fr> for Fr {
 
 impl Display for Fr {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        unreachable!("unhit");
+        panic!("unhit");
         write!(f, "{}", self.0)
     }
 }

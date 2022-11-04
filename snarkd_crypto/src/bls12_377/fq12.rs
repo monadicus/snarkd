@@ -190,7 +190,7 @@ impl Fq12 {
                 if *i {
                     found_one = true;
                 } else {
-                    unreachable!("unhit");
+                    panic!("unhit");
                     continue;
                 }
             }
@@ -300,7 +300,7 @@ impl Field for Fq12 {
     }
 
     fn characteristic<'a>() -> Self {
-        unreachable!("unhit");
+        panic!("unhit");
         Self {
             c0: Fq6::characteristic(),
             c1: Fq6::zero(),
@@ -366,18 +366,18 @@ impl Field for Fq12 {
 
     fn inverse_in_place(&mut self) -> Option<&mut Self> {
         if let Some(inv) = self.inverse() {
-            unreachable!("unhit");
+            panic!("unhit");
             *self = inv;
             Some(self)
         } else {
-            unreachable!("unhit");
+            panic!("unhit");
             None
         }
     }
 
     // No-op
     fn sqrt(&self) -> Option<Self> {
-        unreachable!("unhit");
+        panic!("unhit");
         None
     }
 
@@ -390,7 +390,7 @@ impl Field for Fq12 {
     }
 
     fn glv_endomorphism(&self) -> Self {
-        unreachable!("unhit");
+        panic!("unhit");
         Self::zero()
     }
 }
@@ -459,7 +459,7 @@ impl Div for Fq12 {
     type Output = Self;
 
     fn div(mut self, other: Self) -> Self {
-        unreachable!("unhit");
+        panic!("unhit");
         self.div_assign(other);
         self
     }
@@ -468,7 +468,7 @@ impl Div for Fq12 {
 impl DivAssign for Fq12 {
     #[allow(clippy::suspicious_op_assign_impl)]
     fn div_assign(&mut self, other: Self) {
-        unreachable!("unhit");
+        panic!("unhit");
         *self *= other.inverse().unwrap();
     }
 }
@@ -477,7 +477,7 @@ impl<'a> Add<&'a Self> for Fq12 {
     type Output = Self;
 
     fn add(mut self, other: &Self) -> Self {
-        unreachable!("unhit");
+        panic!("unhit");
         self.add_assign(other);
         self
     }
@@ -494,7 +494,7 @@ impl<'a> Sub<&'a Self> for Fq12 {
     type Output = Self;
 
     fn sub(mut self, other: &Self) -> Self {
-        unreachable!("unhit");
+        panic!("unhit");
         self.sub_assign(other);
         self
     }
@@ -529,7 +529,7 @@ impl<'a> Div<&'a Self> for Fq12 {
     type Output = Self;
 
     fn div(mut self, other: &Self) -> Self {
-        unreachable!("unhit");
+        panic!("unhit");
         self.div_assign(other);
         self
     }
@@ -538,7 +538,7 @@ impl<'a> Div<&'a Self> for Fq12 {
 impl<'a> DivAssign<&'a Self> for Fq12 {
     #[allow(clippy::suspicious_op_assign_impl)]
     fn div_assign(&mut self, other: &Self) {
-        unreachable!("unhit");
+        panic!("unhit");
         *self *= other.inverse().unwrap();
     }
 }
