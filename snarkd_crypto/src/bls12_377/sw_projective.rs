@@ -171,6 +171,7 @@ impl<G: Group> Projective for SWProjective<G> {
             g.z = tmp * s;
             tmp = newtmp;
         }
+
         // Perform affine transformations
         v.par_iter_mut()
             .filter(|g| !g.is_normalized())

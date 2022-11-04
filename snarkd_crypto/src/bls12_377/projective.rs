@@ -23,6 +23,8 @@ pub trait Projective:
     + Debug
     + Display
     + Sized
+    + Send
+    + Sync
 {
     type Affine: Affine<Projective = Self>;
     type Parameters: Group;
