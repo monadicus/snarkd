@@ -1,4 +1,4 @@
-use super::{Affine, Group, Scalar};
+use super::{Affine, Parameters, Scalar};
 use core::{
     fmt::{Debug, Display},
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
@@ -25,7 +25,7 @@ pub trait Projective:
     + Sized
 {
     type Affine: Affine<Projective = Self>;
-    type Parameters: Group;
+    type Parameters: Parameters;
 
     fn rand() -> Self;
 

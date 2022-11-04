@@ -1,6 +1,6 @@
 use crate::bls12_377::{
-    field::Field, group::Group, sw_affine::SWAffine, sw_projective::SWProjective, Affine, Fp,
-    Projective, Scalar, X,
+    field::Field, parameters::Parameters, sw_affine::SWAffine, sw_projective::SWProjective, Affine,
+    Fp, Projective, Scalar, X,
 };
 use bitvec::prelude::*;
 
@@ -9,7 +9,7 @@ use ruint::{uint, Uint};
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct G1Parameters;
 
-impl Group for G1Parameters {
+impl Parameters for G1Parameters {
     type BaseField = Fp;
 
     /// COFACTOR = (x - 1)^2 / 3  = 30631250834960419227450344600217059328

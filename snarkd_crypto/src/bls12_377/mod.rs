@@ -28,8 +28,8 @@ pub use g1::*;
 pub mod g2;
 pub use g2::*;
 
-pub mod group;
-pub use group::*;
+pub mod parameters;
+pub use parameters::*;
 
 pub mod projective;
 pub use projective::*;

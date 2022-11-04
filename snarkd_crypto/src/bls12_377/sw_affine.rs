@@ -1,5 +1,5 @@
 use crate::bls12_377::{
-    field::Field, group::Group, sw_projective::SWProjective, Affine, Projective, Scalar,
+    field::Field, parameters::Parameters, sw_projective::SWProjective, Affine, Projective, Scalar,
 };
 use bitvec::prelude::*;
 use core::{
@@ -12,25 +12,25 @@ use rand::{
 };
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
-pub struct SWAffine<G: Group> {
-    pub x: G::BaseField,
-    pub y: G::BaseField,
+pub struct SWAffine<P: Parameters> {
+    pub x: P::BaseField,
+    pub y: P::BaseField,
     pub infinity: bool,
 }
 
-impl<G: Group> SWAffine<G> {
-    pub const fn new(x: G::BaseField, y: G::BaseField, infinity: bool) -> Self {
+impl<P: Parameters> SWAffine<P> {
+    pub const fn new(x: P::BaseField, y: P::BaseField, infinity: bool) -> Self {
         Self { x, y, infinity }
     }
 }
 
-impl<G: Group> Default for SWAffine<G> {
+impl<P: Parameters> Default for SWAffine<P> {
     fn default() -> Self {
         Self::zero()
     }
 }
 
-impl<G: Group> Display for SWAffine<G> {
+impl<P: Parameters> Display for SWAffine<P> {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         if self.infinity {
             write!(f, "SWAffine(Infinity)")
@@ -40,12 +40,12 @@ impl<G: Group> Display for SWAffine<G> {
     }
 }
 
-impl<G: Group> Affine for SWAffine<G> {
-    type Projective = SWProjective<G>;
-    type Parameters = G;
+impl<P: Parameters> Affine for SWAffine<P> {
+    type Projective = SWProjective<P>;
+    type Parameters = P;
 
     fn zero() -> Self {
-        Self::new(G::BaseField::zero(), G::BaseField::one(), true)
+        Self::new(P::BaseField::zero(), P::BaseField::one(), true)
     }
 
     fn is_zero(&self) -> bool {
@@ -53,7 +53,7 @@ impl<G: Group> Affine for SWAffine<G> {
     }
 
     /// Initializes a new affine group element from the given coordinates.
-    fn from_coordinates(x: G::BaseField, y: G::BaseField, infinity: bool) -> Self {
+    fn from_coordinates(x: P::BaseField, y: P::BaseField, infinity: bool) -> Self {
         let point = Self { x, y, infinity };
         assert!(point.is_on_curve());
         point
@@ -64,13 +64,13 @@ impl<G: Group> Affine for SWAffine<G> {
     }
 
     fn cofactor() -> &'static [u64] {
-        G::COFACTOR
+        P::COFACTOR
     }
 
     fn prime_subgroup_generator() -> Self {
         Self::new(
-            G::AFFINE_GENERATOR_COEFFS.0,
-            G::AFFINE_GENERATOR_COEFFS.1,
+            P::AFFINE_GENERATOR_COEFFS.0,
+            P::AFFINE_GENERATOR_COEFFS.1,
             false,
         )
     }
@@ -80,9 +80,9 @@ impl<G: Group> Affine for SWAffine<G> {
     ///
     /// If and only if `greatest` is set will the lexicographically
     /// largest y-coordinate be selected.
-    fn from_x_coordinate(x: G::BaseField, greatest: bool) -> Option<Self> {
+    fn from_x_coordinate(x: P::BaseField, greatest: bool) -> Option<Self> {
         // Compute x^3 + ax + b
-        let x3b = (x.square() * x) + G::B;
+        let x3b = (x.square() * x) + P::B;
 
         x3b.sqrt().map(|y| {
             let negy = -y;
@@ -92,7 +92,7 @@ impl<G: Group> Affine for SWAffine<G> {
         })
     }
 
-    fn mul_bits(&self, bits: Vec<bool>) -> SWProjective<G> {
+    fn mul_bits(&self, bits: Vec<bool>) -> SWProjective<P> {
         let mut output = SWProjective::zero();
         for i in bits.iter().skip_while(|b| !**b) {
             output.double_in_place();
@@ -104,10 +104,10 @@ impl<G: Group> Affine for SWAffine<G> {
     }
 
     fn mul_by_cofactor_inv(&self) -> Self {
-        (*self * G::COFACTOR_INV).into()
+        (*self * P::COFACTOR_INV).into()
     }
 
-    fn to_projective(&self) -> SWProjective<G> {
+    fn to_projective(&self) -> SWProjective<P> {
         (*self).into()
     }
 
@@ -118,7 +118,7 @@ impl<G: Group> Affine for SWAffine<G> {
         } else {
             // Check that the point is on the curve
             let y2 = self.y.square();
-            let x3b = (self.x.square() * self.x) + G::B;
+            let x3b = (self.x.square() * self.x) + P::B;
             y2 == x3b
         }
     }
@@ -129,8 +129,8 @@ impl<G: Group> Affine for SWAffine<G> {
     fn batch_add_loop_1(
         a: &mut Self,
         b: &mut Self,
-        half: &G::BaseField,
-        inversion_tmp: &mut G::BaseField,
+        half: &P::BaseField,
+        inversion_tmp: &mut P::BaseField,
     ) {
         if a.is_zero() || b.is_zero() {
         } else if a.x == b.x {
@@ -166,7 +166,7 @@ impl<G: Group> Affine for SWAffine<G> {
     /// Performs the second half of batch addition in-place:
     ///     `x3` := `lambda^2 - x1 - x2`
     ///     `y3` := `lambda * (x1 - x3) - y1`.
-    fn batch_add_loop_2(a: &mut Self, b: Self, inversion_tmp: &mut G::BaseField) {
+    fn batch_add_loop_2(a: &mut Self, b: Self, inversion_tmp: &mut P::BaseField) {
         if a.is_zero() {
             *a = b;
         } else if !b.is_zero() {
@@ -183,7 +183,7 @@ impl<G: Group> Affine for SWAffine<G> {
     }
 }
 
-impl<G: Group> Neg for SWAffine<G> {
+impl<P: Parameters> Neg for SWAffine<P> {
     type Output = Self;
 
     fn neg(self) -> Self {
@@ -195,24 +195,24 @@ impl<G: Group> Neg for SWAffine<G> {
     }
 }
 
-impl<G: Group> Mul<Scalar> for SWAffine<G> {
-    type Output = SWProjective<G>;
+impl<P: Parameters> Mul<Scalar> for SWAffine<P> {
+    type Output = SWProjective<P>;
 
     fn mul(self, other: Scalar) -> Self::Output {
         self.to_projective().mul(other)
     }
 }
 
-impl<G: Group> Distribution<SWAffine<G>> for Standard {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> SWAffine<G> {
+impl<P: Parameters> Distribution<SWAffine<P>> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> SWAffine<P> {
         loop {
-            let x = G::BaseField::rand();
+            let x = P::BaseField::rand();
             let greatest = rng.gen();
 
             if let Some(p) = SWAffine::from_x_coordinate(x, greatest) {
                 return p
                     .mul_bits(
-                        G::COFACTOR
+                        P::COFACTOR
                             .iter()
                             .flat_map(|limb| limb.view_bits::<Lsb0>())
                             .map(|b| *b)
@@ -226,8 +226,8 @@ impl<G: Group> Distribution<SWAffine<G>> for Standard {
 }
 
 // The projective point X, Y, Z is represented in the affine coordinates as X/Z^2, Y/Z^3.
-impl<G: Group> From<SWProjective<G>> for SWAffine<G> {
-    fn from(p: SWProjective<G>) -> SWAffine<G> {
+impl<P: Parameters> From<SWProjective<P>> for SWAffine<P> {
+    fn from(p: SWProjective<P>) -> SWAffine<P> {
         if p.is_zero() {
             SWAffine::zero()
         } else if p.z.is_one() {

@@ -4,7 +4,7 @@ use core::{
     hash::Hash,
 };
 
-pub trait Group: Hash + Clone + Copy + Debug + PartialEq + Eq {
+pub trait Parameters: Hash + Clone + Copy + Debug + PartialEq + Eq {
     type BaseField: Field + Ord + Display;
 
     const COFACTOR: &'static [u64];
