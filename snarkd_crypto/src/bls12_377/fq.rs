@@ -188,9 +188,11 @@ impl Field for Fq {
 
     fn inverse_in_place(&mut self) -> Option<&mut Self> {
         if let Some(res) = self.0.inv_mod(MODULUS) {
+            unreachable!("unhit");
             *self = Self(res);
             Some(self)
         } else {
+            unreachable!("unhit");
             None
         }
     }
@@ -310,6 +312,7 @@ impl Field for Fq {
     }
 
     fn frobenius_map(&mut self, _: usize) {
+        unreachable!("unhit");
         // No-op
     }
 
@@ -377,12 +380,14 @@ impl Div for Fq {
     type Output = Self;
 
     fn div(self, other: Self) -> Self {
+        unreachable!("unhit");
         Self(self.0.mul_mod(other.inverse().unwrap().0, MODULUS))
     }
 }
 
 impl DivAssign for Fq {
     fn div_assign(&mut self, other: Self) {
+        unreachable!("unhit");
         *self = *self / other;
     }
 }
@@ -436,12 +441,14 @@ impl<'a> Div<&'a Self> for Fq {
     type Output = Self;
 
     fn div(self, other: &Self) -> Self {
+        unreachable!("unhit");
         Self(self.0.mul_mod(other.inverse().unwrap().0, MODULUS))
     }
 }
 
 impl<'a> DivAssign<&'a Self> for Fq {
     fn div_assign(&mut self, other: &Self) {
+        unreachable!("unhit");
         *self = *self / other;
     }
 }
@@ -455,6 +462,7 @@ impl Sum<Fq> for Fq {
 
 impl Display for Fq {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        unreachable!("unhit");
         write!(f, "{}", self.0)
     }
 }

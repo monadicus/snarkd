@@ -152,6 +152,7 @@ impl Field for Fq6 {
     }
 
     fn characteristic() -> Self {
+        unreachable!("unhit");
         Self {
             c0: Fq2::characteristic(),
             c1: Fq2::zero(),
@@ -236,15 +237,18 @@ impl Field for Fq6 {
 
     fn inverse_in_place(&mut self) -> Option<&mut Self> {
         if let Some(inv) = self.inverse() {
+            unreachable!("unhit");
             *self = inv;
             Some(self)
         } else {
+            unreachable!("unhit");
             None
         }
     }
 
     // No-op
     fn sqrt(&self) -> Option<Self> {
+        unreachable!("unhit");
         None
     }
 
@@ -258,6 +262,7 @@ impl Field for Fq6 {
     }
 
     fn glv_endomorphism(&self) -> Self {
+        unreachable!("unhit");
         Self::zero()
     }
 }
@@ -340,6 +345,7 @@ impl Div for Fq6 {
     type Output = Self;
 
     fn div(mut self, other: Self) -> Self {
+        unreachable!("unhit");
         self.div_assign(other);
         self
     }
@@ -347,6 +353,7 @@ impl Div for Fq6 {
 
 impl DivAssign for Fq6 {
     fn div_assign(&mut self, other: Self) {
+        unreachable!("unhit");
         self.mul_assign(other.inverse().unwrap());
     }
 }
@@ -355,6 +362,7 @@ impl<'a> Add<&'a Self> for Fq6 {
     type Output = Self;
 
     fn add(mut self, other: &Self) -> Self {
+        unreachable!("unhit");
         self.add_assign(other);
         self
     }
@@ -372,6 +380,7 @@ impl<'a> Sub<&'a Self> for Fq6 {
     type Output = Self;
 
     fn sub(mut self, other: &Self) -> Self {
+        unreachable!("unhit");
         self.sub_assign(other);
         self
     }
@@ -417,6 +426,7 @@ impl<'a> Div<&'a Self> for Fq6 {
     type Output = Self;
 
     fn div(mut self, other: &Self) -> Self {
+        unreachable!("unhit");
         self.div_assign(other);
         self
     }
@@ -424,6 +434,7 @@ impl<'a> Div<&'a Self> for Fq6 {
 
 impl<'a> DivAssign<&'a Self> for Fq6 {
     fn div_assign(&mut self, other: &Self) {
+        unreachable!("unhit");
         self.mul_assign(other.inverse().unwrap());
     }
 }

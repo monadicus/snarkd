@@ -26,6 +26,7 @@ impl<G: Group> SWAffine<G> {
 
 impl<G: Group> Default for SWAffine<G> {
     fn default() -> Self {
+        unreachable!("unhit");
         Self::zero()
     }
 }
@@ -35,6 +36,7 @@ impl<G: Group> Display for SWAffine<G> {
         if self.infinity {
             write!(f, "SWAffine(Infinity)")
         } else {
+            unreachable!("unhit");
             write!(f, "SWAffine(x={}, y={})", self.x, self.y)
         }
     }
@@ -54,6 +56,7 @@ impl<G: Group> Affine for SWAffine<G> {
 
     /// Initializes a new affine group element from the given coordinates.
     fn from_coordinates(x: G::BaseField, y: G::BaseField, infinity: bool) -> Self {
+        unreachable!("unhit");
         let point = Self { x, y, infinity };
         assert!(point.is_on_curve());
         point
@@ -64,6 +67,7 @@ impl<G: Group> Affine for SWAffine<G> {
     }
 
     fn cofactor() -> &'static [u64] {
+        unreachable!("unhit");
         G::COFACTOR
     }
 
@@ -98,6 +102,7 @@ impl<G: Group> Affine for SWAffine<G> {
     /// If and only if `greatest` is set will the lexicographically
     /// largest y-coordinate be selected.
     fn from_y_coordinate(_y: G::BaseField, _greatest: bool) -> Option<Self> {
+        unreachable!("unhit");
         unimplemented!()
     }
 
@@ -128,6 +133,7 @@ impl<G: Group> Affine for SWAffine<G> {
     }
 
     fn mul_by_cofactor_inv(&self) -> Self {
+        unreachable!("unhit");
         (*self * G::COFACTOR_INV).into()
     }
 
@@ -138,6 +144,7 @@ impl<G: Group> Affine for SWAffine<G> {
     /// Checks that the current point is on the elliptic curve.
     fn is_on_curve(&self) -> bool {
         if self.is_zero() {
+            unreachable!("unhit");
             true
         } else {
             // Check that the point is on the curve
@@ -156,7 +163,9 @@ impl<G: Group> Affine for SWAffine<G> {
         half: &G::BaseField,
         inversion_tmp: &mut G::BaseField,
     ) {
+        unreachable!("unhit");
         if a.is_zero() || b.is_zero() {
+            unreachable!("unhit");
         } else if a.x == b.x {
             // Double
             // In our model, we consider self additions rare.
@@ -164,6 +173,7 @@ impl<G: Group> Affine for SWAffine<G> {
             // This costs 1 modular mul more than a standard squaring,
             // and one amortised inversion
             if a.y == b.y {
+                unreachable!("unhit");
                 // Compute one half (1/2) and cache it.
 
                 let x_sq = b.x.square();
@@ -174,11 +184,13 @@ impl<G: Group> Affine for SWAffine<G> {
                 a.y *= *inversion_tmp; // (3x^2 + a) * tmp
                 *inversion_tmp *= &a.x; // update tmp
             } else {
+                unreachable!("unhit");
                 // No inversions take place if either operand is zero
                 a.infinity = true;
                 b.infinity = true;
             }
         } else {
+            unreachable!("unhit");
             // We can recover x1 + x2 from this. Note this is never 0.
             a.x -= &b.x; // denominator = x1 - x2
             a.y -= &b.y; // numerator = y1 - y2
@@ -192,8 +204,10 @@ impl<G: Group> Affine for SWAffine<G> {
     ///     `y3` := `lambda * (x1 - x3) - y1`.
     fn batch_add_loop_2(a: &mut Self, b: Self, inversion_tmp: &mut G::BaseField) {
         if a.is_zero() {
+            unreachable!("unhit");
             *a = b;
         } else if !b.is_zero() {
+            unreachable!("unhit");
             let lambda = a.y * *inversion_tmp;
             *inversion_tmp *= &a.x; // Remove the top layer of the denominator
 
@@ -203,6 +217,8 @@ impl<G: Group> Affine for SWAffine<G> {
             // y3 = l*(x2 - x3) - y2 or
             // for squaring: (3x^2 + a)/2y(x - y - x3) - (y - (3x^2 + a)/2) = l*(x - x3) - y
             a.y = lambda * (b.x - a.x) - b.y;
+        } else {
+            unreachable!("unhit");
         }
     }
 }
@@ -214,6 +230,7 @@ impl<G: Group> Neg for SWAffine<G> {
         if !self.is_zero() {
             Self::new(self.x, -self.y, false)
         } else {
+            unreachable!("unhit");
             self
         }
     }
