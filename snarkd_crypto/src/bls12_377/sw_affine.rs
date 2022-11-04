@@ -163,7 +163,6 @@ impl<G: Group> Affine for SWAffine<G> {
         half: &G::BaseField,
         inversion_tmp: &mut G::BaseField,
     ) {
-        unreachable!("unhit");
         if a.is_zero() || b.is_zero() {
             unreachable!("unhit");
         } else if a.x == b.x {
