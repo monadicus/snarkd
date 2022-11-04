@@ -158,7 +158,6 @@ impl Field for Fq2 {
 
     fn inverse_in_place(&mut self) -> Option<&mut Self> {
         if let Some(inv) = self.inverse() {
-            panic!("unhit");
             *self = inv;
             Some(self)
         } else {
@@ -279,7 +278,6 @@ impl Div for Fq2 {
 
     #[allow(clippy::suspicious_arithmetic_impl)]
     fn div(self, other: Self) -> Self {
-        panic!("unhit");
         self * other.inverse().unwrap()
     }
 }

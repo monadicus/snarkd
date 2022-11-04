@@ -237,7 +237,6 @@ impl Field for Fq6 {
 
     fn inverse_in_place(&mut self) -> Option<&mut Self> {
         if let Some(inv) = self.inverse() {
-            panic!("unhit");
             *self = inv;
             Some(self)
         } else {
@@ -345,7 +344,6 @@ impl Div for Fq6 {
     type Output = Self;
 
     fn div(mut self, other: Self) -> Self {
-        panic!("unhit");
         self.div_assign(other);
         self
     }
@@ -353,7 +351,6 @@ impl Div for Fq6 {
 
 impl DivAssign for Fq6 {
     fn div_assign(&mut self, other: Self) {
-        panic!("unhit");
         self.mul_assign(other.inverse().unwrap());
     }
 }

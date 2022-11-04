@@ -290,7 +290,6 @@ impl Field for Fr {
 
     fn inverse_in_place(&mut self) -> Option<&mut Self> {
         if let Some(inv) = self.0.inv_mod(MODULUS) {
-            panic!("unhit");
             *self = Self(inv);
             Some(self)
         } else {
@@ -485,7 +484,6 @@ impl Div for Fr {
     type Output = Self;
 
     fn div(self, other: Self) -> Self {
-        panic!("unhit");
         Self(self.0.mul_mod(other.inverse().unwrap().0, MODULUS))
     }
 }

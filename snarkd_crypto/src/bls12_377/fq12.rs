@@ -366,7 +366,6 @@ impl Field for Fq12 {
 
     fn inverse_in_place(&mut self) -> Option<&mut Self> {
         if let Some(inv) = self.inverse() {
-            panic!("unhit");
             *self = inv;
             Some(self)
         } else {
@@ -459,7 +458,6 @@ impl Div for Fq12 {
     type Output = Self;
 
     fn div(mut self, other: Self) -> Self {
-        panic!("unhit");
         self.div_assign(other);
         self
     }
@@ -468,7 +466,6 @@ impl Div for Fq12 {
 impl DivAssign for Fq12 {
     #[allow(clippy::suspicious_op_assign_impl)]
     fn div_assign(&mut self, other: Self) {
-        panic!("unhit");
         *self *= other.inverse().unwrap();
     }
 }
