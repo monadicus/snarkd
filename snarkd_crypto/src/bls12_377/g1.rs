@@ -1,5 +1,5 @@
 use crate::bls12_377::{
-    field::Field, group::Group, sw_affine::SWAffine, sw_projective::SWProjective, Affine, Fq,
+    field::Field, group::Group, sw_affine::SWAffine, sw_projective::SWProjective, Affine, Fp,
     Projective, Scalar, X,
 };
 use bitvec::prelude::*;
@@ -10,7 +10,7 @@ use ruint::{uint, Uint};
 pub struct G1Parameters;
 
 impl Group for G1Parameters {
-    type BaseField = Fq;
+    type BaseField = Fp;
 
     /// COFACTOR = (x - 1)^2 / 3  = 30631250834960419227450344600217059328
     const COFACTOR: &'static [u64] = &[0x0, 0x170b5d4430000000];
@@ -25,14 +25,14 @@ impl Group for G1Parameters {
         (G1_GENERATOR_X, G1_GENERATOR_Y);
 
     /// WEIERSTRASS_B = 1
-    const B: Fq = Fq(uint!(1_U384));
+    const B: Fp = Fp(uint!(1_U384));
 }
 
-const G1_GENERATOR_X: Fq = Fq(
+const G1_GENERATOR_X: Fp = Fp(
     uint!(89363714989903307245735717098563574705733591463163614225748337416674727625843187853442697973404985688481508350822_U384),
 );
 
-const G1_GENERATOR_Y: Fq = Fq(
+const G1_GENERATOR_Y: Fp = Fp(
     uint!(3702177272937190650578065972808860481433820514072818216637796320125658674906330993856598323293086021583822603349_U384),
 );
 
@@ -42,8 +42,8 @@ pub type G1Projective = SWProjective<G1Parameters>;
 impl G1Affine {
     pub fn is_in_correct_subgroup_assuming_on_curve(&self) -> bool {
         let phi = |mut p: Self| {
-            debug_assert!(Fq::PHI.pow(&[3]).is_one());
-            p.x *= Fq::PHI;
+            debug_assert!(Fp::PHI.pow(&[3]).is_one());
+            p.x *= Fp::PHI;
             p
         };
         let x_square = Scalar(Uint::from(X)).square();
@@ -90,7 +90,7 @@ mod tests {
         for _ in 0..1000 {
             let p = G1Affine::rand();
             assert!(p.is_in_correct_subgroup_assuming_on_curve());
-            let x = Fq::rand();
+            let x = Fp::rand();
             let greatest = rand::thread_rng().gen();
 
             if let Some(p) = G1Affine::from_x_coordinate(x, greatest) {

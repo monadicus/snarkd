@@ -1,5 +1,5 @@
 use crate::bls12_377::{
-    field::Field, fq, fq2, pairing, Affine, Fq, Fq12, Fq2, Fq6, G1Affine, G1Projective, G2Affine,
+    field::Field, fp, fp2, pairing, Affine, Fp, Fp12, Fp2, Fp6, G1Affine, G1Projective, G2Affine,
     G2Projective, LegendreSymbol, Projective, Scalar,
 };
 use bitvec::prelude::*;
@@ -662,49 +662,49 @@ fn test_bls12_377_fr() {
 }
 
 #[test]
-fn test_bls12_377_fq() {
+fn test_bls12_377_fp() {
     for _ in 0..ITERATIONS {
-        let a = Fq::rand();
-        let b = Fq::rand();
+        let a = Fp::rand();
+        let b = Fp::rand();
         field_test(a, b);
         sqrt_field_test(a);
     }
 }
 
 #[test]
-fn test_bls12_377_fq2() {
+fn test_bls12_377_fp2() {
     for _ in 0..ITERATIONS {
-        let a = Fq2::rand();
-        let b = Fq2::rand();
+        let a = Fp2::rand();
+        let b = Fp2::rand();
         field_test(a, b);
         sqrt_field_test(a);
     }
-    frobenius_test::<Fq2>(Fq::characteristic().0.as_limbs(), 13);
+    frobenius_test::<Fp2>(Fp::characteristic().0.as_limbs(), 13);
 }
 
 #[test]
-fn test_bls12_377_fq6() {
+fn test_bls12_377_fp6() {
     for _ in 0..ITERATIONS {
-        let g = Fq6::rand();
-        let h = Fq6::rand();
+        let g = Fp6::rand();
+        let h = Fp6::rand();
         field_test(g, h);
     }
-    frobenius_test::<Fq6>(Fq::characteristic().0.as_limbs(), 13);
+    frobenius_test::<Fp6>(Fp::characteristic().0.as_limbs(), 13);
 }
 
 #[test]
-fn test_bls12_377_fq12() {
+fn test_bls12_377_fp12() {
     for _ in 0..ITERATIONS {
-        let g = Fq12::rand();
-        let h = Fq12::rand();
+        let g = Fp12::rand();
+        let h = Fp12::rand();
         field_test(g, h);
     }
-    frobenius_test::<Fq12>(Fq::characteristic().0.as_limbs(), 13);
+    frobenius_test::<Fp12>(Fp::characteristic().0.as_limbs(), 13);
 }
 
 #[test]
-fn test_fq_is_half() {
-    assert_eq!(Fq::half(), Fq::one().double().inverse().unwrap());
+fn test_fp_is_half() {
+    assert_eq!(Fp::half(), Fp::one().double().inverse().unwrap());
 }
 
 #[test]
@@ -720,26 +720,26 @@ fn test_fr_sum_of_products() {
 }
 
 #[test]
-fn test_fq_sum_of_products() {
+fn test_fp_sum_of_products() {
     for i in [2, 4, 8, 16, 32] {
-        let a = (0..i).map(|_| Fq::rand()).collect::<Vec<_>>();
-        let b = (0..i).map(|_| Fq::rand()).collect::<Vec<_>>();
+        let a = (0..i).map(|_| Fp::rand()).collect::<Vec<_>>();
+        let b = (0..i).map(|_| Fp::rand()).collect::<Vec<_>>();
         assert_eq!(
-            Fq::sum_of_products(a.clone().into_iter(), b.clone().into_iter()),
+            Fp::sum_of_products(a.clone().into_iter(), b.clone().into_iter()),
             a.into_iter().zip(b).map(|(a, b)| a * b).sum()
         );
     }
 }
 
 #[test]
-fn test_fq_add_assign() {
+fn test_fp_add_assign() {
     // Test associativity
 
     for _ in 0..1000 {
         // Generate a, b, c and ensure (a + b) + c == a + (b + c).
-        let a = Fq::rand();
-        let b = Fq::rand();
-        let c = Fq::rand();
+        let a = Fp::rand();
+        let b = Fp::rand();
+        let c = Fp::rand();
 
         let mut tmp1 = a;
         tmp1.add_assign(b);
@@ -756,11 +756,11 @@ fn test_fq_add_assign() {
 }
 
 #[test]
-fn test_fq_sub_assign() {
+fn test_fp_sub_assign() {
     for _ in 0..1000 {
         // Ensure that (a - b) + (b - a) = 0.
-        let a = Fq::rand();
-        let b = Fq::rand();
+        let a = Fp::rand();
+        let b = Fp::rand();
 
         let mut tmp1 = a;
         tmp1.sub_assign(&b);
@@ -774,12 +774,12 @@ fn test_fq_sub_assign() {
 }
 
 #[test]
-fn test_fq_mul_assign() {
+fn test_fp_mul_assign() {
     for _ in 0..1000000 {
         // Ensure that (a * b) * c = a * (b * c)
-        let a = Fq::rand();
-        let b = Fq::rand();
-        let c = Fq::rand();
+        let a = Fp::rand();
+        let b = Fp::rand();
+        let c = Fp::rand();
 
         let mut tmp1 = a;
         tmp1.mul_assign(&b);
@@ -795,10 +795,10 @@ fn test_fq_mul_assign() {
     for _ in 0..1000000 {
         // Ensure that r * (a + b + c) = r*a + r*b + r*c
 
-        let r = Fq::rand();
-        let mut a = Fq::rand();
-        let mut b = Fq::rand();
-        let mut c = Fq::rand();
+        let r = Fp::rand();
+        let mut a = Fp::rand();
+        let mut b = Fp::rand();
+        let mut c = Fp::rand();
 
         let mut tmp1 = a;
         tmp1.add_assign(b);
@@ -817,10 +817,10 @@ fn test_fq_mul_assign() {
 }
 
 #[test]
-fn test_fq_squaring() {
+fn test_fp_squaring() {
     for _ in 0..1000000 {
         // Ensure that (a * a) = a^2
-        let a = Fq::rand();
+        let a = Fp::rand();
 
         let mut tmp = a;
         tmp.square_in_place();
@@ -833,14 +833,14 @@ fn test_fq_squaring() {
 }
 
 #[test]
-fn test_fq_inverse() {
-    assert!(Fq::zero().inverse().is_none());
+fn test_fp_inverse() {
+    assert!(Fp::zero().inverse().is_none());
 
-    let one = Fq::one();
+    let one = Fp::one();
 
     for _ in 0..1000 {
         // Ensure that a * a^-1 = 1
-        let mut a = Fq::rand();
+        let mut a = Fp::rand();
         let ainv = a.inverse().unwrap();
         a.mul_assign(&ainv);
         assert_eq!(a, one);
@@ -848,10 +848,10 @@ fn test_fq_inverse() {
 }
 
 #[test]
-fn test_fq_double_in_place() {
+fn test_fp_double_in_place() {
     for _ in 0..1000 {
         // Ensure doubling a is equivalent to adding a to itself.
-        let mut a = Fq::rand();
+        let mut a = Fp::rand();
         let mut b = a;
         b.add_assign(a);
         a.double_in_place();
@@ -860,16 +860,16 @@ fn test_fq_double_in_place() {
 }
 
 #[test]
-fn test_fq_negate() {
+fn test_fp_negate() {
     {
-        let a = -Fq::zero();
+        let a = -Fp::zero();
 
         assert!(a.is_zero());
     }
 
     for _ in 0..1000 {
         // Ensure (a - (-a)) = 0.
-        let mut a = Fq::rand();
+        let mut a = Fp::rand();
         let b = -a;
         a.add_assign(b);
 
@@ -878,13 +878,13 @@ fn test_fq_negate() {
 }
 
 #[test]
-fn test_fq_pow() {
+fn test_fp_pow() {
     for i in 0..1000 {
         // Exponentiate by various small numbers and ensure it consists with repeated
         // multiplication.
-        let a = Fq::rand();
+        let a = Fp::rand();
         let target = a.pow(&[i]);
-        let mut c = Fq::one();
+        let mut c = Fp::one();
         for _ in 0..i {
             c.mul_assign(&a);
         }
@@ -893,19 +893,19 @@ fn test_fq_pow() {
 
     for _ in 0..1000 {
         // Exponentiating by the modulus should have no effect in a prime field.
-        let a = Fq::rand();
+        let a = Fp::rand();
 
-        assert_eq!(a, a.pow(Fq::characteristic().0.as_limbs()));
+        assert_eq!(a, a.pow(Fp::characteristic().0.as_limbs()));
     }
 }
 
 #[test]
-fn test_fq_sqrt() {
-    assert_eq!(Fq::zero().sqrt().unwrap(), Fq::zero());
+fn test_fp_sqrt() {
+    assert_eq!(Fp::zero().sqrt().unwrap(), Fp::zero());
 
     for _ in 0..1000 {
         // Ensure sqrt(a^2) = a or -a
-        let a = Fq::rand();
+        let a = Fp::rand();
         let nega = -a;
         let mut b = a;
         b.square_in_place();
@@ -917,7 +917,7 @@ fn test_fq_sqrt() {
 
     for _ in 0..1000 {
         // Ensure sqrt(a)^2 = a for random a
-        let a = Fq::rand();
+        let a = Fp::rand();
 
         if let Some(mut tmp) = a.sqrt() {
             tmp.square_in_place();
@@ -928,16 +928,16 @@ fn test_fq_sqrt() {
 }
 
 #[test]
-fn test_fq_num_bits() {
-    assert_eq!(fq::MODULUS_BITS, 377);
-    assert_eq!(fq::CAPACITY, 376);
+fn test_fp_num_bits() {
+    assert_eq!(fp::MODULUS_BITS, 377);
+    assert_eq!(fp::CAPACITY, 376);
 }
 
 #[test]
-fn test_fq_root_of_unity() {
-    assert_eq!(fq::TWO_ADICITY, 46);
+fn test_fp_root_of_unity() {
+    assert_eq!(fp::TWO_ADICITY, 46);
     assert_eq!(
-        Fq::multiplicative_generator().pow(&[
+        Fp::multiplicative_generator().pow(&[
             0x7510c00000021423,
             0x88bee82520005c2d,
             0x67cc03d44e3c7bcd,
@@ -945,75 +945,75 @@ fn test_fq_root_of_unity() {
             0xe9185f1443ab18ec,
             0x6b8
         ]),
-        fq::TWO_ADIC_ROOT_OF_UNITY_AS_FIELD
+        fp::TWO_ADIC_ROOT_OF_UNITY_AS_FIELD
     );
     assert_eq!(
-        fq::TWO_ADIC_ROOT_OF_UNITY_AS_FIELD.pow(&[1 << fq::TWO_ADICITY]),
-        Fq::one()
+        fp::TWO_ADIC_ROOT_OF_UNITY_AS_FIELD.pow(&[1 << fp::TWO_ADICITY]),
+        Fp::one()
     );
-    assert!(Fq::multiplicative_generator().sqrt().is_none());
+    assert!(Fp::multiplicative_generator().sqrt().is_none());
 }
 
 #[test]
-fn test_fq_legendre() {
-    assert_eq!(LegendreSymbol::QuadraticResidue, Fq::one().legendre());
-    assert_eq!(LegendreSymbol::Zero, Fq::zero().legendre());
+fn test_fp_legendre() {
+    assert_eq!(LegendreSymbol::QuadraticResidue, Fp::one().legendre());
+    assert_eq!(LegendreSymbol::Zero, Fp::zero().legendre());
     assert_eq!(
         LegendreSymbol::QuadraticResidue,
-        Fq(uint!(4_U384)).legendre()
+        Fp(uint!(4_U384)).legendre()
     );
     assert_eq!(
         LegendreSymbol::QuadraticNonResidue,
-        Fq(uint!(5_U384)).legendre()
+        Fp(uint!(5_U384)).legendre()
     );
 }
 
 #[test]
-fn test_fq2_ordering() {
-    let mut a = Fq2::new(Fq::zero(), Fq::zero());
+fn test_fp2_ordering() {
+    let mut a = Fp2::new(Fp::zero(), Fp::zero());
     let mut b = a;
 
     assert!(a.cmp(&b) == Ordering::Equal);
-    b.c0.add_assign(Fq::one());
+    b.c0.add_assign(Fp::one());
     assert!(a.cmp(&b) == Ordering::Less);
-    a.c0.add_assign(Fq::one());
+    a.c0.add_assign(Fp::one());
     assert!(a.cmp(&b) == Ordering::Equal);
-    b.c1.add_assign(Fq::one());
+    b.c1.add_assign(Fp::one());
     assert!(a.cmp(&b) == Ordering::Less);
-    a.c0.add_assign(Fq::one());
+    a.c0.add_assign(Fp::one());
     assert!(a.cmp(&b) == Ordering::Less);
-    a.c1.add_assign(Fq::one());
+    a.c1.add_assign(Fp::one());
     assert!(a.cmp(&b) == Ordering::Greater);
-    b.c0.add_assign(Fq::one());
+    b.c0.add_assign(Fp::one());
     assert!(a.cmp(&b) == Ordering::Equal);
 }
 
 #[test]
-fn test_fq2_basics() {
-    assert_eq!(Fq2::new(Fq::zero(), Fq::zero(),), Fq2::zero());
-    assert_eq!(Fq2::new(Fq::one(), Fq::zero(),), Fq2::one());
-    assert!(Fq2::zero().is_zero());
-    assert!(!Fq2::one().is_zero());
-    assert!(!Fq2::new(Fq::zero(), Fq::one(),).is_zero());
+fn test_fp2_basics() {
+    assert_eq!(Fp2::new(Fp::zero(), Fp::zero(),), Fp2::zero());
+    assert_eq!(Fp2::new(Fp::one(), Fp::zero(),), Fp2::one());
+    assert!(Fp2::zero().is_zero());
+    assert!(!Fp2::one().is_zero());
+    assert!(!Fp2::new(Fp::zero(), Fp::one(),).is_zero());
 }
 
 #[test]
-fn test_fq2_legendre() {
-    assert_eq!(LegendreSymbol::Zero, Fq2::zero().legendre());
+fn test_fp2_legendre() {
+    assert_eq!(LegendreSymbol::Zero, Fp2::zero().legendre());
     // i^2 = -1
-    let mut m1 = -Fq2::one();
+    let mut m1 = -Fp2::one();
     assert_eq!(LegendreSymbol::QuadraticResidue, m1.legendre());
-    m1 = Fq6::mul_fp2_by_nonresidue(&m1);
+    m1 = Fp6::mul_fp2_by_nonresidue(&m1);
     assert_eq!(LegendreSymbol::QuadraticNonResidue, m1.legendre());
 }
 
 #[test]
-fn test_fq2_mul_nonresidue() {
-    let nqr = Fq2::new(Fq::zero(), Fq::one());
+fn test_fp2_mul_nonresidue() {
+    let nqr = Fp2::new(Fp::zero(), Fp::one());
 
-    let quadratic_non_residue = Fq2::new(fq2::QUADRATIC_NONRESIDUE.0, fq2::QUADRATIC_NONRESIDUE.1);
+    let quadratic_non_residue = Fp2::new(fp2::QUADRATIC_NONRESIDUE.0, fp2::QUADRATIC_NONRESIDUE.1);
     for _ in 0..1000 {
-        let mut a = Fq2::rand();
+        let mut a = Fp2::rand();
         let mut b = a;
         a = quadratic_non_residue * a;
         b.mul_assign(&nqr);
@@ -1023,47 +1023,47 @@ fn test_fq2_mul_nonresidue() {
 }
 
 #[test]
-fn test_fq6_mul_by_1() {
+fn test_fp6_mul_by_1() {
     for _ in 0..1000 {
-        let c1 = Fq2::rand();
-        let mut a = Fq6::rand();
+        let c1 = Fp2::rand();
+        let mut a = Fp6::rand();
         let mut b = a;
 
         a.mul_by_1(&c1);
-        b.mul_assign(&Fq6::new(Fq2::zero(), c1, Fq2::zero()));
+        b.mul_assign(&Fp6::new(Fp2::zero(), c1, Fp2::zero()));
 
         assert_eq!(a, b);
     }
 }
 
 #[test]
-fn test_fq6_mul_by_01() {
+fn test_fp6_mul_by_01() {
     for _ in 0..1000 {
-        let c0 = Fq2::rand();
-        let c1 = Fq2::rand();
-        let mut a = Fq6::rand();
+        let c0 = Fp2::rand();
+        let c1 = Fp2::rand();
+        let mut a = Fp6::rand();
         let mut b = a;
 
         a.mul_by_01(&c0, &c1);
-        b.mul_assign(&Fq6::new(c0, c1, Fq2::zero()));
+        b.mul_assign(&Fp6::new(c0, c1, Fp2::zero()));
 
         assert_eq!(a, b);
     }
 }
 
 #[test]
-fn test_fq12_mul_by_014() {
+fn test_fp12_mul_by_014() {
     for _ in 0..1000 {
-        let c0 = Fq2::rand();
-        let c1 = Fq2::rand();
-        let c5 = Fq2::rand();
-        let mut a = Fq12::rand();
+        let c0 = Fp2::rand();
+        let c1 = Fp2::rand();
+        let c5 = Fp2::rand();
+        let mut a = Fp12::rand();
         let mut b = a;
 
         a.mul_by_014(&c0, &c1, &c5);
-        b.mul_assign(&Fq12::new(
-            Fq6::new(c0, c1, Fq2::zero()),
-            Fq6::new(Fq2::zero(), c5, Fq2::zero()),
+        b.mul_assign(&Fp12::new(
+            Fp6::new(c0, c1, Fp2::zero()),
+            Fp6::new(Fp2::zero(), c5, Fp2::zero()),
         ));
 
         assert_eq!(a, b);
@@ -1071,18 +1071,18 @@ fn test_fq12_mul_by_014() {
 }
 
 #[test]
-fn test_fq12_mul_by_034() {
+fn test_fp12_mul_by_034() {
     for _ in 0..1000 {
-        let c0 = Fq2::rand();
-        let c3 = Fq2::rand();
-        let c4 = Fq2::rand();
-        let mut a = Fq12::rand();
+        let c0 = Fp2::rand();
+        let c3 = Fp2::rand();
+        let c4 = Fp2::rand();
+        let mut a = Fp12::rand();
         let mut b = a;
 
         a.mul_by_034(&c0, &c3, &c4);
-        b.mul_assign(&Fq12::new(
-            Fq6::new(c0, Fq2::zero(), Fq2::zero()),
-            Fq6::new(c3, c4, Fq2::zero()),
+        b.mul_assign(&Fp12::new(
+            Fp6::new(c0, Fp2::zero(), Fp2::zero()),
+            Fp6::new(c3, c4, Fp2::zero()),
         ));
 
         assert_eq!(a, b);
@@ -1164,11 +1164,11 @@ fn test_bilinearity() {
     assert_eq!(ans1, ans2);
     assert_eq!(ans2, ans3);
 
-    assert_ne!(ans1, Fq12::one());
-    assert_ne!(ans2, Fq12::one());
-    assert_ne!(ans3, Fq12::one());
+    assert_ne!(ans1, Fp12::one());
+    assert_ne!(ans2, Fp12::one());
+    assert_ne!(ans3, Fp12::one());
 
-    assert_eq!(ans1.pow(Scalar::characteristic().0.as_limbs()), Fq12::one());
-    assert_eq!(ans2.pow(Scalar::characteristic().0.as_limbs()), Fq12::one());
-    assert_eq!(ans3.pow(Scalar::characteristic().0.as_limbs()), Fq12::one());
+    assert_eq!(ans1.pow(Scalar::characteristic().0.as_limbs()), Fp12::one());
+    assert_eq!(ans2.pow(Scalar::characteristic().0.as_limbs()), Fp12::one());
+    assert_eq!(ans3.pow(Scalar::characteristic().0.as_limbs()), Fp12::one());
 }

@@ -1,5 +1,5 @@
 use crate::bls12_377::{
-    field::Field, group::Group, sw_affine::SWAffine, sw_projective::SWProjective, Affine, Fq, Fq2,
+    field::Field, group::Group, sw_affine::SWAffine, sw_projective::SWProjective, Affine, Fp, Fp2,
     G1Parameters, Projective, Scalar, X,
 };
 use bitvec::prelude::*;
@@ -9,7 +9,7 @@ use ruint::uint;
 pub struct G2Parameters;
 
 impl Group for G2Parameters {
-    type BaseField = Fq2;
+    type BaseField = Fp2;
 
     /// COFACTOR =
     /// 7923214915284317143930293550643874566881017850177945424769256759165301436616933228209277966774092486467289478618404761412630691835764674559376407658497
@@ -40,19 +40,19 @@ impl Group for G2Parameters {
     // In our case, i = u (App A.3, T_6).
     /// WEIERSTRASS_B = [0,
     /// 155198655607781456406391640216936120121836107652948796323930557600032281009004493664981332883744016074664192874906]
-    const B: Fq2 = Fq2 {
-        c0: Fq(uint!(0_U384)),
-        c1: Fq(
+    const B: Fp2 = Fp2 {
+        c0: Fp(uint!(0_U384)),
+        c1: Fp(
             uint!(155198655607781456406391640216936120121836107652948796323930557600032281009004493664981332883744016074664192874906_U384),
         ),
     };
 }
 
-pub const G2_GENERATOR_X: Fq2 = Fq2 {
+pub const G2_GENERATOR_X: Fp2 = Fp2 {
     c0: G2_GENERATOR_X_C0,
     c1: G2_GENERATOR_X_C1,
 };
-pub const G2_GENERATOR_Y: Fq2 = Fq2 {
+pub const G2_GENERATOR_Y: Fp2 = Fp2 {
     c0: G2_GENERATOR_Y_C0,
     c1: G2_GENERATOR_Y_C1,
 };
@@ -61,7 +61,7 @@ pub const G2_GENERATOR_Y: Fq2 = Fq2 {
 /// G2_GENERATOR_X_C0 =
 /// 170590608266080109581922461902299092015242589883741236963254737235977648828052995125541529645051927918098146183295
 ///
-pub const G2_GENERATOR_X_C0: Fq = Fq(
+pub const G2_GENERATOR_X_C0: Fp = Fp(
     uint!(170590608266080109581922461902299092015242589883741236963254737235977648828052995125541529645051927918098146183295_U384),
 );
 
@@ -69,7 +69,7 @@ pub const G2_GENERATOR_X_C0: Fq = Fq(
 /// G2_GENERATOR_X_C1 =
 /// 83407003718128594709087171351153471074446327721872642659202721143408712182996929763094113874399921859453255070254
 ///
-pub const G2_GENERATOR_X_C1: Fq = Fq(
+pub const G2_GENERATOR_X_C1: Fp = Fp(
     uint!(83407003718128594709087171351153471074446327721872642659202721143408712182996929763094113874399921859453255070254_U384),
 );
 
@@ -77,7 +77,7 @@ pub const G2_GENERATOR_X_C1: Fq = Fq(
 /// G2_GENERATOR_Y_C0 =
 /// 1843833842842620867708835993770650838640642469700861403869757682057607397502738488921663703124647238454792872005
 ///
-pub const G2_GENERATOR_Y_C0: Fq = Fq(
+pub const G2_GENERATOR_Y_C0: Fp = Fp(
     uint!(1843833842842620867708835993770650838640642469700861403869757682057607397502738488921663703124647238454792872005_U384),
 );
 
@@ -85,7 +85,7 @@ pub const G2_GENERATOR_Y_C0: Fq = Fq(
 /// G2_GENERATOR_Y_C1 =
 /// 33145532013610981697337930729788870077912093258611421158732879580766461459275194744385880708057348608045241477209
 ///
-pub const G2_GENERATOR_Y_C1: Fq = Fq(
+pub const G2_GENERATOR_Y_C1: Fp = Fp(
     uint!(33145532013610981697337930729788870077912093258611421158732879580766461459275194744385880708057348608045241477209_U384),
 );
 
@@ -108,7 +108,7 @@ impl G2Affine {
     }
 }
 
-type CoeffTriplet = (Fq2, Fq2, Fq2);
+type CoeffTriplet = (Fp2, Fp2, Fp2);
 
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -121,9 +121,9 @@ pub struct G2Prepared {
 
 #[derive(Copy, Clone, Debug)]
 struct G2HomProjective {
-    x: Fq2,
-    y: Fq2,
-    z: Fq2,
+    x: Fp2,
+    y: Fp2,
+    z: Fp2,
 }
 
 impl Default for G2Prepared {
@@ -148,14 +148,14 @@ impl G2Prepared {
         let mut r = G2HomProjective {
             x: q.x,
             y: q.y,
-            z: Fq2::one(),
+            z: Fp2::one(),
         };
 
         let bit_iterator = X.view_bits::<Msb0>();
         let mut ell_coeffs = Vec::with_capacity(bit_iterator.len());
 
         // `one_half` = 1/2 in the field.
-        let one_half = Fq::half();
+        let one_half = Fp::half();
 
         for i in bit_iterator.iter().skip(1) {
             ell_coeffs.push(doubling_step(&mut r, &one_half));
@@ -173,7 +173,7 @@ impl G2Prepared {
 }
 
 #[allow(clippy::many_single_char_names)]
-fn doubling_step(r: &mut G2HomProjective, two_inv: &Fq) -> CoeffTriplet {
+fn doubling_step(r: &mut G2HomProjective, two_inv: &Fp) -> CoeffTriplet {
     // Formula for line function when working with
     // homogeneous projective coordinates.
 
