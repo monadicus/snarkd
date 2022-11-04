@@ -1,5 +1,15 @@
-mod data;
-pub use data::*;
+mod assert_data;
+pub use assert_data::*;
+mod binary_data;
+pub use binary_data::*;
+mod commit_data;
+pub use commit_data::*;
+mod hash_data;
+pub use hash_data::*;
+mod ternary_data;
+pub use ternary_data::*;
+mod unary_data;
+pub use unary_data::*;
 
 use std::fmt;
 
@@ -15,26 +25,13 @@ pub enum Instruction {
     And(BinaryData),
     AssertEq(AssertData),
     AssertNeq(AssertData),
-    CommitBhp256(BinaryData),
-    CommitBhp512(BinaryData),
-    CommitBhp768(BinaryData),
-    CommitBhp1024(BinaryData),
-    CommitPed64(BinaryData),
-    CommitPed128(BinaryData),
+    Commit(CommitData),
     Div(BinaryData),
     DivWrapped(BinaryData),
     Double(UnaryData),
     Gt(BinaryData),
     Gte(BinaryData),
-    HashBhp256(UnaryData),
-    HashBhp512(UnaryData),
-    HashBhp768(UnaryData),
-    HashBhp1024(UnaryData),
-    HashPed64(UnaryData),
-    HashPed128(UnaryData),
-    HashPsd2(UnaryData),
-    HashPsd4(UnaryData),
-    HashPsd8(UnaryData),
+    Hash(HashData),
     Inv(UnaryData),
     IsEq(BinaryData),
     IsNeq(BinaryData),
@@ -75,26 +72,30 @@ impl Instruction {
             And(_) => "and",
             AssertEq(_) => "assert.eq",
             AssertNeq(_) => "assert.neq",
-            CommitBhp256(_) => "commit.bhp256",
-            CommitBhp512(_) => "commit.bhp512",
-            CommitBhp768(_) => "commit.bhp768",
-            CommitBhp1024(_) => "commit.bhp1024",
-            CommitPed64(_) => "commit.ped64",
-            CommitPed128(_) => "commit.ped128",
+            Commit(data) => match data.method {
+                CommitMethod::CommitBhp256 => "commit.bhp256",
+                CommitMethod::CommitBhp512 => "commit.bhp512",
+                CommitMethod::CommitBhp768 => "commit.bhp768",
+                CommitMethod::CommitBhp1024 => "commit.bhp1024",
+                CommitMethod::CommitPed64 => "commit.ped64",
+                CommitMethod::CommitPed128 => "commit.ped128",
+            },
             Div(_) => "div",
             DivWrapped(_) => "div.wrapped",
             Double(_) => "double",
             Gt(_) => "gt",
             Gte(_) => "gte",
-            HashBhp256(_) => "hash.bhp256",
-            HashBhp512(_) => "hash.bhp512",
-            HashBhp768(_) => "hash.bhp768",
-            HashBhp1024(_) => "hash.bhp1024",
-            HashPed64(_) => "hash.ped64",
-            HashPed128(_) => "hash.ped128",
-            HashPsd2(_) => "hash.psd2",
-            HashPsd4(_) => "hash.psd4",
-            HashPsd8(_) => "hash.psd8",
+            Hash(data) => match data.method {
+                HashMethod::HashBhp256 => "data.bhp256",
+                HashMethod::HashBhp512 => "hash.hbp512",
+                HashMethod::HashBhp768 => "hash.hbp768",
+                HashMethod::HashBhp1024 => "hash.hbp1024",
+                HashMethod::HashPed64 => "hash.ped64",
+                HashMethod::HashPed128 => "hash.ped128",
+                HashMethod::HashPsd2 => "hash.psd2",
+                HashMethod::HashPsd4 => "hash.psd4",
+                HashMethod::HashPsd8 => "hash.psd8",
+            },
             Inv(_) => "inv",
             IsEq(_) => "is.eq",
             IsNeq(_) => "is.neq",
@@ -142,28 +143,13 @@ impl TryFrom<ir::Instruction> for Instruction {
                 ir::instruction::Instruction::And(v) => Self::And(v.try_into()?),
                 ir::instruction::Instruction::AssertEq(v) => Self::AssertEq(v.try_into()?),
                 ir::instruction::Instruction::AssertNeq(v) => Self::AssertNeq(v.try_into()?),
-                ir::instruction::Instruction::CommitBhp256(v) => Self::CommitBhp256(v.try_into()?),
-                ir::instruction::Instruction::CommitBhp512(v) => Self::CommitBhp512(v.try_into()?),
-                ir::instruction::Instruction::CommitBhp768(v) => Self::CommitBhp768(v.try_into()?),
-                ir::instruction::Instruction::CommitBhp1024(v) => {
-                    Self::CommitBhp1024(v.try_into()?)
-                }
-                ir::instruction::Instruction::CommitPed64(v) => Self::CommitPed64(v.try_into()?),
-                ir::instruction::Instruction::CommitPed128(v) => Self::CommitPed128(v.try_into()?),
+                ir::instruction::Instruction::Commit(v) => Self::Commit(v.try_into()?),
                 ir::instruction::Instruction::Div(v) => Self::Div(v.try_into()?),
                 ir::instruction::Instruction::DivWrapped(v) => Self::DivWrapped(v.try_into()?),
                 ir::instruction::Instruction::Double(v) => Self::Double(v.try_into()?),
                 ir::instruction::Instruction::Gt(v) => Self::Gt(v.try_into()?),
                 ir::instruction::Instruction::Gte(v) => Self::Gte(v.try_into()?),
-                ir::instruction::Instruction::HashBhp256(v) => Self::HashBhp256(v.try_into()?),
-                ir::instruction::Instruction::HashBhp512(v) => Self::HashBhp512(v.try_into()?),
-                ir::instruction::Instruction::HashBhp768(v) => Self::HashBhp768(v.try_into()?),
-                ir::instruction::Instruction::HashBhp1024(v) => Self::HashBhp1024(v.try_into()?),
-                ir::instruction::Instruction::HashPed64(v) => Self::HashPed64(v.try_into()?),
-                ir::instruction::Instruction::HashPed128(v) => Self::HashPed128(v.try_into()?),
-                ir::instruction::Instruction::HashPsd2(v) => Self::HashPsd2(v.try_into()?),
-                ir::instruction::Instruction::HashPsd4(v) => Self::HashPsd4(v.try_into()?),
-                ir::instruction::Instruction::HashPsd8(v) => Self::HashPsd8(v.try_into()?),
+                ir::instruction::Instruction::Hash(v) => Self::Hash(v.try_into()?),
                 ir::instruction::Instruction::Inv(v) => Self::Inv(v.try_into()?),
                 ir::instruction::Instruction::IsEq(v) => Self::IsEq(v.try_into()?),
                 ir::instruction::Instruction::IsNeq(v) => Self::IsNeq(v.try_into()?),
@@ -207,36 +193,14 @@ impl From<Instruction> for ir::Instruction {
                 Instruction::And(v) => ir::instruction::Instruction::And(v.into()),
                 Instruction::AssertEq(v) => ir::instruction::Instruction::AssertEq(v.into()),
                 Instruction::AssertNeq(v) => ir::instruction::Instruction::AssertNeq(v.into()),
-                Instruction::CommitBhp256(v) => {
-                    ir::instruction::Instruction::CommitBhp256(v.into())
-                }
-                Instruction::CommitBhp512(v) => {
-                    ir::instruction::Instruction::CommitBhp512(v.into())
-                }
-                Instruction::CommitBhp768(v) => {
-                    ir::instruction::Instruction::CommitBhp768(v.into())
-                }
-                Instruction::CommitBhp1024(v) => {
-                    ir::instruction::Instruction::CommitBhp1024(v.into())
-                }
-                Instruction::CommitPed64(v) => ir::instruction::Instruction::CommitPed64(v.into()),
-                Instruction::CommitPed128(v) => {
-                    ir::instruction::Instruction::CommitPed128(v.into())
-                }
+                Instruction::Commit(v) => ir::instruction::Instruction::Commit(v.into()),
+
                 Instruction::Div(v) => ir::instruction::Instruction::Div(v.into()),
                 Instruction::DivWrapped(v) => ir::instruction::Instruction::DivWrapped(v.into()),
                 Instruction::Double(v) => ir::instruction::Instruction::Double(v.into()),
                 Instruction::Gt(v) => ir::instruction::Instruction::Gt(v.into()),
                 Instruction::Gte(v) => ir::instruction::Instruction::Gte(v.into()),
-                Instruction::HashBhp256(v) => ir::instruction::Instruction::HashBhp256(v.into()),
-                Instruction::HashBhp512(v) => ir::instruction::Instruction::HashBhp512(v.into()),
-                Instruction::HashBhp768(v) => ir::instruction::Instruction::HashBhp768(v.into()),
-                Instruction::HashBhp1024(v) => ir::instruction::Instruction::HashBhp1024(v.into()),
-                Instruction::HashPed64(v) => ir::instruction::Instruction::HashPed64(v.into()),
-                Instruction::HashPed128(v) => ir::instruction::Instruction::HashPed128(v.into()),
-                Instruction::HashPsd2(v) => ir::instruction::Instruction::HashPsd2(v.into()),
-                Instruction::HashPsd4(v) => ir::instruction::Instruction::HashPsd4(v.into()),
-                Instruction::HashPsd8(v) => ir::instruction::Instruction::HashPsd8(v.into()),
+                Instruction::Hash(v) => ir::instruction::Instruction::Hash(v.into()),
                 Instruction::Inv(v) => ir::instruction::Instruction::Inv(v.into()),
                 Instruction::IsEq(v) => ir::instruction::Instruction::IsEq(v.into()),
                 Instruction::IsNeq(v) => ir::instruction::Instruction::IsNeq(v.into()),
@@ -281,26 +245,13 @@ impl fmt::Display for Instruction {
             And(x) => x.fmt(f),
             AssertEq(x) => x.fmt(f),
             AssertNeq(x) => x.fmt(f),
-            CommitBhp256(x) => x.fmt(f),
-            CommitBhp512(x) => x.fmt(f),
-            CommitBhp768(x) => x.fmt(f),
-            CommitBhp1024(x) => x.fmt(f),
-            CommitPed64(x) => x.fmt(f),
-            CommitPed128(x) => x.fmt(f),
+            Commit(x) => x.fmt(f),
             Div(x) => x.fmt(f),
             DivWrapped(x) => x.fmt(f),
             Double(x) => x.fmt(f),
             Gt(x) => x.fmt(f),
             Gte(x) => x.fmt(f),
-            HashBhp256(x) => x.fmt(f),
-            HashBhp512(x) => x.fmt(f),
-            HashBhp768(x) => x.fmt(f),
-            HashBhp1024(x) => x.fmt(f),
-            HashPed64(x) => x.fmt(f),
-            HashPed128(x) => x.fmt(f),
-            HashPsd2(x) => x.fmt(f),
-            HashPsd4(x) => x.fmt(f),
-            HashPsd8(x) => x.fmt(f),
+            Hash(x) => x.fmt(f),
             Inv(x) => x.fmt(f),
             IsEq(x) => x.fmt(f),
             IsNeq(x) => x.fmt(f),
