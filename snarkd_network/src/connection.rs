@@ -11,10 +11,10 @@ use std::{
 };
 
 use dashmap::DashMap;
-use log::{error, warn};
+use log::{error, trace, warn};
 use tokio::{
     io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt},
-    net::{TcpStream, ToSocketAddrs},
+    net::{TcpListener, TcpStream, ToSocketAddrs},
     sync::{
         mpsc::{self, error::SendTimeoutError},
         oneshot,
@@ -79,13 +79,13 @@ pub struct ProcessedPacket<'a> {
     pub response_code: ResponseCode,
 }
 
-impl<'a> Into<ProcessedPacketOwned> for ProcessedPacket<'a> {
-    fn into(self) -> ProcessedPacketOwned {
+impl<'a> From<ProcessedPacket<'a>> for ProcessedPacketOwned {
+    fn from(val: ProcessedPacket<'a>) -> Self {
         ProcessedPacketOwned {
-            command: self.command,
-            response: self.response.map(Into::into),
-            body: self.body,
-            response_code: self.response_code,
+            command: val.command,
+            response: val.response.map(Into::into),
+            body: val.body,
+            response_code: val.response_code,
         }
     }
 }
@@ -97,10 +97,10 @@ pub struct ProcessedPacketOwned {
     pub response_code: ResponseCode,
 }
 
-fn process_inbound_packet<'a>(
-    response: &'a mpsc::Sender<Packet>,
+fn process_inbound_packet(
+    response: &mpsc::Sender<Packet>,
     packet: Packet,
-) -> Result<ProcessedPacket<'a>, Packet> {
+) -> Result<ProcessedPacket, Packet> {
     let command = match CommandId::from_i32(packet.command) {
         Some(x) => x,
         None => {
@@ -157,6 +157,7 @@ fn process_inbound_packet<'a>(
     })
 }
 
+#[derive(Debug)]
 pub enum RequestError {
     Closed,
     Dropped,
@@ -166,20 +167,34 @@ pub enum RequestError {
 impl Connection {
     pub async fn connect<A: ToSocketAddrs>(
         target: A,
-        handler: impl RequestHandler + Send + Sync + 'static,
+        handler: impl RequestHandler,
     ) -> Result<Self> {
         let stream = TcpStream::connect(target).await?;
         let remote = stream.peer_addr()?;
         let (reader, writer) = stream.into_split();
-        Self::accept(reader, writer, remote, handler).await
+        Ok(Self::accept(reader, writer, remote, handler))
     }
 
-    pub async fn accept(
+    pub async fn listen<R: RequestHandler>(
+        bind: SocketAddr,
+        handler: impl Fn(SocketAddr) -> R + Send + Sync + 'static,
+        output: impl Fn(Self) + Send + Sync + 'static,
+    ) -> Result<()> {
+        let listener = TcpListener::bind(bind).await?;
+        loop {
+            let (stream, address) = listener.accept().await?;
+            let handler = handler(address);
+            let (reader, writer) = stream.into_split();
+            output(Self::accept(reader, writer, address, handler));
+        }
+    }
+
+    pub fn accept(
         mut reader: impl AsyncRead + Unpin + Send + Sync + 'static,
         mut writer: impl AsyncWrite + Unpin + Send + Sync + 'static,
         remote: SocketAddr,
-        mut handler: impl RequestHandler + Send + Sync + 'static,
-    ) -> Result<Self> {
+        mut handler: impl RequestHandler,
+    ) -> Self {
         let (inbound_sender, mut inbound_receiver) = mpsc::channel::<Packet>(CHANNEL_DEPTH);
         let (outbound_sender, mut outbound_receiver) = mpsc::channel::<Packet>(CHANNEL_DEPTH);
 
@@ -187,7 +202,7 @@ impl Connection {
             loop {
                 let packet = match read_packet(&mut reader).await {
                     Err(e) => {
-                        error!("failed reading packet from remote {remote}: {e:?}");
+                        trace!("failed reading packet from remote {remote}: {e:?}");
                         break;
                     }
                     Ok(x) => x,
@@ -200,7 +215,7 @@ impl Connection {
         tokio::spawn(async move {
             while let Some(packet) = outbound_receiver.recv().await {
                 if let Err(e) = write_packet(&mut writer, packet).await {
-                    error!("failed writing packet to remote {remote}: {e:?}");
+                    trace!("failed writing packet to remote {remote}: {e:?}");
                     break;
                 }
             }
@@ -253,15 +268,18 @@ impl Connection {
                     // i.e. i.e. it died or intentionally ignored it
                     pending_response.send(packet.into()).ok();
                 }
+                if let Err(e) = handler.on_disconnect().await {
+                    error!("packet handler failed: {e:?}");
+                }
             });
         }
 
-        Ok(Self {
+        Self {
             next_local_id: AtomicU64::new(0),
             socket_addr: remote,
             outbound_channel: outbound_sender,
             pending_responses,
-        })
+        }
     }
 
     /// Sends a request to the other end of this connection, returning `Ok(value)` when a response has been received.

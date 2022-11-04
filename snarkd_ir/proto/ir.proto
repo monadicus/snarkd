@@ -1,0 +1,99 @@
+// markdown doc generation command
+/*
+protoc
+--plugin=protoc-gen-doc=D:\Downloads\protoc-gen-doc_1.5.1_windows_amd64.tar\protoc-gen-doc_1.5.1_windows_amd64\protoc-gen-doc.exe
+--proto_path=snarkd_ir\proto\ --doc_out=docs --doc_opt=markdown,bytecode-spec.md
+snarkd_ir\proto\*.proto
+*/
+
+// html doc generation command
+/*
+protoc
+--plugin=protoc-gen-doc=D:\Downloads\protoc-gen-doc_1.5.1_windows_amd64.tar\protoc-gen-doc_1.5.1_windows_amd64\protoc-gen-doc.exe
+--proto_path=snarkd_ir\proto\ --doc_out=docs --doc_opt=html,bytecode-spec.html
+snarkd_ir\proto\*.proto
+*/
+
+// The structure of a Snarkd program
+syntax = "proto3";
+
+import public "opcode.proto";
+import public "operand.proto";
+
+package ir;
+
+// A value being input to a program
+message InputValue {
+  // The name of the value
+  string name = 1;
+  // The value contained by the value
+  operand.Operand value = 2;
+}
+
+// The input values for a program
+message InputData {
+  // A list of constant input registers
+  repeated InputValue constants = 1;
+  // A list of private registers inputs
+  repeated InputValue privates = 2;
+  // A list of public registers inputs
+  repeated InputValue publics = 3;
+  // A list of registers inputs
+  repeated InputValue registers = 5;
+  // A list of public state inputs
+  repeated InputValue public_state = 6;
+  // A list of private record state inputs
+  repeated InputValue private_leaf_state = 7;
+  // A list of private leaf state inputs
+  repeated InputValue private_record_state = 8;
+}
+
+// A register input for a program
+message InputType {
+  // The ID of the register
+  uint32 variable = 1;
+  // The name of the register, used for debugging purposes
+  string name = 2;
+  // The type of the register
+  operand.Type type = 3;
+}
+
+// The metadata of a Snarkd program
+message Header {
+  // The major release version of snarkd this programn was made for
+  uint32 snarkd_major = 1;
+  // The minor release version of snarkd this programn was made for
+  uint32 snarkd_minor = 2;
+  // The patch release version of snarkd this programn was made for
+  uint32 snarkd_patch = 3;
+  // A list of constant input registers
+  repeated InputType constant_inputs = 4;
+  // A list of private input registers
+  repeated InputType private_inputs = 5;
+  // A list of public inputs
+  repeated InputType public_inputs = 6;
+  // A list of register inputs
+  repeated InputType register_inputs = 7;
+  // A list of public state inputs
+  repeated InputType public_states = 8;
+  // A list of private record state inputs
+  repeated InputType private_record_states = 9;
+  // A list of private leaf state inputs
+  repeated InputType private_leaf_states = 10;
+}
+
+// A function in a Snarkd program
+message Function {
+  // The ID of the function
+  uint32 argument_start_variable = 1;
+  // The instructions contained within the function
+  repeated opcode.Instruction instructions = 2;
+}
+
+// A Snarkd program
+message Program {
+  // The metadata of the program
+  Header header = 1;
+  // The functions within the program
+  repeated Function functions = 2;
+}

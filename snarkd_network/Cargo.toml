@@ -4,14 +4,14 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-prost = "0.10"
-async-trait = "0.1"
-anyhow = "1.0"
-tokio = { version = "1.0", features = ["full"] }
-log = "0.4"
-dashmap = "5.4"
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+dashmap = { workspace = true }
+log = { workspace = true }
+prost = { workspace = true }
+tokio = { workspace = true }
 
-snarkd_common = { path = "../snarkd_common" }
+snarkd_common = { workspace = true }
 
 [build-dependencies]
-prost-build = "0.10"
+prost-build = { workspace = true }
