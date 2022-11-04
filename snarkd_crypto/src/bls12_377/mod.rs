@@ -4,9 +4,6 @@ use ruint::uint;
 pub mod affine;
 pub use affine::*;
 
-pub mod errors;
-pub use errors::*;
-
 pub mod field;
 pub use field::*;
 
