@@ -79,10 +79,6 @@ pub trait Field:
     /// Computes the square root of `self`, and returns `None` if it does not exist.
     fn sqrt(&self) -> Option<Self>;
 
-    /// Exponentiates this element by a power of the base prime modulus via
-    /// the Frobenius automorphism.
-    fn frobenius_map(&mut self, power: usize);
-
     /// Performs the GLV endomorphism.
     fn glv_endomorphism(&self) -> Self;
 

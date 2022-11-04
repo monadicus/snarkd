@@ -57,6 +57,10 @@ impl Fp2 {
     pub fn legendre(&self) -> LegendreSymbol {
         self.norm().legendre()
     }
+
+    pub fn frobenius_map(&mut self, power: usize) {
+        self.c1 *= FROBENIUS_COEFF_FP2_C1[power % 2];
+    }
 }
 
 impl Field for Fp2 {
@@ -188,10 +192,6 @@ impl Field for Fp2 {
                 Some(Self::new(c0, self.c1 * two_inv * c0_inv))
             }
         }
-    }
-
-    fn frobenius_map(&mut self, power: usize) {
-        self.c1 *= FROBENIUS_COEFF_FP2_C1[power % 2];
     }
 
     fn glv_endomorphism(&self) -> Self {

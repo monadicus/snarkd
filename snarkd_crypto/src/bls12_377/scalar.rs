@@ -410,10 +410,6 @@ impl Field for Scalar {
         }
     }
 
-    fn frobenius_map(&mut self, _: usize) {
-        // No-op
-    }
-
     fn glv_endomorphism(&self) -> Self {
         Self::zero()
     }

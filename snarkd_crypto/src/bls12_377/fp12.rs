@@ -234,6 +234,14 @@ impl Fp12 {
         self.c0 = Self::mul_fp6_by_nonresidue(&self.c0);
         self.c0.add_assign(aa);
     }
+
+    pub fn frobenius_map(&mut self, power: usize) {
+        self.c0.frobenius_map(power);
+        self.c1.frobenius_map(power);
+        self.c1.c0.mul_assign(FROBENIUS_COEFF_FP12_C1[power % 12]);
+        self.c1.c1.mul_assign(FROBENIUS_COEFF_FP12_C1[power % 12]);
+        self.c1.c2.mul_assign(FROBENIUS_COEFF_FP12_C1[power % 12]);
+    }
 }
 
 impl Field for Fp12 {
@@ -374,14 +382,6 @@ impl Field for Fp12 {
     // No-op
     fn sqrt(&self) -> Option<Self> {
         None
-    }
-
-    fn frobenius_map(&mut self, power: usize) {
-        self.c0.frobenius_map(power);
-        self.c1.frobenius_map(power);
-        self.c1.c0.mul_assign(FROBENIUS_COEFF_FP12_C1[power % 12]);
-        self.c1.c1.mul_assign(FROBENIUS_COEFF_FP12_C1[power % 12]);
-        self.c1.c2.mul_assign(FROBENIUS_COEFF_FP12_C1[power % 12]);
     }
 
     fn glv_endomorphism(&self) -> Self {

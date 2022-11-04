@@ -100,6 +100,15 @@ impl Fp6 {
     pub fn new(c0: Fp2, c1: Fp2, c2: Fp2) -> Self {
         Self { c0, c1, c2 }
     }
+
+    pub fn frobenius_map(&mut self, power: usize) {
+        self.c0.frobenius_map(power);
+        self.c1.frobenius_map(power);
+        self.c2.frobenius_map(power);
+
+        self.c1.mul_assign(FROBENIUS_COEFF_FP6_C1[power % 6]);
+        self.c2.mul_assign(FROBENIUS_COEFF_FP6_C2[power % 6]);
+    }
 }
 
 impl Field for Fp6 {
@@ -246,15 +255,6 @@ impl Field for Fp6 {
     // No-op
     fn sqrt(&self) -> Option<Self> {
         None
-    }
-
-    fn frobenius_map(&mut self, power: usize) {
-        self.c0.frobenius_map(power);
-        self.c1.frobenius_map(power);
-        self.c2.frobenius_map(power);
-
-        self.c1.mul_assign(FROBENIUS_COEFF_FP6_C1[power % 6]);
-        self.c2.mul_assign(FROBENIUS_COEFF_FP6_C2[power % 6]);
     }
 
     fn glv_endomorphism(&self) -> Self {

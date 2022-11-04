@@ -309,10 +309,6 @@ impl Field for Fp {
         }
     }
 
-    fn frobenius_map(&mut self, _: usize) {
-        // No-op
-    }
-
     fn glv_endomorphism(&self) -> Self {
         *self * Self::PHI
     }
