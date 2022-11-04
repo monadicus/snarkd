@@ -1,6 +1,6 @@
 extern crate thiserror;
 
-mod bls12_377;
+pub mod bls12_377;
 pub use bls12_377::*;
-mod marlin;
+pub mod marlin;
 mod objects;
