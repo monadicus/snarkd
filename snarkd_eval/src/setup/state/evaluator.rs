@@ -1,24 +1,14 @@
-use std::borrow::Cow;
-
-use anyhow::{anyhow, Result};
-use indexmap::IndexMap;
-use snarkd_crypto::{Field, Group};
-use snarkd_ir::{Function, InputType, InputValue, Operand, Program, Type};
-
-use crate::{
-    bool_from_input, ConstrainedAddress, ConstrainedField, ConstrainedValue, ConstraintSystem,
-    ValueError,
-};
+use super::*;
 
 #[derive(Clone, Debug)]
-pub(super) struct EvaluatorState<'a, F: Field, G: Group> {
+pub struct EvaluatorState<'a, F: Field, G: Group> {
     pub program: &'a Program,
-    variables: IndexMap<u32, ConstrainedValue<F, G>>,
-    call_depth: u32,
+    pub variables: IndexMap<u32, ConstrainedValue<F, G>>,
+    pub call_depth: u32,
     pub parent_variables: IndexMap<u32, ConstrainedValue<F, G>>,
     pub function_index: u32,
     pub instruction_index: u32,
-    namespace_id: usize,
+    pub namespace_id: usize,
 }
 
 impl<'a, F: Field, G: Group> EvaluatorState<'a, F, G> {
@@ -83,7 +73,8 @@ impl<'a, F: Field, G: Group> EvaluatorState<'a, F, G> {
             // Type::Char => Char::from_input(&mut cs.ns(|| name.to_string()), name, value)?,
             Type::Group => match value {
                 Operand::Group(g) => ConstrainedValue::Group(
-                    G::constant(&g)?.to_allocated(&mut cs.ns(|| name.to_string()))?,
+                    // G::constant(&g)?.to_allocated(&mut cs.ns(|| name.to_string()))?,
+                    todo!(),
                 ),
                 _ => {
                     // return Err(GroupError::invalid_group(
@@ -116,28 +107,14 @@ impl<'a, F: Field, G: Group> EvaluatorState<'a, F, G> {
         cs: &'b mut CS,
     ) -> Result<Cow<'b, ConstrainedValue<F, G>>> {
         Ok(Cow::Owned(match value {
-            Operand::Address(bytes) => ConstrainedValue::Address(Address::constant(&bytes[..])?),
-            Operand::Boolean(value) => ConstrainedValue::Boolean(Boolean::Constant(*value)),
-            Operand::Field(limbs) => {
-                ConstrainedValue::Field(ConstrainedField::constant(cs, &limbs)?)
+            Operand::Address(address) => {
+                ConstrainedValue::Address(ConstrainedAddress::constant(address)?)
             }
-            Operand::Group(g) => ConstrainedValue::Group(G::constant(g)?),
-            // Operand::Integer(i) => ConstrainedValue::Integer(Integer::constant(i)?),
-            // Operand::Array(items) => {
-            //     let mut out = Vec::with_capacity(items.len());
-            //     // todo: optionally check inner types
-            //     for item in items {
-            //         out.push(self.resolve(item, cs)?.into_owned());
-            //     }
-            //     ConstrainedValue::Array(out)
-            // }
-            // Operand::Tuple(items) => {
-            //     let mut out = Vec::with_capacity(items.len());
-            //     for item in items {
-            //         out.push(self.resolve(item, cs)?.into_owned());
-            //     }
-            //     ConstrainedValue::Tuple(out)
-            // }
+            Operand::Boolean(value) => ConstrainedValue::Boolean(ConstrainedBool(*value)),
+            Operand::Field(field) => {
+                ConstrainedValue::Field(ConstrainedField::constant(cs, field)?)
+            }
+            Operand::Group(g) => ConstrainedValue::Group(todo!()),
             // TODO i think this is wrong since now aleo uses static strings
             Operand::String(_) => return Err(anyhow!("cannot have resolved control string")),
             Operand::Ref(i) => {
@@ -176,7 +153,7 @@ impl<'a, F: Field, G: Group> EvaluatorState<'a, F, G> {
         input_values: &[InputValue],
         cs: &mut CS,
     ) -> Result<()> {
-        // let mut cs = cs.ns(|| format!("input {}", name));
+        let mut cs = cs.ns(|| format!("input {}", name));
         // for ir_input in input_header {
         //     let value = input_values
         //         .get(&ir_input.name)

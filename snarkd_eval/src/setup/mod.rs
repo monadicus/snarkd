@@ -14,7 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with the snarkVM library. If not, see <https://www.gnu.org/licenses/>.
 
+mod instruction;
+use instruction::*;
+
 mod state;
+use state::*;
 
 use std::marker::PhantomData;
 
@@ -24,8 +28,6 @@ use snarkd_crypto::*;
 use snarkd_ir::{InputData, Program};
 
 use crate::{ConstrainedValue, ConstraintSystem, Evaluator};
-
-use self::state::EvaluatorState;
 
 /// An evaluator for filling out a R1CS while also producing an expected output.
 pub struct SetupEvaluator<F: Field, G: Group, CS: ConstraintSystem<F>> {

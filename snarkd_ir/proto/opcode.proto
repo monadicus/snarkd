@@ -283,5 +283,6 @@ message Instruction {
     // Performs an XOR operation on an integer (bitwise) or boolean first and
     // second, storing the outcome in destination.
     BinaryData xor = 54;
+    
   }
 }

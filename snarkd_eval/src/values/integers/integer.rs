@@ -1,4 +1,8 @@
-use crate::Todo;
+use snarkd_crypto::Field;
+
+use super::*;
+use crate::{ConstrainedBool, ConstraintSystem, Todo};
+use anyhow::Result;
 
 /// An integer type enum wrapping the integer value.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd)]
@@ -16,6 +20,16 @@ pub enum ConstrainedInteger {
     I128(Todo),
 }
 
+impl ConstrainedInteger {
+    pub fn conditionally_select<F: Field, CS: ConstraintSystem<F>>(
+        mut cs: CS,
+        cond: &ConstrainedBool,
+        first: &Self,
+        second: &Self,
+    ) -> Result<Self> {
+        todo!()
+    }
+}
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum IntegerType {
