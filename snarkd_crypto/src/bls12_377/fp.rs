@@ -158,8 +158,8 @@ impl Field for Fp {
         a
     }
 
-    fn characteristic<'a>() -> Self {
-        Self(MODULUS)
+    fn characteristic() -> Vec<u64> {
+        MODULUS.as_limbs().to_vec()
     }
 
     fn double(&self) -> Self {

@@ -360,23 +360,28 @@ fn random_expansion_tests<F: Field>() {
     }
 }
 
-pub fn frobenius_test<F: Field>(characteristic: &[u64], maxpower: usize) {
-    for _ in 0..ITERATIONS {
-        let a = F::rand();
+macro_rules! frobenius_test {
+    ($name:ident, $field:ty) => {
+        #[test]
+        fn $name() {
+            for _ in 0..ITERATIONS {
+                let a = <$field>::rand();
 
-        let mut a_0 = a;
-        a_0.frobenius_map(0);
-        assert_eq!(a, a_0);
+                let mut a_0 = a;
+                a_0.frobenius_map(0);
+                assert_eq!(a, a_0);
 
-        let mut a_q = a.pow(characteristic);
-        for power in 1..maxpower {
-            let mut a_qi = a;
-            a_qi.frobenius_map(power);
-            assert_eq!(a_qi, a_q);
+                let mut a_q = a.pow(&<$field>::characteristic());
+                for power in 1..13 {
+                    let mut a_qi = a;
+                    a_qi.frobenius_map(power);
+                    assert_eq!(a_qi, a_q);
 
-            a_q = a_q.pow(characteristic);
+                    a_q = a_q.pow(&<$field>::characteristic());
+                }
+            }
         }
-    }
+    };
 }
 
 pub fn sqrt_field_test<F: Field>(elem: F) {
@@ -679,8 +684,9 @@ fn test_bls12_377_fp2() {
         field_test(a, b);
         sqrt_field_test(a);
     }
-    frobenius_test::<Fp2>(Fp::characteristic().0.as_limbs(), 13);
 }
+
+frobenius_test!(fp2_frobenius_test, Fp2);
 
 #[test]
 fn test_bls12_377_fp6() {
@@ -689,8 +695,9 @@ fn test_bls12_377_fp6() {
         let h = Fp6::rand();
         field_test(g, h);
     }
-    frobenius_test::<Fp6>(Fp::characteristic().0.as_limbs(), 13);
 }
+
+frobenius_test!(fp6_frobenius_test, Fp6);
 
 #[test]
 fn test_bls12_377_fp12() {
@@ -699,8 +706,9 @@ fn test_bls12_377_fp12() {
         let h = Fp12::rand();
         field_test(g, h);
     }
-    frobenius_test::<Fp12>(Fp::characteristic().0.as_limbs(), 13);
 }
+
+frobenius_test!(fp12_frobenius_test, Fp12);
 
 #[test]
 fn test_fp_is_half() {
@@ -895,7 +903,7 @@ fn test_fp_pow() {
         // Exponentiating by the modulus should have no effect in a prime field.
         let a = Fp::rand();
 
-        assert_eq!(a, a.pow(Fp::characteristic().0.as_limbs()));
+        assert_eq!(a, a.pow(&Fp::characteristic()));
     }
 }
 
@@ -1168,7 +1176,7 @@ fn test_bilinearity() {
     assert_ne!(ans2, Fp12::one());
     assert_ne!(ans3, Fp12::one());
 
-    assert_eq!(ans1.pow(Scalar::characteristic().0.as_limbs()), Fp12::one());
-    assert_eq!(ans2.pow(Scalar::characteristic().0.as_limbs()), Fp12::one());
-    assert_eq!(ans3.pow(Scalar::characteristic().0.as_limbs()), Fp12::one());
+    assert_eq!(ans1.pow(&Scalar::characteristic()), Fp12::one());
+    assert_eq!(ans2.pow(&Scalar::characteristic()), Fp12::one());
+    assert_eq!(ans3.pow(&Scalar::characteristic()), Fp12::one());
 }

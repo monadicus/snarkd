@@ -98,8 +98,6 @@ mod tests {
                     p.is_in_correct_subgroup_assuming_on_curve(),
                     p.mul_bits(
                         Scalar::characteristic()
-                            .0
-                            .as_limbs()
                             .iter()
                             .flat_map(|limb| limb.view_bits::<Lsb0>())
                             .map(|b| *b)

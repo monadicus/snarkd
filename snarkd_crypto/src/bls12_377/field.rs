@@ -49,7 +49,7 @@ pub trait Field:
     fn rand() -> Self;
 
     /// Returns the characteristic of the field.
-    fn characteristic() -> Self;
+    fn characteristic() -> Vec<u64>;
 
     /// Returns `self + self`.
     #[must_use]

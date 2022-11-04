@@ -100,11 +100,8 @@ impl Field for Fp2 {
         }
     }
 
-    fn characteristic() -> Self {
-        Fp2 {
-            c0: Fp::characteristic(),
-            c1: Fp::zero(),
-        }
+    fn characteristic() -> Vec<u64> {
+        Fp::characteristic()
     }
 
     fn double(&self) -> Self {

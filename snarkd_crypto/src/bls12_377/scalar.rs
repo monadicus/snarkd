@@ -259,8 +259,8 @@ impl Field for Scalar {
         a
     }
 
-    fn characteristic() -> Self {
-        Self(MODULUS)
+    fn characteristic() -> Vec<u64> {
+        MODULUS.as_limbs().to_vec()
     }
 
     fn double(&self) -> Self {

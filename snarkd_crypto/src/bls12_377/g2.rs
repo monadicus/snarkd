@@ -80,8 +80,6 @@ impl G2Affine {
     pub fn is_in_correct_subgroup_assuming_on_curve(&self) -> bool {
         self.mul_bits(
             Scalar::characteristic()
-                .0
-                .as_limbs()
                 .iter()
                 .flat_map(|limb| limb.view_bits::<Lsb0>())
                 .map(|b| *b)
