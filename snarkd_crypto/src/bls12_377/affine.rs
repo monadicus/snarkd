@@ -36,9 +36,6 @@ pub trait Affine:
     fn from_x_coordinate(x: <Self::Parameters as Group>::BaseField, greatest: bool)
         -> Option<Self>;
 
-    fn from_y_coordinate(y: <Self::Parameters as Group>::BaseField, greatest: bool)
-        -> Option<Self>;
-
     fn mul_bits(&self, bits: Vec<bool>) -> Self::Projective;
 
     fn mul_by_cofactor_to_projective(&self) -> Self::Projective;

@@ -92,15 +92,6 @@ impl<G: Group> Affine for SWAffine<G> {
         })
     }
 
-    /// Attempts to construct an affine point given a y-coordinate. The
-    /// point is not guaranteed to be in the prime order subgroup.
-    ///
-    /// If and only if `greatest` is set will the lexicographically
-    /// largest y-coordinate be selected.
-    fn from_y_coordinate(_y: G::BaseField, _greatest: bool) -> Option<Self> {
-        unimplemented!()
-    }
-
     fn mul_bits(&self, bits: Vec<bool>) -> SWProjective<G> {
         let mut output = SWProjective::zero();
         for i in bits.iter().skip_while(|b| !**b) {
