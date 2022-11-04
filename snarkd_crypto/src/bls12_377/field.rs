@@ -30,6 +30,8 @@ pub trait Field:
     + Hash
     + Debug
     + Sized
+    + Send
+    + Sync
 {
     const PHI: Self;
 

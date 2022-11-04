@@ -11,6 +11,7 @@ use rand::{
     distributions::{Distribution, Standard},
     Rng,
 };
+use rayon::prelude::*;
 use ruint::{uint, Uint};
 
 #[derive(Copy, Clone, Debug)]
@@ -170,30 +171,16 @@ impl<G: Group> Projective for SWProjective<G> {
             g.z = tmp * s;
             tmp = newtmp;
         }
-        #[cfg(not(feature = "parallel"))]
-        {
-            // Perform affine transformations
-            for g in v.iter_mut().filter(|g| !g.is_normalized()) {
+
+        // Perform affine transformations
+        v.par_iter_mut()
+            .filter(|g| !g.is_normalized())
+            .for_each(|g| {
                 let z2 = g.z.square(); // 1/z
                 g.x *= &z2; // x/z^2
                 g.y *= &(z2 * g.z); // y/z^3
                 g.z = G::BaseField::one(); // z = 1
-            }
-        }
-
-        #[cfg(feature = "parallel")]
-        {
-            use rayon::prelude::*;
-            // Perform affine transformations
-            v.par_iter_mut()
-                .filter(|g| !g.is_normalized())
-                .for_each(|g| {
-                    let z2 = g.z.square(); // 1/z
-                    g.x *= &z2; // x/z^2
-                    g.y *= &(z2 * g.z); // y/z^3
-                    g.z = G::BaseField::one(); // z = 1
-                });
-        }
+            });
     }
 
     /// Adds an affine element to this element.
