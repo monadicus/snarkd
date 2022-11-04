@@ -38,10 +38,6 @@ pub trait Affine:
 
     fn mul_bits(&self, bits: Vec<bool>) -> Self::Projective;
 
-    fn mul_by_cofactor_to_projective(&self) -> Self::Projective;
-
-    fn mul_by_cofactor(&self) -> Self;
-
     fn mul_by_cofactor_inv(&self) -> Self;
 
     fn to_projective(&self) -> Self::Projective;

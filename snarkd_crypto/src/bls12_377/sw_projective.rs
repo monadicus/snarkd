@@ -2,6 +2,7 @@ use crate::bls12_377::{
     field::Field, group::Group, sw_affine::SWAffine, Affine, Projective, Scalar, B1, B2, HALF_R,
     Q1, Q2, R128,
 };
+use bitvec::prelude::*;
 use core::{
     fmt::{Display, Formatter, Result as FmtResult},
     hash::{Hash, Hasher},
@@ -91,7 +92,14 @@ impl<G: Group> Distribution<SWProjective<G>> for Standard {
             let greatest = rng.gen();
 
             if let Some(p) = SWAffine::from_x_coordinate(x, greatest) {
-                return p.mul_by_cofactor_to_projective();
+                return p.mul_bits(
+                    G::COFACTOR
+                        .iter()
+                        .flat_map(|limb| limb.view_bits::<Lsb0>())
+                        .map(|b| *b)
+                        .rev()
+                        .collect::<Vec<bool>>(),
+                );
             }
         }
     }

@@ -103,21 +103,6 @@ impl<G: Group> Affine for SWAffine<G> {
         output
     }
 
-    fn mul_by_cofactor_to_projective(&self) -> SWProjective<G> {
-        self.mul_bits(
-            G::COFACTOR
-                .iter()
-                .flat_map(|limb| limb.view_bits::<Lsb0>())
-                .map(|b| *b)
-                .rev()
-                .collect::<Vec<bool>>(),
-        )
-    }
-
-    fn mul_by_cofactor(&self) -> Self {
-        self.mul_by_cofactor_to_projective().into()
-    }
-
     fn mul_by_cofactor_inv(&self) -> Self {
         (*self * G::COFACTOR_INV).into()
     }
@@ -225,7 +210,16 @@ impl<G: Group> Distribution<SWAffine<G>> for Standard {
             let greatest = rng.gen();
 
             if let Some(p) = SWAffine::from_x_coordinate(x, greatest) {
-                return p.mul_by_cofactor();
+                return p
+                    .mul_bits(
+                        G::COFACTOR
+                            .iter()
+                            .flat_map(|limb| limb.view_bits::<Lsb0>())
+                            .map(|b| *b)
+                            .rev()
+                            .collect::<Vec<bool>>(),
+                    )
+                    .into();
             }
         }
     }
