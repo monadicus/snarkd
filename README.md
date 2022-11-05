@@ -7,19 +7,19 @@
 
 ## Building
 
-Production: `cargo build --release`
-Development: `cargo build`
+**Production**: `cargo build --release`  
+**Development**: `cargo build`
 
 ## Running
 
 Be sure to [configure](#configuration) your node before running.
 
-- If you have previously run `cargo build`:
-    Production: `target/release/snarkd_node`
-    Development: `target/debug/snarkd_node`
-- Otherwise, you can run with:
-    Production: `cargo run --release`
-    Development: `cargo run`
+- If you have previously run `cargo build`:  
+    **Production**: `target/release/snarkd`  
+    **Development**: `target/debug/snarkd`  
+- Otherwise, you can run with:  
+    **Production**: `cargo run --release`  
+    **Development**: `cargo run`  
 
 ## Testing
 
