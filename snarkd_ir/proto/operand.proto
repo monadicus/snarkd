@@ -1,0 +1,245 @@
+// Types and Values supported by snarkd
+syntax = "proto3";
+
+package operand;
+
+// Type data for the field of a struct
+message StructTypeEntry {
+  // The names of the field
+  string name = 1;
+  // The data type of the field
+  Type type = 2;
+}
+
+// The type information for a struct
+message StructType {
+  // The fields of the struct
+  repeated StructTypeEntry fields = 1;
+}
+
+// Type data for the field of a record
+message RecordTypeEntry {
+  // The name of the record entry
+  string name = 1;
+  // The data type of the record entry
+  Type type = 2;
+  // The visibility status of the record entry
+  Visibility visibility = 3;
+}
+
+// The type and visibility information for a record
+message RecordType {
+  // The visibility status for the record owner
+  Visibility owner = 1;
+  // The visibility status for the record gates
+  Visibility gates = 2;
+  // The fields within the record
+  repeated RecordTypeEntry data = 3;
+  // The visibility status for the record nonce
+  Visibility nonce = 4;
+}
+
+// An empty type used to get around the limitations of the `oneof` keyword
+message SimpleType {}
+
+// Type information for an unknown value
+message Type {
+  // The data types that the IR supports
+  oneof Type {
+    // The address of an Aleo account
+    SimpleType address = 1;
+    // A true or false value
+    SimpleType boolean = 2;
+    // A native field element as an unsigned number up to
+    // the modulus length of the field
+    SimpleType field = 3;
+    // The set of affine points on the elliptic curve passed into the
+    // snarkd-vm forms a group. Snarkd supports this set as a primitive
+    // data type. Group elements are special since their values can be
+    // defined from the x-coordinate of a coordinate pair.
+    SimpleType group = 4;
+
+    // An 8 bit unsigned integer
+    SimpleType u8 = 5;
+    // A 16 bit unsigned integer
+    SimpleType u16 = 6;
+    // A 32 bit unsigned integer
+    SimpleType u32 = 7;
+    // A 64 bit unsigned integer
+    SimpleType u64 = 8;
+    // A 128 bit unsigned integer
+    SimpleType u128 = 9;
+    // An 8 bit signed integer
+    SimpleType i8 = 10;
+    // A 16 bit signed integer
+    SimpleType i16 = 11;
+    // A 32 bit signed integer
+    SimpleType i32 = 12;
+    // A 64 bit signed integer
+    SimpleType i64 = 13;
+    // A 128 bit signed integer
+    SimpleType i128 = 14;
+
+    // Field elements in the scalar field.
+    SimpleType scalar = 15;
+    // An array of characters. Snarkd currently only supports static
+    // strings for certian commit operations
+    SimpleType string = 16;
+    // a complex data structure containing fields with
+    // other data. Internally represented as a tuple.
+    StructType struct = 17;
+    // An arbitrary collection of user-owned state
+    RecordType record = 18;
+  }
+}
+
+// A coordinate on the curve
+message GroupCoordinate {
+  oneof GroupCoordinate {
+    Field GroupField = 1;
+    SimpleType SignHigh = 2;
+    SimpleType SignLow = 3;
+    SimpleType Inferred = 4;
+  }
+}
+
+// A group made up of two coordinates
+message TupleGroup {
+  GroupCoordinate left = 1;
+  GroupCoordinate right = 2;
+}
+
+/**
+ * The set of affine points on the elliptic curve passed into the
+ * snarkd-vm forms a group. Snarkd supports this set as a primitive
+ * data type. Group elements are special since their values can be
+ * defined from the x-coordinate of a coordinate pair.
+ */
+message Group {
+  // The possible group types that snarkd supports
+  oneof Group {
+    // A single group value
+    Field single = 1;
+    // A tuple group value
+    TupleGroup tuple = 2;
+  }
+}
+
+// The address of an Aleo account
+message Address {
+  // A byte array representing an aleo address
+  bytes address = 1;
+}
+
+/**
+ * A native field element as an unsigned number up to
+ * the modulus length of the field
+ */
+message Field {
+  // The sign of the field
+  bool negate = 1;
+  // The bytes of the field
+  repeated fixed64 values = 2;
+}
+
+// Field elements in the scalar field.
+message Scalar {
+  // The bytes of the scalar field
+  repeated fixed64 values = 1;
+}
+
+/**
+ * Acomplex data structure containing fields with
+ * other data. Internally represented as a tuple.
+ */
+message Struct {
+  // a list of values held by the data structure
+  repeated Operand values = 1;
+}
+
+// The possible visibility states for an input or record
+enum Visibility {
+  // A public value, able to be seen but not set by others
+  Constant = 0;
+  // A private value, unable to be seen or set by others
+  Private = 1;
+  // A public value, able to be seen and set by others
+  Public = 2;
+}
+
+// A value and visibility pair used in a record
+message VisibleData {
+  // the value held in the record
+  Operand value = 1;
+  // the visibility status of the value
+  Visibility visibility = 2;
+}
+
+// An arbitrary collection of user-owned state
+message Record {
+  // The owner of the record. This must always be an address
+  Address owner = 1;
+  // The visibility status of the owner address
+  Visibility owner_visibility = 2;
+  // The amount of Aleo credits held by the record
+  uint64 gates = 3;
+  // The visibility status of the gates
+  Visibility gates_visibility = 4;
+  // The values held by the record
+  repeated VisibleData data = 5;
+  // Encryption metadata
+  Group nonce = 6;
+  // The visibility status of the nonce group
+  Visibility nonce_visibility = 7;
+}
+
+// An instance of a Snarkd value
+message Operand {
+  // the possible values an operand can be
+  oneof Operand {
+    // The address of an Aleo account
+    Address address = 1;
+    // A true or false value
+    bool boolean = 2;
+    // A native field element as an unsigned number up to
+    // the modulus length of the field
+    Field field = 3;
+    // The set of affine points on the elliptic curve passed into the
+    // snarkd-vm forms a group. Snarkd supports this set as a primitive
+    // data type. Group elements are special since their values can be
+    // defined from the x-coordinate of a coordinate pair.
+    Group group = 4;
+    // An 8 bit unsigned integer
+    uint32 u8 = 5;
+    // A 16 bit unsigned integer
+    uint32 u16 = 6;
+    // A 32 bit unsigned integer
+    uint32 u32 = 7;
+    // A 64 bit unsigned integer
+    uint64 u64 = 8;
+    // A 128 bit unsigned integer
+    bytes u128 = 9;
+    // An 8 bit signed integer
+    int32 i8 = 10;
+    // A 16 bit signed integer
+    int32 i16 = 11;
+    // A 32 bit signed integer
+    int32 i32 = 12;
+    // A 64 bit signed integer
+    int64 i64 = 13;
+    // A 128 bit signed integer
+    bytes i128 = 14;
+    // The ID of an input register containing the target value
+    uint32 ref = 15;
+    // Field elements in the scalar field.
+    Scalar scalar = 16;
+    // An array of characters. Snarkd currently only
+    // supports static strings for certian commit operations
+    string string = 17;
+    // a complex data structure containing fields with
+    // other data. Internally represented as a tuple.
+    Struct struct = 18;
+    // An arbitrary collection of user-owned state
+    Record record = 19;
+  }
+}

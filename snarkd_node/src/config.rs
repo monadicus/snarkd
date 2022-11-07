@@ -1,4 +1,5 @@
 use std::{
+    net::Ipv4Addr,
     path::{Path, PathBuf},
     sync::Arc,
 };
@@ -32,6 +33,10 @@ fn default_bool<const D: bool>() -> bool {
     D
 }
 
+fn default_listen_ip() -> Ipv4Addr {
+    Ipv4Addr::UNSPECIFIED
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct Config {
     /// Log level verbosity, defaults to `info`
@@ -57,6 +62,9 @@ pub struct Config {
     /// Port we are actually listening to
     #[serde(default = "default_u16::<5423>")]
     pub listen_port: u16,
+    /// Address that we are listening to. Defaults to 0.0.0.0
+    #[serde(default = "default_listen_ip")]
+    pub listen_ip: Ipv4Addr,
     /// Port that we are receiving connections on. Generally the same as `listen_port` but a port rewrite firewall rule might change that.
     pub inbound_port: Option<u16>,
 }

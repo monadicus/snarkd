@@ -1,0 +1,287 @@
+// Instructions supported by Snarkd
+syntax = "proto3";
+
+import "operand.proto";
+
+package opcode;
+
+// The arguments for a unary operation
+message UnaryData {
+  // the value to be operated on
+  operand.Operand operand = 1;
+  // the register to store the result in
+  uint32 dest = 2;
+}
+
+// The argumnents for a binary operation
+message BinaryData {
+  // the lhs value of the operation
+  operand.Operand lhs = 1;
+  // the rhs value of the operation
+  operand.Operand rhs = 2;
+  // the register to store the result in
+  uint32 dest = 3;
+}
+
+// The argumnents for a ternary operation
+message TernaryData {
+  // the condition that operation will use to make its selection
+  operand.Operand cond = 1;
+  // the lhs value of the operation
+  operand.Operand lhs = 2;
+  // the rhs value of the operation
+  operand.Operand rhs = 3;
+  // the register to store the result in
+  uint32 dest = 4;
+}
+
+// The argumnents for an assertion operation
+message AssertData {
+  // the lhs value of the operation
+  operand.Operand lhs = 1;
+  // the rhs value of the operation
+  operand.Operand rhs = 2;
+}
+
+// A Snarkd instruction
+message Instruction {
+  // the possible instructions supported by SnarkdVM
+  oneof Instruction {
+    // Computes the absolute value of the input, checking for overflow, storing
+    // the result in the destination register.
+    //
+    // For integer types, a constraint is added to check for underflow. For
+    // cases where wrapping semantics are needed, see the abs.w instruction.
+    // This underflow happens when the input is the minimum value of a signed
+    // integer type. For example, abs -128i8 would result in underflow, since
+    // 128 cannot be represented as an i8.
+    UnaryData abs = 1;
+    // Compute the absolute value of the input, wrapping around at the boundary
+    // of the type, and storing the result in the destination register.
+    UnaryData abs_wrapped = 2;
+    // Adds first with second, storing the outcome in destination.
+    //
+    // For integer types, a constraint is added to check for overflow. For cases
+    // where wrapping semantics are needed for integer types, see the add.w
+    // instruction.
+    BinaryData add = 3;
+    // Adds first with second, wrapping around at the boundary of the type, and
+    // storing the outcome in destination.
+    BinaryData add_wrapped = 4;
+    // Performs an AND operation on integer (bitwise) or boolean first and
+    // second, storing the outcome in destination.
+    BinaryData and = 5;
+    // Checks whether first and second are equal, halting if they are not equal.
+    AssertData assert_eq = 6;
+    // Checks whether first and second are not equal, halting if they are equal.
+    AssertData assert_neq = 7;
+    // Computes a BHP commitment on inputs of 256-bit chunks in first, and some
+    // randomness in second, storing the commitment in destination. Randomness
+    // should always be a Scalar value, and the produced commitment will always
+    // be a Field value.
+    //
+    // The instruction will halt if the given input is smaller than 129 bits.
+    BinaryData commit_bhp_256 = 8;
+    // Computes a BHP commitment on inputs of 512-bit chunks in first, and some
+    // randomness in second, storing the commitment in destination. Randomness
+    // should always be a Scalar value, and the produced commitment will always
+    // be a Field value.
+    //
+    // The instruction will halt if the given input is smaller than 171 bits.
+    BinaryData commit_bhp_512 = 9;
+    // Computes a BHP commitment on inputs of 768-bit chunks in first, and some
+    // randomness in second, storing the commitment in destination. Randomness
+    // should always be a Scalar value, and the produced commitment will always
+    // be a Field value.
+    //
+    // The instruction will halt if the given input is smaller than 129 bits.
+    BinaryData commit_bhp_768 = 10;
+    // Computes a BHP commitment on inputs of 1024-bit chunks in first, and some
+    // randomness in second, storing the commitment in destination. Randomness
+    // should always be a Scalar value, and the produced commitment will always
+    // be a Field value.
+    //
+    // The instruction will halt if the given input is smaller than 171 bits.
+    BinaryData commit_bhp_1024 = 11;
+    // Computes a Pedersen commitment up to a 64-bit input in first, and some
+    // randomness in second, storing the commitment in destination. Randomness
+    // should always be a Scalar value, and the produced commitment will always
+    // be a Group value.
+    //
+    // The instruction will halt if the given String or Interface value exceeds
+    // the 64-bit limit.
+    BinaryData commit_ped_64 = 12;
+    // Computes a Pedersen commitment up to a 128-bit input in first, and some
+    // randomness in second, storing the commitment in destination. Randomness
+    // should always be a Scalar value, and the produced commitment will always
+    // be a Group value.
+    //
+    // The instruction will halt if the given String or Interface value exceeds
+    // the 128-bit limit.
+    BinaryData commit_ped_128 = 13;
+    // Divides first by second, storing the outcome in destination. Halts on
+    // division by zero.
+    //
+    // For integer types, this operation performs truncated division.
+    // Furthermore, a constraint is added to check for underflow. This underflow
+    // happens when dividing the minimum value of a signed integer type by -1.
+    // For example, div -128i8 -1i8 would result in underflow, since 128 cannot
+    // be represented as an i8.
+    //
+    // For cases where wrapping semantics are needed for integer types, see the
+    // div.w instruction.
+    BinaryData div = 14;
+    // Divides first by second, wrapping around at the boundary of the type, and
+    // storing the outcome in destination.
+    BinaryData div_wrapped = 15;
+    // Doubles the input, storing the outcome in destination.
+    UnaryData double = 16;
+    // Checks if first is greater than second, storing the result in
+    // destination.
+    BinaryData gt = 17;
+    // Checks if first is greater than or equal to second, storing the result in
+    // destination.
+    BinaryData gte = 18;
+    // Computes a BHP hash on inputs of 256-bit chunks in first, storing the
+    // hash in destination. The produced hash will always be a Field value.
+    //
+    // The instruction will halt if the given input is smaller than 129 bits.
+    UnaryData hash_bhp_256 = 19;
+    // Computes a BHP hash on inputs of 512-bit chunks in first, storing the
+    // hash in destination. The produced hash will always be a Field value.
+    //
+    // The instruction will halt if the given input is smaller than 171 bits.
+    UnaryData hash_bhp_512 = 20;
+    // Computes a BHP hash on inputs of 768-bit chunks in first, storing the
+    // hash in destination. The produced hash will always be a Field value.
+    //
+    // The instruction will halt if the given input is smaller than 129 bits.
+    UnaryData hash_bhp_768 = 21;
+    // Computes a BHP hash on inputs of 1024-bit chunks in first, storing the
+    // hash in destination. The produced hash will always be a Field value.
+    //
+    // The instruction will halt if the given input is smaller than 171 bits.
+    UnaryData hash_bhp_1024 = 22;
+    // Computes a Pedersen hash up to a 64-bit input in first, storing the hash
+    // in destination. The produced hash will always be a Field value.
+    //
+    // The instruction will halt if the given String or Interface value exceeds
+    // the 64-bit limit.
+    UnaryData hash_ped_64 = 23;
+    // Computes a Pedersen hash up to a 128-bit input in first, storing the hash
+    // in destination. The produced hash will always be a Field value.
+    //
+    // The instruction will halt if the given String or Interface value exceeds
+    // the 128-bit limit.
+    UnaryData hash_ped_128 = 24;
+    // Calculates a Poseidon hash with an input rate of 2, from an input in
+    // first, storing the hash in destination. The produced hash will always be
+    // a Field value.
+    UnaryData hash_psd_2 = 25;
+    // Calculates a Poseidon hash with an input rate of 4, from an input in
+    // first, storing the hash in destination. The produced hash will always be
+    // a Field value.
+    UnaryData hash_psd_4 = 26;
+    // Calculates a Poseidon hash with an input rate of 8, from an input in
+    // first, storing the hash in destination. The produced hash will always be
+    // a Field value.
+    UnaryData hash_psd_8 = 27;
+    // Computes the multiplicative inverse of the input, storing the outcome in
+    // destination.
+    UnaryData inv = 28;
+    // Compares first and second, storing the result in destination.
+    BinaryData is_eq = 29;
+    // Returns true if first is not equal to second, storing the result in
+    // destination.
+    BinaryData is_neq = 30;
+    // Checks if first is less than second, storing the outcome in destination.
+    BinaryData lt = 31;
+    // Checks if first is less than or equal to second, storing the outcome in
+    // destination.
+    BinaryData lte = 32;
+    // Takes the modulus of first with respect to second, storing the outcome in
+    // destination. Halts if second is zero.
+    //
+    // The semantics of this operation are consistent with the mathematical
+    // definition of modulo operation.
+    BinaryData mod = 33;
+    // Multiplies first with second, storing the outcome in destination.
+    //
+    // For integer types, a constraint is added to check for overflow/underflow.
+    // For cases where wrapping semantics are needed for integer types, see the
+    // mul.w instruction.
+    BinaryData mul = 34;
+    // Multiplies first with second, wrapping around at the boundary of the
+    // type, and storing the outcome in destination.
+    BinaryData mul_wrapped = 35;
+    // Returns false only if first and second are true, storing the outcome in
+    // destination.
+    BinaryData nand = 36;
+    // Negates first, storing the outcome in destination.
+    //
+    // For signed integer types, calling neg on the minimum value is an invalid
+    // operation. For example, the input -128i8 would not be valid since 128
+    // cannot be represented as an i8.
+    UnaryData neg = 37;
+    // Returns true when neither first nor second is true, storing the outcome
+    // in destination.
+    BinaryData nor = 38;
+    // Perform a NOT operation on an integer (bitwise) or boolean input, storing
+    // the outcome in destination.
+    UnaryData not = 39;
+    // Performs an OR operation on integer (bitwise) or boolean first and
+    // second, storing the outcome in destination.
+    BinaryData or = 40;
+    // Raises first to the power of second, storing the outcome in destination.
+    //
+    // For integer types, a constraint is added to check for overflow/underflow.
+    // For cases where wrapping semantics are needed for integer types, see the
+    // pow.w instruction.
+    BinaryData pow = 41;
+    // Raises first to the power of second, wrapping around at the boundary of
+    // the type, storing the outcome in destination.
+    BinaryData pow_wrapped = 42;
+    // Computes the truncated remainder of first divided by second, storing the
+    // outcome in destination. Halts on division by zero.
+    //
+    // A constraint is added to check for underflow. This underflow happens when
+    // the associated division operation, div, underflows.
+    //
+    // For cases where wrapping semantics are needed for integer types, see the
+    // rem.w instruction.
+    BinaryData rem = 43;
+    // Computes the truncated remainder of first divided by second, wrapping
+    // around at the boundary of the type, and storing the outcome in
+    // destination.
+    BinaryData rem_wrapped = 44;
+    // Shifts first left by second bits, storing the outcome in destination.
+    BinaryData shl = 45;
+    // Shifts first left by second bits, wrapping around at the boundary of the
+    // type, storing the outcome in destination.
+    BinaryData shl_wrapped = 46;
+    // Shifts first right by second bits, storing the outcome in destination.
+    BinaryData shr = 47;
+    // Shifts first right by second bits, wrapping around at the boundary of the
+    // type, storing the outcome in destination.
+    BinaryData shr_wrapped = 48;
+    // Squares the input, storing the outcome in destination.
+    UnaryData square = 49;
+    // Computes the square root of the input, storing the outcome in
+    // destination.
+    UnaryData sqrt = 50;
+    // Computes first - second, storing the outcome in destination.
+    BinaryData sub = 51;
+    // Computes first - second, wrapping around at the boundary of the type, and
+    // storing the outcome in destination.
+    BinaryData sub_wrapped = 52;
+    // Selects first, if condition is true, otherwise selects second, storing
+    // the result in destination.
+    //
+    // Example: ternary r0 r1 r2 into r3, where r0 is the condition, r1 is
+    // first, r2 is second, and r3 is the destination.
+    TernaryData ternary = 53;
+    // Performs an XOR operation on an integer (bitwise) or boolean first and
+    // second, storing the outcome in destination.
+    BinaryData xor = 54;
+  }
+}
