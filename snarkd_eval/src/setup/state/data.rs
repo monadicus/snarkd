@@ -70,7 +70,7 @@ impl<'a, F: Field, G: Group> StateData<'a, F, G> {
     ) -> Result<Self> {
         Ok(Self {
             arguments,
-            function: &function,
+            function,
             function_index: index,
             block_start: 0,
             block_instruction_count: function.instructions.len() as u32,

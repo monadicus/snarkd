@@ -309,7 +309,7 @@ impl<'a, F: Field, G: Group> FunctionEvaluator<'a, F, G> {
                 .state
                 .variables
                 .get(&variable)
-                .or(self.state_data.state.parent_variables.get(&variable))
+                .or_else(|| self.state_data.state.parent_variables.get(&variable))
                 .is_some()
                 && variable != iter_variable
             {

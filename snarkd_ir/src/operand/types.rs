@@ -31,7 +31,7 @@ impl From<StructTypeEntry> for ir::operand::StructTypeEntry {
 
 impl fmt::Display for StructTypeEntry {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+        write!(f, "{}: {}", self.name, self.type_)
     }
 }
 

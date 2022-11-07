@@ -121,7 +121,7 @@ impl<'a, F: Field, G: Group> EvaluatorState<'a, F, G> {
                 return Ok(Cow::Borrowed(
                     self.variables
                         .get(i)
-                        .or(self.parent_variables.get(i))
+                        .or_else(|| self.parent_variables.get(i))
                         // .expect("reference to unknown variable")
                         .ok_or_else(|| anyhow!("reference to unknown variable"))?,
                 ));
@@ -219,6 +219,6 @@ impl<'a, F: Field, G: Group> EvaluatorState<'a, F, G> {
         self.instruction_index = 0;
         self.call_depth += 1;
 
-        Ok(&function)
+        Ok(function)
     }
 }
