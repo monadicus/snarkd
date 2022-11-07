@@ -96,14 +96,11 @@ fn miller_loop<'a, I>(i: I) -> Fp12
 where
     I: Iterator<Item = (&'a G1Prepared, &'a G2Prepared)>,
 {
-    let mut pairs = vec![];
-    for (p, q) in i {
-        if !p.is_zero() && !q.is_zero() {
-            pairs.push((p, q.ell_coeffs.iter()));
-        }
-    }
+    let mut pairs = i
+        .filter_map(|(p, q)| (!p.is_zero() && !q.is_zero()).then(|| (p, q.ell_coeffs.iter())))
+        .collect::<Vec<_>>();
 
-    let mut f = Fp12::one();
+    let mut f = Fp12::ONE;
 
     for i in X.view_bits::<Msb0>().iter().skip(1) {
         f.square_in_place();

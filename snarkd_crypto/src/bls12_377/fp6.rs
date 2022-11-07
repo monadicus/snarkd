@@ -128,24 +128,20 @@ impl Field for Fp6 {
         },
     };
 
-    fn zero() -> Self {
-        Self {
-            c0: Fp2::zero(),
-            c1: Fp2::zero(),
-            c2: Fp2::zero(),
-        }
-    }
+    const ZERO: Fp6 = Self {
+        c0: Fp2::ZERO,
+        c1: Fp2::ZERO,
+        c2: Fp2::ZERO,
+    };
+
+    const ONE: Fp6 = Self {
+        c0: Fp2::ONE,
+        c1: Fp2::ZERO,
+        c2: Fp2::ZERO,
+    };
 
     fn is_zero(&self) -> bool {
         self.c0.is_zero() && self.c1.is_zero() && self.c2.is_zero()
-    }
-
-    fn one() -> Self {
-        Self {
-            c0: Fp2::one(),
-            c1: Fp2::zero(),
-            c2: Fp2::zero(),
-        }
     }
 
     fn is_one(&self) -> bool {
@@ -254,7 +250,7 @@ impl Field for Fp6 {
     }
 
     fn glv_endomorphism(&self) -> Self {
-        Self::zero()
+        Self::ZERO
     }
 }
 
@@ -514,7 +510,7 @@ impl Fp6 {
 impl Sum<Fp6> for Fp6 {
     /// Returns the `sum` of `self` and `other`.
     fn sum<I: Iterator<Item = Fp6>>(iter: I) -> Self {
-        iter.fold(Fp6::zero(), |a, b| a + b)
+        iter.fold(Fp6::ZERO, |a, b| a + b)
     }
 }
 
@@ -524,8 +520,8 @@ mod test {
 
     #[test]
     fn test_fq2_mul_nonresidue() {
-        let nqr = Fp2::new(Fp::zero(), Fp::one());
-        println!("One: {:?}", Fp::one());
+        let nqr = Fp2::new(Fp::ZERO, Fp::ONE);
+        println!("One: {:?}", Fp::ONE);
 
         for _ in 0..1000 {
             let mut a = Fp2::rand();

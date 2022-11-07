@@ -29,9 +29,9 @@ pub trait Projective:
     type Affine: Affine<Projective = Self>;
     type Parameters: Parameters;
 
-    fn rand() -> Self;
+    const ZERO: Self;
 
-    fn zero() -> Self;
+    fn rand() -> Self;
 
     fn is_zero(&self) -> bool;
 

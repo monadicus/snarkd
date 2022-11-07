@@ -71,22 +71,18 @@ impl Field for Fp2 {
         ),
     };
 
-    fn zero() -> Self {
-        Fp2 {
-            c0: Fp(uint!(0_U384)),
-            c1: Fp(uint!(0_U384)),
-        }
-    }
+    const ZERO: Fp2 = Fp2 {
+        c0: Fp(uint!(0_U384)),
+        c1: Fp(uint!(0_U384)),
+    };
+
+    const ONE: Fp2 = Fp2 {
+        c0: Fp(uint!(1_U384)),
+        c1: Fp(uint!(0_U384)),
+    };
 
     fn is_zero(&self) -> bool {
         self.c0.is_zero() && self.c1.is_zero()
-    }
-
-    fn one() -> Self {
-        Fp2 {
-            c0: Fp(uint!(1_U384)),
-            c1: Fp(uint!(0_U384)),
-        }
     }
 
     fn is_one(&self) -> bool {
@@ -167,7 +163,7 @@ impl Field for Fp2 {
 
     fn sqrt(&self) -> Option<Self> {
         if self.c1.is_zero() {
-            return self.c0.sqrt().map(|c0| Self::new(c0, Fp::zero()));
+            return self.c0.sqrt().map(|c0| Self::new(c0, Fp::ZERO));
         }
         match self.legendre() {
             // Square root based on the complex method. See
@@ -362,7 +358,7 @@ impl<'a> DivAssign<&'a Self> for Fp2 {
 impl Sum<Fp2> for Fp2 {
     /// Returns the `sum` of `self` and `other`.
     fn sum<I: Iterator<Item = Fp2>>(iter: I) -> Self {
-        iter.fold(Fp2::zero(), |a, b| a + b)
+        iter.fold(Fp2::ZERO, |a, b| a + b)
     }
 }
 

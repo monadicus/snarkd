@@ -1,6 +1,6 @@
 use crate::bls12_377::{
     field::Field, parameters::Parameters, sw_affine::SWAffine, sw_projective::SWProjective, Affine,
-    Fp, Fp2, G1Parameters, Projective, Scalar, X,
+    Fp, Fp2, Projective, Scalar, X,
 };
 use bitvec::prelude::*;
 use ruint::uint;
@@ -130,7 +130,7 @@ impl G2Prepared {
         let mut r = G2HomProjective {
             x: q.x,
             y: q.y,
-            z: Fp2::one(),
+            z: Fp2::ONE,
         };
 
         let bit_iterator = X.view_bits::<Msb0>();

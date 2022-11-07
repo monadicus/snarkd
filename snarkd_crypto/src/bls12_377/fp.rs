@@ -100,6 +100,8 @@ pub const T: Uint<384, 6> = uint!(3675842578061421676390135839012792950148785745
 pub const T_MINUS_ONE_DIV_TWO: Uint<384, 6> = uint!(1837921289030710838195067919506396475074392872918698035817074744121558668640693829665401097909504529_U384);
 
 impl Fp {
+    pub const MULTIPLICATIVE_GENERATOR: Self = GENERATOR_AS_FIELD;
+
     pub fn legendre(&self) -> LegendreSymbol {
         // s = self^((MODULUS - 1) // 2)
         let s = self.pow(MODULUS_MINUS_ONE_DIV_TWO.as_limbs());
@@ -114,10 +116,6 @@ impl Fp {
 
     pub fn half() -> Self {
         Self((MODULUS + uint!(1_U384)) >> 1)
-    }
-
-    pub fn multiplicative_generator() -> Self {
-        GENERATOR_AS_FIELD
     }
 
     pub fn is_valid(&self) -> bool {
@@ -136,20 +134,15 @@ impl Field for Fp {
         uint!(80949648264912719408558363140637477264845294720710499478137287262712535938301461879813459410945_U384),
     );
 
-    fn zero() -> Self {
-        Self(uint!(0_U384))
-    }
+    const ZERO: Fp = Self(uint!(0_U384));
+    const ONE: Fp = Self(uint!(1_U384));
 
     fn is_zero(&self) -> bool {
-        self.0 == Self::zero().0
-    }
-
-    fn one() -> Self {
-        Self(uint!(1_U384))
+        self.0 == Self::ZERO.0
     }
 
     fn is_one(&self) -> bool {
-        self.0 == Self::one().0
+        self.0 == Self::ONE.0
     }
 
     fn rand() -> Self {
@@ -232,7 +225,7 @@ impl Field for Fp {
                 let find = |delta: Self| -> u64 {
                     let mut mu = delta;
                     let mut i = 0;
-                    while mu != -Self::one() {
+                    while mu != -Self::ONE {
                         mu.square_in_place();
                         i += 1;
                     }
@@ -241,7 +234,7 @@ impl Field for Fp {
 
                 let eval = |mut delta: Self| -> u64 {
                     let mut s = 0u64;
-                    while delta != Self::one() {
+                    while delta != Self::ONE {
                         let i = find(delta);
                         let n_minus_one_minus_i = n - 1 - i;
                         s += 2u64.pow(n_minus_one_minus_i as u32);
@@ -260,7 +253,7 @@ impl Field for Fp {
 
                 let calc_gamma =
                     |i: usize, q_s: &Vec<BitVec>, last: bool| -> Self {
-                        let mut gamma = Self::one();
+                        let mut gamma = Self::ONE;
                         if i != 0 {
                             q_s.iter()
                                 .zip(l_s.iter())
@@ -445,7 +438,7 @@ impl<'a> DivAssign<&'a Self> for Fp {
 impl Sum<Fp> for Fp {
     /// Returns the `sum` of `self` and `other`.
     fn sum<I: Iterator<Item = Fp>>(iter: I) -> Self {
-        iter.fold(Fp::zero(), |a, b| a + b)
+        iter.fold(Fp::ZERO, |a, b| a + b)
     }
 }
 

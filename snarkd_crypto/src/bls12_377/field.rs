@@ -5,6 +5,7 @@ use core::{
     iter::Sum,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
+use std::ops::Deref;
 
 pub trait Field:
     Add<Self, Output = Self>
@@ -34,15 +35,11 @@ pub trait Field:
     + Sync
 {
     const PHI: Self;
-
-    /// Returns the additive identity of the field.
-    fn zero() -> Self;
+    const ZERO: Self;
+    const ONE: Self;
 
     /// Returns whether or not the given element is zero.
     fn is_zero(&self) -> bool;
-
-    /// Returns the multiplicative identity of the field.
-    fn one() -> Self;
 
     /// Returns whether or not the given element is one.
     fn is_one(&self) -> bool;
@@ -88,25 +85,17 @@ pub trait Field:
     /// least significant limb first.
     #[must_use]
     fn pow(&self, exp: &[u64]) -> Self {
-        let mut res = Self::one();
-
-        let mut found_one = false;
-
-        for i in exp.iter().flat_map(|limb| limb.view_bits::<Lsb0>()).rev() {
-            if !found_one {
+        exp.iter()
+            .flat_map(|limb| limb.view_bits::<Lsb0>())
+            .rev()
+            .skip_while(|i| !i.deref())
+            .fold(Self::ONE, |mut res, i| {
+                res.square_in_place();
                 if *i {
-                    found_one = true;
+                    res * self
                 } else {
-                    continue;
+                    res
                 }
-            }
-
-            res.square_in_place();
-
-            if *i {
-                res *= self;
-            }
-        }
-        res
+            })
     }
 }

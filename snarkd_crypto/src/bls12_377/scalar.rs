@@ -237,20 +237,16 @@ impl Field for Scalar {
     // We don't need GLV endomorphisms for the scalar field.
     const PHI: Self = Self(uint!(0_U256));
 
-    fn zero() -> Self {
-        Self(uint!(0_U256))
-    }
+    const ZERO: Self = Self(uint!(0_U256));
+
+    const ONE: Self = Self(uint!(1_U256));
 
     fn is_zero(&self) -> bool {
-        self.0 == Self::zero().0
-    }
-
-    fn one() -> Self {
-        Self(uint!(1_U256))
+        self.0 == Self::ZERO.0
     }
 
     fn is_one(&self) -> bool {
-        self.0 == Self::one().0
+        self.0 == Self::ONE.0
     }
 
     fn rand() -> Self {
@@ -333,7 +329,7 @@ impl Field for Scalar {
                 let find = |delta: Self| -> u64 {
                     let mut mu = delta;
                     let mut i = 0;
-                    while mu != -Self::one() {
+                    while mu != -Self::ONE {
                         mu.square_in_place();
                         i += 1;
                     }
@@ -342,7 +338,7 @@ impl Field for Scalar {
 
                 let eval = |mut delta: Self| -> u64 {
                     let mut s = 0u64;
-                    while delta != Self::one() {
+                    while delta != Self::ONE {
                         let i = find(delta);
                         let n_minus_one_minus_i = n - 1 - i;
                         s += 2u64.pow(n_minus_one_minus_i as u32);
@@ -361,7 +357,7 @@ impl Field for Scalar {
 
                 let calc_gamma =
                     |i: usize, q_s: &Vec<BitVec>, last: bool| -> Self {
-                        let mut gamma = Self::one();
+                        let mut gamma = Self::ONE;
                         if i != 0 {
                             q_s.iter()
                                 .zip(l_s.iter())
@@ -411,7 +407,7 @@ impl Field for Scalar {
     }
 
     fn glv_endomorphism(&self) -> Self {
-        Self::zero()
+        Self::ZERO
     }
 }
 
@@ -546,7 +542,7 @@ impl<'a> DivAssign<&'a Self> for Scalar {
 impl Sum<Scalar> for Scalar {
     /// Returns the `sum` of `self` and `other`.
     fn sum<I: Iterator<Item = Scalar>>(iter: I) -> Self {
-        iter.fold(Scalar::zero(), |a, b| a + b)
+        iter.fold(Scalar::ZERO, |a, b| a + b)
     }
 }
 

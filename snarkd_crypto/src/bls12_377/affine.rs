@@ -17,7 +17,7 @@ pub trait Affine:
     type Projective: Projective<Affine = Self>;
     type Parameters: Parameters;
 
-    fn zero() -> Self;
+    const ZERO: Self;
 
     fn is_zero(&self) -> bool;
 

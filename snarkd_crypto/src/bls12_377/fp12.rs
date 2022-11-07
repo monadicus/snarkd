@@ -115,7 +115,7 @@ impl Fp12 {
     }
 
     pub fn cyclotomic_square(&self) -> Self {
-        let mut result = Self::zero();
+        let mut result = Self::ZERO;
         let fp2_nr = Fp6::mul_fp2_by_nonresidue;
 
         let mut z0 = self.c0.c0;
@@ -181,7 +181,7 @@ impl Fp12 {
     }
 
     pub fn cyclotomic_exp(&self, exp: u64) -> Self {
-        let mut res = Self::one();
+        let mut res = Self::ONE;
 
         let mut found_one = false;
 
@@ -277,22 +277,18 @@ impl Field for Fp12 {
         },
     };
 
-    fn zero() -> Self {
-        Self {
-            c0: Fp6::zero(),
-            c1: Fp6::zero(),
-        }
-    }
+    const ZERO: Fp12 = Self {
+        c0: Fp6::ZERO,
+        c1: Fp6::ZERO,
+    };
+
+    const ONE: Fp12 = Self {
+        c0: Fp6::ONE,
+        c1: Fp6::ZERO,
+    };
 
     fn is_zero(&self) -> bool {
         self.c0.is_zero() && self.c1.is_zero()
-    }
-
-    fn one() -> Self {
-        Self {
-            c0: Fp6::one(),
-            c1: Fp6::zero(),
-        }
     }
 
     fn is_one(&self) -> bool {
@@ -382,7 +378,7 @@ impl Field for Fp12 {
     }
 
     fn glv_endomorphism(&self) -> Self {
-        Self::zero()
+        Self::ZERO
     }
 }
 
@@ -531,6 +527,6 @@ impl<'a> DivAssign<&'a Self> for Fp12 {
 impl Sum<Fp12> for Fp12 {
     /// Returns the `sum` of `self` and `other`.
     fn sum<I: Iterator<Item = Fp12>>(iter: I) -> Self {
-        iter.fold(Fp12::zero(), |a, b| a + b)
+        iter.fold(Fp12::ZERO, |a, b| a + b)
     }
 }

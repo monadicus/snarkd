@@ -30,7 +30,7 @@ impl<P: Parameters> SWProjective<P> {
 
 impl<P: Parameters> Default for SWProjective<P> {
     fn default() -> Self {
-        Self::zero()
+        Self::ZERO
     }
 }
 
@@ -110,17 +110,11 @@ impl<P: Parameters> Projective for SWProjective<P> {
     type Affine = SWAffine<P>;
     type Parameters = P;
 
+    /// The point at infinity is always represented by Z = 0.
+    const ZERO: Self = Self::new(P::BaseField::ZERO, P::BaseField::ONE, P::BaseField::ZERO);
+
     fn rand() -> Self {
         rand::thread_rng().sample(Standard)
-    }
-
-    // The point at infinity is always represented by Z = 0.
-    fn zero() -> Self {
-        Self::new(
-            P::BaseField::zero(),
-            P::BaseField::one(),
-            P::BaseField::zero(),
-        )
     }
 
     fn is_zero(&self) -> bool {
@@ -145,16 +139,16 @@ impl<P: Parameters> Projective for SWProjective<P> {
         // Section 3.2
 
         // First pass: compute [a, ab, abc, ...]
-        let mut prod = Vec::with_capacity(v.len());
-        let mut tmp = P::BaseField::one();
-        for g in v
-            .iter_mut()
-            // Ignore normalized elements
-            .filter(|g| !g.is_normalized())
-        {
-            tmp.mul_assign(&g.z);
-            prod.push(tmp);
-        }
+        let mut tmp = P::BaseField::ONE;
+        let prod = v
+            .iter()
+            .filter_map(|g| {
+                (!g.is_normalized()).then(|| {
+                    tmp.mul_assign(&g.z);
+                    tmp
+                })
+            })
+            .collect::<Vec<_>>();
 
         // Invert `tmp`.
         tmp = tmp.inverse().unwrap(); // Guaranteed to be nonzero.
@@ -171,7 +165,7 @@ impl<P: Parameters> Projective for SWProjective<P> {
                 prod.into_iter()
                     .rev()
                     .skip(1)
-                    .chain(Some(P::BaseField::one())),
+                    .chain(Some(P::BaseField::ONE)),
             )
         {
             // tmp := tmp * g.z; g.z := tmp * s = 1/z
@@ -187,7 +181,7 @@ impl<P: Parameters> Projective for SWProjective<P> {
                 let z2 = g.z.square(); // 1/z
                 g.x *= &z2; // x/z^2
                 g.y *= &(z2 * g.z); // y/z^3
-                g.z = P::BaseField::one(); // z = 1
+                g.z = P::BaseField::ONE; // z = 1
             });
     }
 
@@ -207,7 +201,7 @@ impl<P: Parameters> Projective for SWProjective<P> {
         if self.is_zero() {
             self.x = other.x;
             self.y = other.y;
-            self.z = P::BaseField::one();
+            self.z = P::BaseField::ONE;
             return;
         }
 
@@ -490,8 +484,8 @@ impl<P: Parameters> Mul<Scalar> for SWProjective<P> {
         let t_1 = t_1.into_iter().map(|v| v.to_affine()).collect::<Vec<_>>();
 
         let t_2 = t_1
-            .clone()
-            .into_iter()
+            .iter()
+            .cloned()
             .map(|mut v| {
                 v.x = v.x.glv_endomorphism();
                 v
@@ -559,7 +553,7 @@ impl<P: Parameters> Mul<Scalar> for SWProjective<P> {
             decomposition.3,
         );
         let max_len = naf_1.len().max(naf_2.len());
-        let mut acc = SWProjective::<P>::zero();
+        let mut acc = SWProjective::<P>::ZERO;
         for i in (0..max_len).rev() {
             if i < naf_1.len() {
                 naf_add(&t_1, naf_1[i], &mut acc)
@@ -589,9 +583,9 @@ impl<P: Parameters> MulAssign<Scalar> for SWProjective<P> {
 impl<P: Parameters> From<SWAffine<P>> for SWProjective<P> {
     fn from(p: SWAffine<P>) -> SWProjective<P> {
         if p.is_zero() {
-            Self::zero()
+            Self::ZERO
         } else {
-            Self::new(p.x, p.y, P::BaseField::one())
+            Self::new(p.x, p.y, P::BaseField::ONE)
         }
     }
 }

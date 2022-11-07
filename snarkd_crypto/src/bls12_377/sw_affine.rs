@@ -26,7 +26,7 @@ impl<P: Parameters> SWAffine<P> {
 
 impl<P: Parameters> Default for SWAffine<P> {
     fn default() -> Self {
-        Self::zero()
+        Self::ZERO
     }
 }
 
@@ -44,9 +44,7 @@ impl<P: Parameters> Affine for SWAffine<P> {
     type Projective = SWProjective<P>;
     type Parameters = P;
 
-    fn zero() -> Self {
-        Self::new(P::BaseField::zero(), P::BaseField::one(), true)
-    }
+    const ZERO: Self = Self::new(P::BaseField::ZERO, P::BaseField::ONE, true);
 
     fn is_zero(&self) -> bool {
         self.infinity
@@ -93,7 +91,7 @@ impl<P: Parameters> Affine for SWAffine<P> {
     }
 
     fn mul_bits(&self, bits: Vec<bool>) -> SWProjective<P> {
-        let mut output = SWProjective::zero();
+        let mut output = SWProjective::ZERO;
         for i in bits.iter().skip_while(|b| !**b) {
             output.double_in_place();
             if *i {
@@ -229,7 +227,7 @@ impl<P: Parameters> Distribution<SWAffine<P>> for Standard {
 impl<P: Parameters> From<SWProjective<P>> for SWAffine<P> {
     fn from(p: SWProjective<P>) -> SWAffine<P> {
         if p.is_zero() {
-            SWAffine::zero()
+            SWAffine::ZERO
         } else if p.z.is_one() {
             // If Z is one, the point is already normalized.
             SWAffine::new(p.x, p.y, false)
