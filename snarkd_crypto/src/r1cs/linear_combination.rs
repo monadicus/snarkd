@@ -32,26 +32,22 @@ impl<F: Field> From<Variable> for LinearCombination<F> {
 
 impl<F: Field> LinearCombination<F> {
     /// Outputs an empty linear combination.
-
     pub fn zero() -> LinearCombination<F> {
         LinearCombination(Vec::new())
     }
 
     /// Replaces the contents of `self` with those of `other`.
-
     pub fn replace_in_place(&mut self, other: Self) {
         self.0.clear();
         self.0.extend_from_slice(&other.0)
     }
 
     /// Negate the coefficients of all variables in `self`.
-
     pub fn negate_in_place(&mut self) {
         self.0.iter_mut().for_each(|(_, coeff)| *coeff = -(*coeff));
     }
 
     /// Double the coefficients of all variables in `self`.
-
     pub fn double_in_place(&mut self) {
         self.0.iter_mut().for_each(|(_, coeff)| {
             coeff.double_in_place();
@@ -59,7 +55,6 @@ impl<F: Field> LinearCombination<F> {
     }
 
     /// Get the location of a variable in `self`.
-
     pub fn get_var_loc(&self, search_var: &Variable) -> Result<usize, usize> {
         if self.0.len() < 6 {
             let mut found_index = 0;
