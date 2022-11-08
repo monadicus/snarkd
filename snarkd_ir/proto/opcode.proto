@@ -43,6 +43,113 @@ message AssertData {
   operand.Operand rhs = 2;
 }
 
+enum CommitMethod {
+  // Computes a BHP commitment on inputs of 256-bit chunks in second, and some
+  // randomness in third, storing the commitment in destination. Randomness
+  // should always be a Scalar value, and the produced commitment will always
+  // be a Field value.
+  //
+  // The instruction will halt if the given input is smaller than 129 bits.
+  CommitBHP256 = 0;
+  // Computes a BHP commitment on inputs of 512-bit chunks in first, and some
+  // randomness in second, storing the commitment in destination. Randomness
+  // should always be a Scalar value, and the produced commitment will always
+  // be a Field value.
+  //
+  // The instruction will halt if the given input is smaller than 171 bits.
+  CommitBHP512 = 1;
+  // Computes a BHP commitment on inputs of 768-bit chunks in first, and some
+  // randomness in second, storing the commitment in destination. Randomness
+  // should always be a Scalar value, and the produced commitment will always
+  // be a Field value.
+  //
+  // The instruction will halt if the given input is smaller than 129 bits.
+  CommitBHP768 = 2;
+  // Computes a BHP commitment on inputs of 1024-bit chunks in first, and some
+  // randomness in second, storing the commitment in destination. Randomness
+  // should always be a Scalar value, and the produced commitment will always
+  // be a Field value.
+  //
+  // The instruction will halt if the given input is smaller than 171 bits.
+  CommitBHP1024 = 3;
+  // Computes a Pedersen commitment up to a 64-bit input in first, and some
+  // randomness in second, storing the commitment in destination. Randomness
+  // should always be a Scalar value, and the produced commitment will always
+  // be a Group value.
+  //
+  // The instruction will halt if the given String or Interface value exceeds
+  // the 64-bit limit.
+  CommitPED64 = 4;
+  // Computes a Pedersen commitment up to a 128-bit input in first, and some
+  // randomness in second, storing the commitment in destination. Randomness
+  // should always be a Scalar value, and the produced commitment will always
+  // be a Group value.
+  //
+  // The instruction will halt if the given String or Interface value exceeds
+  // the 128-bit limit.
+  CommitPED128 = 5;
+}
+
+message CommitData {
+  CommitMethod method = 1;
+  operand.Operand chunk = 2;
+  operand.Scalar randomness = 3;
+  uint32 dest = 4;
+}
+
+enum HashMethod {
+  // Computes a BHP hash on inputs of 256-bit chunks in second, storing the
+  // hash in destination. The produced hash will always be a Field value.
+  //
+  // The instruction will halt if the given input is smaller than 129 bits.
+  HashBHP256 = 0;
+  // Computes a BHP hash on inputs of 512-bit chunks in second, storing the
+  // hash in destination. The produced hash will always be a Field value.
+  //
+  // The instruction will halt if the given input is smaller than 171 bits.
+  HashBHP512 = 1;
+  // Computes a BHP hash on inputs of 768-bit chunks in second, storing the
+  // hash in destination. The produced hash will always be a Field value.
+  //
+  // The instruction will halt if the given input is smaller than 129 bits.
+  HashBHP768 = 2;
+  // Computes a BHP hash on inputs of 1024-bit chunks in second, storing the
+  // hash in destination. The produced hash will always be a Field value.
+  //
+  // The instruction will halt if the given input is smaller than 171 bits.
+  HashBHP1024 = 3;
+  // Computes a Pedersen hash up to a 64-bit input in second, storing the hash
+  // in destination. The produced hash will always be a Field value.
+  //
+  // The instruction will halt if the given String or Interface value exceeds
+  // the 64-bit limit.
+  HashPED64 = 4;
+  // Computes a Pedersen hash up to a 128-bit input in second, storing the hash
+  // in destination. The produced hash will always be a Field value.
+  //
+  // The instruction will halt if the given String or Interface value exceeds
+  // the 128-bit limit.
+  HashPED128 = 5;
+  // Calculates a Poseidon hash with an input rate of 2, from an input in
+  // first, storing the hash in destination. The produced hash will always be
+  // a Field value.
+  HashPSD2 = 6;
+  // Calculates a Poseidon hash with an input rate of 4, from an input in
+  // first, storing the hash in destination. The produced hash will always be
+  // a Field value.
+  HashPSD4 = 7;
+  // Calculates a Poseidon hash with an input rate of 8, from an input in
+  // first, storing the hash in destination. The produced hash will always be
+  // a Field value.
+  HashPSD8 = 8;
+}
+
+message HashData {
+  HashMethod method = 1;
+  operand.Operand chunk = 2;
+  uint32 dest = 3;
+}
+
 // A Snarkd instruction
 message Instruction {
   // the possible instructions supported by SnarkdVM
@@ -75,50 +182,10 @@ message Instruction {
     AssertData assert_eq = 6;
     // Checks whether first and second are not equal, halting if they are equal.
     AssertData assert_neq = 7;
-    // Computes a BHP commitment on inputs of 256-bit chunks in first, and some
-    // randomness in second, storing the commitment in destination. Randomness
-    // should always be a Scalar value, and the produced commitment will always
-    // be a Field value.
-    //
-    // The instruction will halt if the given input is smaller than 129 bits.
-    BinaryData commit_bhp_256 = 8;
-    // Computes a BHP commitment on inputs of 512-bit chunks in first, and some
-    // randomness in second, storing the commitment in destination. Randomness
-    // should always be a Scalar value, and the produced commitment will always
-    // be a Field value.
-    //
-    // The instruction will halt if the given input is smaller than 171 bits.
-    BinaryData commit_bhp_512 = 9;
-    // Computes a BHP commitment on inputs of 768-bit chunks in first, and some
-    // randomness in second, storing the commitment in destination. Randomness
-    // should always be a Scalar value, and the produced commitment will always
-    // be a Field value.
-    //
-    // The instruction will halt if the given input is smaller than 129 bits.
-    BinaryData commit_bhp_768 = 10;
-    // Computes a BHP commitment on inputs of 1024-bit chunks in first, and some
-    // randomness in second, storing the commitment in destination. Randomness
-    // should always be a Scalar value, and the produced commitment will always
-    // be a Field value.
-    //
-    // The instruction will halt if the given input is smaller than 171 bits.
-    BinaryData commit_bhp_1024 = 11;
-    // Computes a Pedersen commitment up to a 64-bit input in first, and some
-    // randomness in second, storing the commitment in destination. Randomness
-    // should always be a Scalar value, and the produced commitment will always
-    // be a Group value.
-    //
-    // The instruction will halt if the given String or Interface value exceeds
-    // the 64-bit limit.
-    BinaryData commit_ped_64 = 12;
-    // Computes a Pedersen commitment up to a 128-bit input in first, and some
-    // randomness in second, storing the commitment in destination. Randomness
-    // should always be a Scalar value, and the produced commitment will always
-    // be a Group value.
-    //
-    // The instruction will halt if the given String or Interface value exceeds
-    // the 128-bit limit.
-    BinaryData commit_ped_128 = 13;
+    // Computes a specified commit function, the first argument.
+    // For further documentation of that function please see
+    // the CommitMethod enum.
+    CommitData commit = 8;
     // Divides first by second, storing the outcome in destination. Halts on
     // division by zero.
     //
@@ -130,117 +197,81 @@ message Instruction {
     //
     // For cases where wrapping semantics are needed for integer types, see the
     // div.w instruction.
-    BinaryData div = 14;
+    BinaryData div = 9;
     // Divides first by second, wrapping around at the boundary of the type, and
     // storing the outcome in destination.
-    BinaryData div_wrapped = 15;
+    BinaryData div_wrapped = 10;
     // Doubles the input, storing the outcome in destination.
-    UnaryData double = 16;
+    UnaryData double = 11;
     // Checks if first is greater than second, storing the result in
     // destination.
-    BinaryData gt = 17;
+    BinaryData gt = 12;
     // Checks if first is greater than or equal to second, storing the result in
     // destination.
-    BinaryData gte = 18;
+    BinaryData gte = 13;
+    // Computes a specified hash function, the first argument.
+    // For further documentation of that function please see
+    // the HashMethod enum.
+    HashData hash = 14;
     // Computes a BHP hash on inputs of 256-bit chunks in first, storing the
     // hash in destination. The produced hash will always be a Field value.
     //
-    // The instruction will halt if the given input is smaller than 129 bits.
-    UnaryData hash_bhp_256 = 19;
-    // Computes a BHP hash on inputs of 512-bit chunks in first, storing the
-    // hash in destination. The produced hash will always be a Field value.
-    //
-    // The instruction will halt if the given input is smaller than 171 bits.
-    UnaryData hash_bhp_512 = 20;
-    // Computes a BHP hash on inputs of 768-bit chunks in first, storing the
-    // hash in destination. The produced hash will always be a Field value.
-    //
-    // The instruction will halt if the given input is smaller than 129 bits.
-    UnaryData hash_bhp_768 = 21;
-    // Computes a BHP hash on inputs of 1024-bit chunks in first, storing the
-    // hash in destination. The produced hash will always be a Field value.
-    //
-    // The instruction will halt if the given input is smaller than 171 bits.
-    UnaryData hash_bhp_1024 = 22;
-    // Computes a Pedersen hash up to a 64-bit input in first, storing the hash
-    // in destination. The produced hash will always be a Field value.
-    //
-    // The instruction will halt if the given String or Interface value exceeds
-    // the 64-bit limit.
-    UnaryData hash_ped_64 = 23;
-    // Computes a Pedersen hash up to a 128-bit input in first, storing the hash
-    // in destination. The produced hash will always be a Field value.
-    //
-    // The instruction will halt if the given String or Interface value exceeds
-    // the 128-bit limit.
-    UnaryData hash_ped_128 = 24;
-    // Calculates a Poseidon hash with an input rate of 2, from an input in
-    // first, storing the hash in destination. The produced hash will always be
-    // a Field value.
-    UnaryData hash_psd_2 = 25;
-    // Calculates a Poseidon hash with an input rate of 4, from an input in
-    // first, storing the hash in destination. The produced hash will always be
-    // a Field value.
-    UnaryData hash_psd_4 = 26;
-    // Calculates a Poseidon hash with an input rate of 8, from an input in
-    // first, storing the hash in destination. The produced hash will always be
-    // a Field value.
-    UnaryData hash_psd_8 = 27;
+    // The instruction will halt if does not follow the specified hash .
     // Computes the multiplicative inverse of the input, storing the outcome in
     // destination.
-    UnaryData inv = 28;
+    UnaryData inv = 15;
     // Compares first and second, storing the result in destination.
-    BinaryData is_eq = 29;
+    BinaryData is_eq = 16;
     // Returns true if first is not equal to second, storing the result in
     // destination.
-    BinaryData is_neq = 30;
+    BinaryData is_neq = 17;
     // Checks if first is less than second, storing the outcome in destination.
-    BinaryData lt = 31;
+    BinaryData lt = 18;
     // Checks if first is less than or equal to second, storing the outcome in
     // destination.
-    BinaryData lte = 32;
+    BinaryData lte = 19;
     // Takes the modulus of first with respect to second, storing the outcome in
     // destination. Halts if second is zero.
     //
     // The semantics of this operation are consistent with the mathematical
     // definition of modulo operation.
-    BinaryData mod = 33;
+    BinaryData mod = 20;
     // Multiplies first with second, storing the outcome in destination.
     //
     // For integer types, a constraint is added to check for overflow/underflow.
     // For cases where wrapping semantics are needed for integer types, see the
     // mul.w instruction.
-    BinaryData mul = 34;
+    BinaryData mul = 21;
     // Multiplies first with second, wrapping around at the boundary of the
     // type, and storing the outcome in destination.
-    BinaryData mul_wrapped = 35;
+    BinaryData mul_wrapped = 22;
     // Returns false only if first and second are true, storing the outcome in
     // destination.
-    BinaryData nand = 36;
+    BinaryData nand = 23;
     // Negates first, storing the outcome in destination.
     //
     // For signed integer types, calling neg on the minimum value is an invalid
     // operation. For example, the input -128i8 would not be valid since 128
     // cannot be represented as an i8.
-    UnaryData neg = 37;
+    UnaryData neg = 24;
     // Returns true when neither first nor second is true, storing the outcome
     // in destination.
-    BinaryData nor = 38;
+    BinaryData nor = 25;
     // Perform a NOT operation on an integer (bitwise) or boolean input, storing
     // the outcome in destination.
-    UnaryData not = 39;
+    UnaryData not = 26;
     // Performs an OR operation on integer (bitwise) or boolean first and
     // second, storing the outcome in destination.
-    BinaryData or = 40;
+    BinaryData or = 27;
     // Raises first to the power of second, storing the outcome in destination.
     //
     // For integer types, a constraint is added to check for overflow/underflow.
     // For cases where wrapping semantics are needed for integer types, see the
     // pow.w instruction.
-    BinaryData pow = 41;
+    BinaryData pow = 28;
     // Raises first to the power of second, wrapping around at the boundary of
     // the type, storing the outcome in destination.
-    BinaryData pow_wrapped = 42;
+    BinaryData pow_wrapped = 29;
     // Computes the truncated remainder of first divided by second, storing the
     // outcome in destination. Halts on division by zero.
     //
@@ -249,31 +280,31 @@ message Instruction {
     //
     // For cases where wrapping semantics are needed for integer types, see the
     // rem.w instruction.
-    BinaryData rem = 43;
+    BinaryData rem = 30;
     // Computes the truncated remainder of first divided by second, wrapping
     // around at the boundary of the type, and storing the outcome in
     // destination.
-    BinaryData rem_wrapped = 44;
+    BinaryData rem_wrapped = 31;
     // Shifts first left by second bits, storing the outcome in destination.
-    BinaryData shl = 45;
+    BinaryData shl = 32;
     // Shifts first left by second bits, wrapping around at the boundary of the
     // type, storing the outcome in destination.
-    BinaryData shl_wrapped = 46;
+    BinaryData shl_wrapped = 33;
     // Shifts first right by second bits, storing the outcome in destination.
-    BinaryData shr = 47;
+    BinaryData shr = 34;
     // Shifts first right by second bits, wrapping around at the boundary of the
     // type, storing the outcome in destination.
-    BinaryData shr_wrapped = 48;
+    BinaryData shr_wrapped = 35;
     // Squares the input, storing the outcome in destination.
-    UnaryData square = 49;
+    UnaryData square = 36;
     // Computes the square root of the input, storing the outcome in
     // destination.
-    UnaryData sqrt = 50;
+    UnaryData sqrt = 37;
     // Computes first - second, storing the outcome in destination.
-    BinaryData sub = 51;
+    BinaryData sub = 38;
     // Computes first - second, wrapping around at the boundary of the type, and
     // storing the outcome in destination.
-    BinaryData sub_wrapped = 52;
+    BinaryData sub_wrapped = 39;
     // Selects first, if condition is true, otherwise selects second, storing
     // the result in destination.
     //
@@ -282,6 +313,6 @@ message Instruction {
     TernaryData ternary = 53;
     // Performs an XOR operation on an integer (bitwise) or boolean first and
     // second, storing the outcome in destination.
-    BinaryData xor = 54;
+    BinaryData xor = 41;
   }
 }
