@@ -90,4 +90,20 @@ CreateErrorType! {
     ],
     suggestions: [],
   }
+
+  unwrapped invalid_commit_method {
+    args: (),
+    error_msgs: [
+        "Invalid commit method.",
+    ],
+    suggestions: [],
+  }
+
+  unwrapped invalid_hash_method {
+    args: (),
+    error_msgs: [
+        "Invalid hash method.",
+    ],
+    suggestions: [],
+  }
 }
