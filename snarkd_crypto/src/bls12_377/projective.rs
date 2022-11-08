@@ -1,4 +1,4 @@
-use super::{Affine, Fr, Group};
+use super::{Affine, Parameters, Scalar};
 use core::{
     fmt::{Debug, Display},
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
@@ -14,8 +14,8 @@ pub trait Projective:
     + for<'a> AddAssign<&'a Self>
     + for<'a> Sub<&'a Self, Output = Self>
     + for<'a> SubAssign<&'a Self>
-    + Mul<Fr, Output = Self>
-    + MulAssign<Fr>
+    + Mul<Scalar, Output = Self>
+    + MulAssign<Scalar>
     + Copy
     + Clone
     + PartialEq
@@ -27,11 +27,11 @@ pub trait Projective:
     + Sync
 {
     type Affine: Affine<Projective = Self>;
-    type Parameters: Group;
+    type Parameters: Parameters;
+
+    const ZERO: Self;
 
     fn rand() -> Self;
-
-    fn zero() -> Self;
 
     fn is_zero(&self) -> bool;
 

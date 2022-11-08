@@ -1,4 +1,4 @@
-use super::{Fr, Group, Projective};
+use super::{Parameters, Projective, Scalar};
 
 use core::{
     fmt::{Debug, Display},
@@ -6,18 +6,24 @@ use core::{
 };
 
 pub trait Affine:
-    Neg<Output = Self> + Mul<Fr, Output = Self::Projective> + Debug + Display + PartialEq + Eq + Sized
+    Neg<Output = Self>
+    + Mul<Scalar, Output = Self::Projective>
+    + Debug
+    + Display
+    + PartialEq
+    + Eq
+    + Sized
 {
     type Projective: Projective<Affine = Self>;
-    type Parameters: Group;
+    type Parameters: Parameters;
 
-    fn zero() -> Self;
+    const ZERO: Self;
 
     fn is_zero(&self) -> bool;
 
     fn from_coordinates(
-        x: <Self::Parameters as Group>::BaseField,
-        y: <Self::Parameters as Group>::BaseField,
+        x: <Self::Parameters as Parameters>::BaseField,
+        y: <Self::Parameters as Parameters>::BaseField,
         infinity: bool,
     ) -> Self;
 
@@ -27,17 +33,12 @@ pub trait Affine:
 
     fn prime_subgroup_generator() -> Self;
 
-    fn from_x_coordinate(x: <Self::Parameters as Group>::BaseField, greatest: bool)
-        -> Option<Self>;
-
-    fn from_y_coordinate(y: <Self::Parameters as Group>::BaseField, greatest: bool)
-        -> Option<Self>;
+    fn from_x_coordinate(
+        x: <Self::Parameters as Parameters>::BaseField,
+        greatest: bool,
+    ) -> Option<Self>;
 
     fn mul_bits(&self, bits: Vec<bool>) -> Self::Projective;
-
-    fn mul_by_cofactor_to_projective(&self) -> Self::Projective;
-
-    fn mul_by_cofactor(&self) -> Self;
 
     fn mul_by_cofactor_inv(&self) -> Self;
 
@@ -48,13 +49,13 @@ pub trait Affine:
     fn batch_add_loop_1(
         a: &mut Self,
         b: &mut Self,
-        half: &<Self::Parameters as Group>::BaseField,
-        inversion_tmp: &mut <Self::Parameters as Group>::BaseField,
+        half: &<Self::Parameters as Parameters>::BaseField,
+        inversion_tmp: &mut <Self::Parameters as Parameters>::BaseField,
     );
 
     fn batch_add_loop_2(
         a: &mut Self,
         b: Self,
-        inversion_tmp: &mut <Self::Parameters as Group>::BaseField,
+        inversion_tmp: &mut <Self::Parameters as Parameters>::BaseField,
     );
 }
