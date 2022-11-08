@@ -1,4 +1,4 @@
-use crate::bls12_377::{field::Field, Fq, Fq2};
+use crate::bls12_377::{field::Field, Fp, Fp2};
 use core::{
     iter::Sum,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
@@ -6,137 +6,142 @@ use core::{
 use ruint::uint;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
-pub struct Fq6 {
-    pub c0: Fq2,
-    pub c1: Fq2,
-    pub c2: Fq2,
+pub struct Fp6 {
+    pub c0: Fp2,
+    pub c1: Fp2,
+    pub c2: Fp2,
 }
 
-const FROBENIUS_COEFF_FP6_C1: [Fq2; 6] = [
+const FROBENIUS_COEFF_FP6_C1: [Fp2; 6] = [
     // Fp2::NONRESIDUE^(((q^0) - 1) / 3)
-    Fq2 {
-        c0: Fq(uint!(1_U384)),
-        c1: Fq(uint!(0_U384)),
+    Fp2 {
+        c0: Fp(uint!(1_U384)),
+        c1: Fp(uint!(0_U384)),
     },
     // Fp2::NONRESIDUE^(((q^1) - 1) / 3)
-    Fq2 {
-        c0: Fq(
+    Fp2 {
+        c0: Fp(
             uint!(80949648264912719408558363140637477264845294720710499478137287262712535938301461879813459410946_U384),
         ),
-        c1: Fq(uint!(0_U384)),
+        c1: Fp(uint!(0_U384)),
     },
     // Fp2::NONRESIDUE^(((q^2) - 1) / 3)
-    Fq2 {
-        c0: Fq(
+    Fp2 {
+        c0: Fp(
             uint!(80949648264912719408558363140637477264845294720710499478137287262712535938301461879813459410945_U384),
         ),
-        c1: Fq(uint!(0_U384)),
+        c1: Fp(uint!(0_U384)),
     },
     // Fp2::NONRESIDUE^(((q^3) - 1) / 3)
-    Fq2 {
-        c0: Fq(
+    Fp2 {
+        c0: Fp(
             uint!(258664426012969094010652733694893533536393512754914660539884262666720468348340822774968888139573360124440321458176_U384),
         ),
-        c1: Fq(uint!(0_U384)),
+        c1: Fp(uint!(0_U384)),
     },
     // Fp2::NONRESIDUE^(((q^4) - 1) / 3)
-    Fq2 {
-        c0: Fq(
+    Fp2 {
+        c0: Fp(
             uint!(258664426012969093929703085429980814127835149614277183275038967946009968870203535512256352201271898244626862047231_U384),
         ),
-        c1: Fq(uint!(0_U384)),
+        c1: Fp(uint!(0_U384)),
     },
     // Fp2::NONRESIDUE^(((q^5) - 1) / 3)
-    Fq2 {
-        c0: Fq(
+    Fp2 {
+        c0: Fp(
             uint!(258664426012969093929703085429980814127835149614277183275038967946009968870203535512256352201271898244626862047232_U384),
         ),
-        c1: Fq(uint!(0_U384)),
+        c1: Fp(uint!(0_U384)),
     },
 ];
 
-const FROBENIUS_COEFF_FP6_C2: [Fq2; 6] = [
+const FROBENIUS_COEFF_FP6_C2: [Fp2; 6] = [
     // Fp2::NONRESIDUE^((2*(q^0) - 2) / 3)
-    Fq2 {
-        c0: Fq(uint!(1_U384)),
-        c1: Fq(uint!(0_U384)),
+    Fp2 {
+        c0: Fp(uint!(1_U384)),
+        c1: Fp(uint!(0_U384)),
     },
     // Fp2::NONRESIDUE^((2*(q^1) - 2) / 3)
-    Fq2 {
-        c0: Fq(
+    Fp2 {
+        c0: Fp(
             uint!(80949648264912719408558363140637477264845294720710499478137287262712535938301461879813459410945_U384),
         ),
-        c1: Fq(uint!(0_U384)),
+        c1: Fp(uint!(0_U384)),
     },
     // Fp2::NONRESIDUE^((2*(q^2) - 2) / 3)
-    Fq2 {
-        c0: Fq(
+    Fp2 {
+        c0: Fp(
             uint!(258664426012969093929703085429980814127835149614277183275038967946009968870203535512256352201271898244626862047231_U384),
         ),
-        c1: Fq(uint!(0_U384)),
+        c1: Fp(uint!(0_U384)),
     },
     // Fp2::NONRESIDUE^((2*(q^3) - 2) / 3)
-    Fq2 {
-        c0: Fq(uint!(1_U384)),
-        c1: Fq(uint!(0_U384)),
+    Fp2 {
+        c0: Fp(uint!(1_U384)),
+        c1: Fp(uint!(0_U384)),
     },
     // Fp2::NONRESIDUE^((2*(q^4) - 2) / 3)
-    Fq2 {
-        c0: Fq(
+    Fp2 {
+        c0: Fp(
             uint!(80949648264912719408558363140637477264845294720710499478137287262712535938301461879813459410945_U384),
         ),
-        c1: Fq(uint!(0_U384)),
+        c1: Fp(uint!(0_U384)),
     },
     // Fp2::NONRESIDUE^((2*(q^5) - 2) / 3)
-    Fq2 {
-        c0: Fq(
+    Fp2 {
+        c0: Fp(
             uint!(258664426012969093929703085429980814127835149614277183275038967946009968870203535512256352201271898244626862047231_U384),
         ),
-        c1: Fq(uint!(0_U384)),
+        c1: Fp(uint!(0_U384)),
     },
 ];
 
-impl Fq6 {
-    pub fn new(c0: Fq2, c1: Fq2, c2: Fq2) -> Self {
+impl Fp6 {
+    pub fn new(c0: Fp2, c1: Fp2, c2: Fp2) -> Self {
         Self { c0, c1, c2 }
+    }
+
+    pub fn frobenius_map(&mut self, power: usize) {
+        self.c0.frobenius_map(power);
+        self.c1.frobenius_map(power);
+        self.c2.frobenius_map(power);
+
+        self.c1.mul_assign(FROBENIUS_COEFF_FP6_C1[power % 6]);
+        self.c2.mul_assign(FROBENIUS_COEFF_FP6_C2[power % 6]);
     }
 }
 
-impl Field for Fq6 {
-    // We don't need to perform GLV endomorphisms in Fq6.
-    const PHI: Fq6 = Fq6 {
-        c0: Fq2 {
-            c0: Fq(uint!(1_U384)),
-            c1: Fq(uint!(0_U384)),
+impl Field for Fp6 {
+    // We don't need to perform GLV endomorphisms in Fp6.
+    const PHI: Fp6 = Fp6 {
+        c0: Fp2 {
+            c0: Fp(uint!(1_U384)),
+            c1: Fp(uint!(0_U384)),
         },
-        c1: Fq2 {
-            c0: Fq(uint!(0_U384)),
-            c1: Fq(uint!(0_U384)),
+        c1: Fp2 {
+            c0: Fp(uint!(0_U384)),
+            c1: Fp(uint!(0_U384)),
         },
-        c2: Fq2 {
-            c0: Fq(uint!(0_U384)),
-            c1: Fq(uint!(0_U384)),
+        c2: Fp2 {
+            c0: Fp(uint!(0_U384)),
+            c1: Fp(uint!(0_U384)),
         },
     };
 
-    fn zero() -> Self {
-        Self {
-            c0: Fq2::zero(),
-            c1: Fq2::zero(),
-            c2: Fq2::zero(),
-        }
-    }
+    const ZERO: Fp6 = Self {
+        c0: Fp2::ZERO,
+        c1: Fp2::ZERO,
+        c2: Fp2::ZERO,
+    };
+
+    const ONE: Fp6 = Self {
+        c0: Fp2::ONE,
+        c1: Fp2::ZERO,
+        c2: Fp2::ZERO,
+    };
 
     fn is_zero(&self) -> bool {
         self.c0.is_zero() && self.c1.is_zero() && self.c2.is_zero()
-    }
-
-    fn one() -> Self {
-        Self {
-            c0: Fq2::one(),
-            c1: Fq2::zero(),
-            c2: Fq2::zero(),
-        }
     }
 
     fn is_one(&self) -> bool {
@@ -145,18 +150,14 @@ impl Field for Fq6 {
 
     fn rand() -> Self {
         Self {
-            c0: Fq2::rand(),
-            c1: Fq2::rand(),
-            c2: Fq2::rand(),
+            c0: Fp2::rand(),
+            c1: Fp2::rand(),
+            c2: Fp2::rand(),
         }
     }
 
-    fn characteristic() -> Self {
-        Self {
-            c0: Fq2::characteristic(),
-            c1: Fq2::zero(),
-            c2: Fq2::zero(),
-        }
+    fn characteristic() -> Vec<u64> {
+        Fp::characteristic()
     }
 
     fn double(&self) -> Self {
@@ -248,21 +249,12 @@ impl Field for Fq6 {
         None
     }
 
-    fn frobenius_map(&mut self, power: usize) {
-        self.c0.frobenius_map(power);
-        self.c1.frobenius_map(power);
-        self.c2.frobenius_map(power);
-
-        self.c1.mul_assign(FROBENIUS_COEFF_FP6_C1[power % 6]);
-        self.c2.mul_assign(FROBENIUS_COEFF_FP6_C2[power % 6]);
-    }
-
     fn glv_endomorphism(&self) -> Self {
-        Self::zero()
+        Self::ZERO
     }
 }
 
-impl Add for Fq6 {
+impl Add for Fp6 {
     type Output = Self;
 
     fn add(mut self, other: Self) -> Self {
@@ -271,7 +263,7 @@ impl Add for Fq6 {
     }
 }
 
-impl AddAssign for Fq6 {
+impl AddAssign for Fp6 {
     fn add_assign(&mut self, other: Self) {
         self.c0.add_assign(other.c0);
         self.c1.add_assign(other.c1);
@@ -279,7 +271,7 @@ impl AddAssign for Fq6 {
     }
 }
 
-impl Sub for Fq6 {
+impl Sub for Fp6 {
     type Output = Self;
 
     fn sub(mut self, other: Self) -> Self {
@@ -288,7 +280,7 @@ impl Sub for Fq6 {
     }
 }
 
-impl SubAssign for Fq6 {
+impl SubAssign for Fp6 {
     fn sub_assign(&mut self, other: Self) {
         self.c0.sub_assign(other.c0);
         self.c1.sub_assign(other.c1);
@@ -296,11 +288,11 @@ impl SubAssign for Fq6 {
     }
 }
 
-impl Neg for Fq6 {
+impl Neg for Fp6 {
     type Output = Self;
 
     fn neg(self) -> Self {
-        Fq6 {
+        Fp6 {
             c0: self.c0.neg(),
             c1: self.c1.neg(),
             c2: self.c2.neg(),
@@ -308,7 +300,7 @@ impl Neg for Fq6 {
     }
 }
 
-impl Mul for Fq6 {
+impl Mul for Fp6 {
     type Output = Self;
 
     fn mul(mut self, other: Self) -> Self {
@@ -317,7 +309,7 @@ impl Mul for Fq6 {
     }
 }
 
-impl MulAssign for Fq6 {
+impl MulAssign for Fp6 {
     fn mul_assign(&mut self, other: Self) {
         let v0 = self.c0 * other.c0;
         let v1 = self.c1 * other.c1;
@@ -336,7 +328,7 @@ impl MulAssign for Fq6 {
     }
 }
 
-impl Div for Fq6 {
+impl Div for Fp6 {
     type Output = Self;
 
     fn div(mut self, other: Self) -> Self {
@@ -345,13 +337,13 @@ impl Div for Fq6 {
     }
 }
 
-impl DivAssign for Fq6 {
+impl DivAssign for Fp6 {
     fn div_assign(&mut self, other: Self) {
         self.mul_assign(other.inverse().unwrap());
     }
 }
 
-impl<'a> Add<&'a Self> for Fq6 {
+impl<'a> Add<&'a Self> for Fp6 {
     type Output = Self;
 
     fn add(mut self, other: &Self) -> Self {
@@ -360,7 +352,7 @@ impl<'a> Add<&'a Self> for Fq6 {
     }
 }
 
-impl<'a> AddAssign<&'a Self> for Fq6 {
+impl<'a> AddAssign<&'a Self> for Fp6 {
     fn add_assign(&mut self, other: &Self) {
         self.c0.add_assign(other.c0);
         self.c1.add_assign(other.c1);
@@ -368,7 +360,7 @@ impl<'a> AddAssign<&'a Self> for Fq6 {
     }
 }
 
-impl<'a> Sub<&'a Self> for Fq6 {
+impl<'a> Sub<&'a Self> for Fp6 {
     type Output = Self;
 
     fn sub(mut self, other: &Self) -> Self {
@@ -377,7 +369,7 @@ impl<'a> Sub<&'a Self> for Fq6 {
     }
 }
 
-impl<'a> SubAssign<&'a Self> for Fq6 {
+impl<'a> SubAssign<&'a Self> for Fp6 {
     fn sub_assign(&mut self, other: &Self) {
         self.c0.sub_assign(other.c0);
         self.c1.sub_assign(other.c1);
@@ -385,7 +377,7 @@ impl<'a> SubAssign<&'a Self> for Fq6 {
     }
 }
 
-impl<'a> Mul<&'a Self> for Fq6 {
+impl<'a> Mul<&'a Self> for Fp6 {
     type Output = Self;
 
     fn mul(mut self, other: &Self) -> Self {
@@ -394,7 +386,7 @@ impl<'a> Mul<&'a Self> for Fq6 {
     }
 }
 
-impl<'a> MulAssign<&'a Self> for Fq6 {
+impl<'a> MulAssign<&'a Self> for Fp6 {
     fn mul_assign(&mut self, other: &Self) {
         let v0 = self.c0 * other.c0;
         let v1 = self.c1 * other.c1;
@@ -413,7 +405,7 @@ impl<'a> MulAssign<&'a Self> for Fq6 {
     }
 }
 
-impl<'a> Div<&'a Self> for Fq6 {
+impl<'a> Div<&'a Self> for Fp6 {
     type Output = Self;
 
     fn div(mut self, other: &Self) -> Self {
@@ -422,7 +414,7 @@ impl<'a> Div<&'a Self> for Fq6 {
     }
 }
 
-impl<'a> DivAssign<&'a Self> for Fq6 {
+impl<'a> DivAssign<&'a Self> for Fp6 {
     fn div_assign(&mut self, other: &Self) {
         self.mul_assign(other.inverse().unwrap());
     }
@@ -430,20 +422,20 @@ impl<'a> DivAssign<&'a Self> for Fq6 {
 
 /// NONRESIDUE = U
 #[allow(dead_code)]
-const NONRESIDUE: Fq2 = Fq2 {
-    c0: Fq(uint!(0_U384)),
-    c1: Fq(uint!(1_U384)),
+const NONRESIDUE: Fp2 = Fp2 {
+    c0: Fp(uint!(0_U384)),
+    c1: Fp(uint!(1_U384)),
 };
 
-impl Fq6 {
-    pub fn mul_fp2_by_nonresidue(fe: &Fq2) -> Fq2 {
+impl Fp6 {
+    pub fn mul_fp2_by_nonresidue(fe: &Fp2) -> Fp2 {
         // Karatsuba multiplication with constant other = u.
-        let c0 = Fq2::mul_fp_by_nonresidue(&fe.c1);
+        let c0 = Fp2::mul_fp_by_nonresidue(&fe.c1);
         let c1 = fe.c0;
-        Fq2 { c0, c1 }
+        Fp2 { c0, c1 }
     }
 
-    pub fn mul_by_1(&mut self, c1: &Fq2) {
+    pub fn mul_by_1(&mut self, c1: &Fp2) {
         let mut b_b = self.c1;
         b_b.mul_assign(c1);
 
@@ -471,7 +463,7 @@ impl Fq6 {
         self.c2 = b_b;
     }
 
-    pub fn mul_by_01(&mut self, c0: &Fq2, c1: &Fq2) {
+    pub fn mul_by_01(&mut self, c0: &Fp2, c1: &Fp2) {
         let mut a_a = self.c0;
         let mut b_b = self.c1;
         a_a.mul_assign(c0);
@@ -515,10 +507,10 @@ impl Fq6 {
     }
 }
 
-impl Sum<Fq6> for Fq6 {
+impl Sum<Fp6> for Fp6 {
     /// Returns the `sum` of `self` and `other`.
-    fn sum<I: Iterator<Item = Fq6>>(iter: I) -> Self {
-        iter.fold(Fq6::zero(), |a, b| a + b)
+    fn sum<I: Iterator<Item = Fp6>>(iter: I) -> Self {
+        iter.fold(Fp6::ZERO, |a, b| a + b)
     }
 }
 
@@ -528,11 +520,11 @@ mod test {
 
     #[test]
     fn test_fq2_mul_nonresidue() {
-        let nqr = Fq2::new(Fq::zero(), Fq::one());
-        println!("One: {:?}", Fq::one());
+        let nqr = Fp2::new(Fp::ZERO, Fp::ONE);
+        println!("One: {:?}", Fp::ONE);
 
         for _ in 0..1000 {
-            let mut a = Fq2::rand();
+            let mut a = Fp2::rand();
             let mut b = a;
             a *= &NONRESIDUE;
             b *= &nqr;
