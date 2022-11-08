@@ -8,6 +8,9 @@
 # Added by cargo
 /target
 
+snarkd.yaml
+snarkd.db
+
 # MacOS stuff
 .DS_Store
 

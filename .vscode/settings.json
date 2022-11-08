@@ -1,0 +1,6 @@
+{
+    "[markdown]": {
+        "files.trimTrailingWhitespace": false,
+        "editor.defaultFormatter": "vscode.markdown-language-features"
+    }
+}
