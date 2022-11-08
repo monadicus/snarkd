@@ -10,6 +10,7 @@ pub enum Transaction {
     Execute(ExecuteTransaction),
 }
 
+#[derive(Clone, PartialEq, Eq)]
 pub struct DeployTransaction {
     pub id: TransactionID,
     pub deployment: Box<Deployment>,
@@ -17,6 +18,7 @@ pub struct DeployTransaction {
     pub transition: Transition,
 }
 
+#[derive(Clone, PartialEq, Eq)]
 pub struct ExecuteTransaction {
     pub id: TransactionID,
     pub execution: Execution,
