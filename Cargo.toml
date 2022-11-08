@@ -1,14 +1,17 @@
 [workspace]
 resolver = "2"
 members = [
+    "snarkd_cli",
+    "snarkd_client",
     "snarkd_common",
     "snarkd_crypto",
     "snarkd_errors",
     "snarkd_ir",
     "snarkd_network",
     "snarkd_node",
-    "snarkd_storage",
     "snarkd_peer",
+    "snarkd_rpc",
+    "snarkd_storage",
 ]
 
 [workspace.dependencies]
@@ -38,6 +41,7 @@ refinery = { version = "0.8.6", features = [
 rusqlite = { version = "0.28", features = ["bundled"] }
 serde = { version = "1.0.147", features = ["derive"] }
 serde_yaml = "0.9.14"
+serde_json = "1.0.87"
 smallvec = "1.10"
 strum = { version = "0.24", features = ["derive"] }
 thiserror = "1.0"
@@ -45,6 +49,9 @@ tokio = { version = "1.0", features = ["full"] }
 # we need a new release for rusqlite 0.28 support
 tokio-rusqlite = "0.3.0"
 uuid = { version = "1.2", features = ["serde", "v4"] }
+url = { version = "2.3.1", features = ["serde"] }
 
+snarkd_rpc = { path = "./snarkd_rpc" }
 snarkd_common = { path = "./snarkd_common" }
 snarkd_errors = { path = "./snarkd_errors" }
+snarkd_client = { path = "./snarkd_client" }

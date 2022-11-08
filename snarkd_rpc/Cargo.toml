@@ -1,0 +1,13 @@
+[package]
+name = "snarkd_rpc"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+jsonrpsee = { version = "0.15.1", optional = true, default-features = false }
+anyhow = { workspace = true }
+
+[features]
+default = ["client", "server"]
+client = ["jsonrpsee/client"]
+server = ["jsonrpsee/server"]
