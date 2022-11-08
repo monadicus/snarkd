@@ -4,12 +4,34 @@ version: 2.1
 # https://circleci.com/developer/orbs/orb/circleci/rust
 
 orbs:
-  # installs protoc
-  protobuf: izumin5210/protobuf@0.1.0
   # provides rustfmt, clippy, cargo
   rust: circleci/rust@1.6.0
 
 commands:
+  # adapted from https://circleci.com/developer/orbs/orb/izumin5210 to support architecture parameter
+  # Licensed by MIT as per https://circleci.com/developer/orbs/licensing
+  protobuf_install:
+    description: Install protobuf (protoc command and standard libs)
+    parameters:
+      prefix:
+        default: /usr/local
+        type: string
+      protoc_arch:
+        # see arches from https://github.com/protocolbuffers/protobuf/releases/tag/v21.9
+        default: linux-x86_64
+        type: string
+      version:
+        default: "21.9"
+        type: string
+    steps:
+      - run:
+          command: |
+            archive=protoc-<<parameters.version>>-<<parameters.protoc_arch>>
+            curl -O -L https://github.com/protocolbuffers/protobuf/releases/download/v<<parameters.version>>/$archive.zip
+            sudo unzip -d '/usr/local' $archive.zip 'bin/*' 'include/*'
+            rm -rf $archive.zip
+          name: "[protobuf] Install"
+
   setup:
     description: Sets up the environment for building snarkd
     parameters:
@@ -17,11 +39,15 @@ commands:
         default: false
         description: Whether to install protoc during setup
         type: boolean
+      protoc_arch:
+        default: linux-x86_64
+        type: string
     steps:
       - when:
           condition: <<parameters.protoc>>
           steps:
-            - protobuf/install
+            - protobuf_install:
+                protoc_arch: <<parameters.protoc_arch>>
 
 jobs:
   # runs rustfmt, clippy, and cargo test
@@ -31,14 +57,32 @@ jobs:
     docker:
       - image: cimg/rust:1.64.0
     steps:
-      - setup:
-         protoc: true
       - checkout
+      - setup:
+          protoc: true
       - rust/format
       - rust/clippy
       - rust/test
+
+  # runs cargo test on arm64 architecture
+  test_arm64:
+    environment:
+      RUST_BACKTRACE: 1
+    machine:
+      image: ubuntu-2204:current
+    resource_class: arm.medium
+    steps:
+      - checkout
+      - setup:
+          protoc: true
+          protoc_arch: linux-aarch_64
+      - rust/install
+      - rust/test:
+          # we use a unique cache version for arm so it doesn't share 86x_64 binaries
+          cache_version: "arm-v1"
 
 workflows:
   lint_and_test:
     jobs:
       - lint_and_test
+      - test_arm64

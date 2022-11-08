@@ -5,6 +5,7 @@ use core::{
     iter::Sum,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
+use std::ops::Deref;
 
 pub trait Field:
     Add<Self, Output = Self>
@@ -30,17 +31,15 @@ pub trait Field:
     + Hash
     + Debug
     + Sized
+    + Send
+    + Sync
 {
     const PHI: Self;
-
-    /// Returns the additive identity of the field.
-    fn zero() -> Self;
+    const ZERO: Self;
+    const ONE: Self;
 
     /// Returns whether or not the given element is zero.
     fn is_zero(&self) -> bool;
-
-    /// Returns the multiplicative identity of the field.
-    fn one() -> Self;
 
     /// Returns whether or not the given element is one.
     fn is_one(&self) -> bool;
@@ -49,7 +48,7 @@ pub trait Field:
     fn rand() -> Self;
 
     /// Returns the characteristic of the field.
-    fn characteristic() -> Self;
+    fn characteristic() -> Vec<u64>;
 
     /// Returns `self + self`.
     #[must_use]
@@ -79,10 +78,6 @@ pub trait Field:
     /// Computes the square root of `self`, and returns `None` if it does not exist.
     fn sqrt(&self) -> Option<Self>;
 
-    /// Exponentiates this element by a power of the base prime modulus via
-    /// the Frobenius automorphism.
-    fn frobenius_map(&mut self, power: usize);
-
     /// Performs the GLV endomorphism.
     fn glv_endomorphism(&self) -> Self;
 
@@ -90,29 +85,17 @@ pub trait Field:
     /// least significant limb first.
     #[must_use]
     fn pow(&self, exp: &[u64]) -> Self {
-        let mut res = Self::one();
-
-        let mut found_one = false;
-
-        let bits = exp
-            .iter()
+        exp.iter()
             .flat_map(|limb| limb.view_bits::<Lsb0>())
-            .collect::<Vec<_>>();
-        for i in bits.into_iter().rev() {
-            if !found_one {
+            .rev()
+            .skip_while(|i| !i.deref())
+            .fold(Self::ONE, |mut res, i| {
+                res.square_in_place();
                 if *i {
-                    found_one = true;
+                    res * self
                 } else {
-                    continue;
+                    res
                 }
-            }
-
-            res.square_in_place();
-
-            if *i {
-                res *= self;
-            }
-        }
-        res
+            })
     }
 }
