@@ -29,7 +29,6 @@ impl<G: Group> SWProjective<G> {
 
 impl<G: Group> Default for SWProjective<G> {
     fn default() -> Self {
-        panic!("unhit");
         Self::zero()
     }
 }
@@ -42,7 +41,6 @@ impl<G: Group> Display for SWProjective<G> {
 
 impl<G: Group> Hash for SWProjective<G> {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        panic!("unhit");
         self.to_affine().hash(state);
     }
 }
@@ -56,7 +54,6 @@ impl<G: Group> PartialEq for SWProjective<G> {
         }
 
         if other.is_zero() {
-            panic!("unhit");
             return false;
         }
 
@@ -73,16 +70,13 @@ impl<G: Group> PartialEq for SWProjective<G> {
 impl<G: Group> PartialEq<SWAffine<G>> for SWProjective<G> {
     fn eq(&self, other: &SWAffine<G>) -> bool {
         if self.is_zero() {
-            panic!("unhit");
             return other.is_zero();
         }
 
         if other.is_zero() {
-            panic!("unhit");
             return false;
         }
 
-        panic!("unhit");
         // The points (X, Y, Z) and (X', Y', Z')
         // are equal when (X * Z^2) = (X' * Z'^2)
         // and (Y * Z^3) = (Y' * Z'^3).
@@ -126,12 +120,10 @@ impl<G: Group> Projective for SWProjective<G> {
     }
 
     fn prime_subgroup_generator() -> Self {
-        panic!("unhit");
         SWAffine::prime_subgroup_generator().into()
     }
 
     fn cofactor() -> &'static [u64] {
-        panic!("unhit");
         G::COFACTOR
     }
 
@@ -369,7 +361,6 @@ impl<'a, G: Group> Add<&'a Self> for SWProjective<G> {
     type Output = Self;
 
     fn add(self, other: &'a Self) -> Self {
-        panic!("unhit");
         let mut copy = self;
         copy += other;
         copy
@@ -450,7 +441,6 @@ impl<'a, G: Group> Sub<&'a Self> for SWProjective<G> {
     type Output = Self;
 
     fn sub(self, other: &'a Self) -> Self {
-        panic!("unhit");
         let mut copy = self;
         copy -= other;
         copy

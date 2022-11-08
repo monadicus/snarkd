@@ -190,7 +190,6 @@ impl Fq12 {
                 if *i {
                     found_one = true;
                 } else {
-                    panic!("unhit");
                     continue;
                 }
             }
@@ -300,7 +299,6 @@ impl Field for Fq12 {
     }
 
     fn characteristic<'a>() -> Self {
-        panic!("unhit");
         Self {
             c0: Fq6::characteristic(),
             c1: Fq6::zero(),
@@ -369,14 +367,12 @@ impl Field for Fq12 {
             *self = inv;
             Some(self)
         } else {
-            panic!("unhit");
             None
         }
     }
 
     // No-op
     fn sqrt(&self) -> Option<Self> {
-        panic!("unhit");
         None
     }
 
@@ -389,7 +385,6 @@ impl Field for Fq12 {
     }
 
     fn glv_endomorphism(&self) -> Self {
-        panic!("unhit");
         Self::zero()
     }
 }
@@ -474,7 +469,6 @@ impl<'a> Add<&'a Self> for Fq12 {
     type Output = Self;
 
     fn add(mut self, other: &Self) -> Self {
-        panic!("unhit");
         self.add_assign(other);
         self
     }
@@ -491,7 +485,6 @@ impl<'a> Sub<&'a Self> for Fq12 {
     type Output = Self;
 
     fn sub(mut self, other: &Self) -> Self {
-        panic!("unhit");
         self.sub_assign(other);
         self
     }
@@ -526,7 +519,6 @@ impl<'a> Div<&'a Self> for Fq12 {
     type Output = Self;
 
     fn div(mut self, other: &Self) -> Self {
-        panic!("unhit");
         self.div_assign(other);
         self
     }
@@ -535,7 +527,6 @@ impl<'a> Div<&'a Self> for Fq12 {
 impl<'a> DivAssign<&'a Self> for Fq12 {
     #[allow(clippy::suspicious_op_assign_impl)]
     fn div_assign(&mut self, other: &Self) {
-        panic!("unhit");
         *self *= other.inverse().unwrap();
     }
 }

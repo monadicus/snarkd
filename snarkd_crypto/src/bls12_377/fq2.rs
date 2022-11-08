@@ -97,7 +97,6 @@ impl Field for Fq2 {
     }
 
     fn characteristic() -> Self {
-        panic!("unhit");
         Fq2 {
             c0: Fq::characteristic(),
             c1: Fq::zero(),
@@ -161,7 +160,6 @@ impl Field for Fq2 {
             *self = inv;
             Some(self)
         } else {
-            panic!("unhit");
             None
         }
     }
@@ -173,7 +171,7 @@ impl Field for Fq2 {
         match self.legendre() {
             // Square root based on the complex method. See
             // https://eprint.iacr.org/2012/685.pdf (page 15, algorithm 8)
-            LegendreSymbol::Zero => panic!("unhit"), // Some(*self),
+            LegendreSymbol::Zero => Some(*self),
             LegendreSymbol::QuadraticNonResidue => None,
             LegendreSymbol::QuadraticResidue => {
                 let two_inv = Fq::half();
@@ -285,7 +283,6 @@ impl Div for Fq2 {
 impl DivAssign for Fq2 {
     #[allow(clippy::suspicious_op_assign_impl)]
     fn div_assign(&mut self, other: Self) {
-        panic!("unhit");
         *self *= other.inverse().unwrap();
     }
 }
@@ -354,7 +351,6 @@ impl<'a> Div<&'a Self> for Fq2 {
 
     #[allow(clippy::suspicious_arithmetic_impl)]
     fn div(self, other: &Self) -> Self {
-        panic!("unhit");
         self * other.inverse().unwrap()
     }
 }
@@ -362,7 +358,6 @@ impl<'a> Div<&'a Self> for Fq2 {
 impl<'a> DivAssign<&'a Self> for Fq2 {
     #[allow(clippy::suspicious_op_assign_impl)]
     fn div_assign(&mut self, other: &Self) {
-        panic!("unhit");
         *self *= other.inverse().unwrap();
     }
 }
@@ -376,7 +371,6 @@ impl Sum<Fq2> for Fq2 {
 
 impl std::fmt::Display for Fq2 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        panic!("unhit");
         write!(f, "Fp2({} + {} * u)", self.c0, self.c1)
     }
 }

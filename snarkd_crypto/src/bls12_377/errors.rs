@@ -26,14 +26,12 @@ pub enum GroupError {
 
 impl From<std::io::Error> for GroupError {
     fn from(error: std::io::Error) -> Self {
-        panic!("unhit");
         GroupError::Crate("std::io", format!("{:?}", error))
     }
 }
 
 impl From<GroupError> for std::io::Error {
     fn from(error: GroupError) -> Self {
-        panic!("unhit");
         std::io::Error::new(std::io::ErrorKind::Other, format!("{}", error))
     }
 }

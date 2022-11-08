@@ -183,7 +183,7 @@ fn final_exponentiation(f: &Fq12) -> Option<Fq12> {
             y5 *= &y1;
             Some(y5)
         }
-        None => panic!("unhit"), // None,
+        None => None,
     }
 }
 

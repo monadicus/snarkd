@@ -152,7 +152,6 @@ impl Field for Fq6 {
     }
 
     fn characteristic() -> Self {
-        panic!("unhit");
         Self {
             c0: Fq2::characteristic(),
             c1: Fq2::zero(),
@@ -240,14 +239,12 @@ impl Field for Fq6 {
             *self = inv;
             Some(self)
         } else {
-            panic!("unhit");
             None
         }
     }
 
     // No-op
     fn sqrt(&self) -> Option<Self> {
-        panic!("unhit");
         None
     }
 
@@ -261,7 +258,6 @@ impl Field for Fq6 {
     }
 
     fn glv_endomorphism(&self) -> Self {
-        panic!("unhit");
         Self::zero()
     }
 }
@@ -359,7 +355,6 @@ impl<'a> Add<&'a Self> for Fq6 {
     type Output = Self;
 
     fn add(mut self, other: &Self) -> Self {
-        panic!("unhit");
         self.add_assign(other);
         self
     }
@@ -377,7 +372,6 @@ impl<'a> Sub<&'a Self> for Fq6 {
     type Output = Self;
 
     fn sub(mut self, other: &Self) -> Self {
-        panic!("unhit");
         self.sub_assign(other);
         self
     }
@@ -423,7 +417,6 @@ impl<'a> Div<&'a Self> for Fq6 {
     type Output = Self;
 
     fn div(mut self, other: &Self) -> Self {
-        panic!("unhit");
         self.div_assign(other);
         self
     }
@@ -431,7 +424,6 @@ impl<'a> Div<&'a Self> for Fq6 {
 
 impl<'a> DivAssign<&'a Self> for Fq6 {
     fn div_assign(&mut self, other: &Self) {
-        panic!("unhit");
         self.mul_assign(other.inverse().unwrap());
     }
 }

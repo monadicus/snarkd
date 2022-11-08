@@ -191,7 +191,6 @@ impl Field for Fq {
             *self = Self(res);
             Some(self)
         } else {
-            panic!("unhit");
             None
         }
     }
@@ -311,7 +310,6 @@ impl Field for Fq {
     }
 
     fn frobenius_map(&mut self, _: usize) {
-        panic!("unhit");
         // No-op
     }
 
@@ -385,7 +383,6 @@ impl Div for Fq {
 
 impl DivAssign for Fq {
     fn div_assign(&mut self, other: Self) {
-        panic!("unhit");
         *self = *self / other;
     }
 }
@@ -439,14 +436,12 @@ impl<'a> Div<&'a Self> for Fq {
     type Output = Self;
 
     fn div(self, other: &Self) -> Self {
-        panic!("unhit");
         Self(self.0.mul_mod(other.inverse().unwrap().0, MODULUS))
     }
 }
 
 impl<'a> DivAssign<&'a Self> for Fq {
     fn div_assign(&mut self, other: &Self) {
-        panic!("unhit");
         *self = *self / other;
     }
 }
@@ -460,7 +455,6 @@ impl Sum<Fq> for Fq {
 
 impl Display for Fq {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        panic!("unhit");
         write!(f, "{}", self.0)
     }
 }
