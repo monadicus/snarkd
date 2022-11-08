@@ -23,6 +23,8 @@ mod variable;
 pub use variable::*;
 
 #[cfg(test)]
+mod linear_combination_test;
+#[cfg(test)]
 pub mod test_constraint_checker;
 #[cfg(test)]
 pub mod test_constraint_system;
