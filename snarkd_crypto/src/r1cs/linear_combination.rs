@@ -13,21 +13,18 @@ use std::{
 pub struct LinearCombination<F: Field>(pub Vec<(Variable, F)>);
 
 impl<F: Field> AsRef<[(Variable, F)]> for LinearCombination<F> {
-    #[inline]
     fn as_ref(&self) -> &[(Variable, F)] {
         &self.0
     }
 }
 
 impl<F: Field> From<(F, Variable)> for LinearCombination<F> {
-    #[inline]
     fn from((coeff, var): (F, Variable)) -> Self {
         LinearCombination(vec![(var, coeff)])
     }
 }
 
 impl<F: Field> From<Variable> for LinearCombination<F> {
-    #[inline]
     fn from(var: Variable) -> Self {
         LinearCombination(vec![(var, F::ONE)])
     }
@@ -35,26 +32,26 @@ impl<F: Field> From<Variable> for LinearCombination<F> {
 
 impl<F: Field> LinearCombination<F> {
     /// Outputs an empty linear combination.
-    #[inline]
+
     pub fn zero() -> LinearCombination<F> {
         LinearCombination(Vec::new())
     }
 
     /// Replaces the contents of `self` with those of `other`.
-    #[inline]
+
     pub fn replace_in_place(&mut self, other: Self) {
         self.0.clear();
         self.0.extend_from_slice(&other.0)
     }
 
     /// Negate the coefficients of all variables in `self`.
-    #[inline]
+
     pub fn negate_in_place(&mut self) {
         self.0.iter_mut().for_each(|(_, coeff)| *coeff = -(*coeff));
     }
 
     /// Double the coefficients of all variables in `self`.
-    #[inline]
+
     pub fn double_in_place(&mut self) {
         self.0.iter_mut().for_each(|(_, coeff)| {
             coeff.double_in_place();
@@ -62,7 +59,7 @@ impl<F: Field> LinearCombination<F> {
     }
 
     /// Get the location of a variable in `self`.
-    #[inline]
+
     pub fn get_var_loc(&self, search_var: &Variable) -> Result<usize, usize> {
         if self.0.len() < 6 {
             let mut found_index = 0;
@@ -94,7 +91,6 @@ impl<F: Field> LinearCombination<F> {
 impl<F: Field> Add<(F, Variable)> for LinearCombination<F> {
     type Output = Self;
 
-    #[inline]
     fn add(mut self, coeff_var: (F, Variable)) -> Self {
         self += coeff_var;
         self
@@ -102,7 +98,6 @@ impl<F: Field> Add<(F, Variable)> for LinearCombination<F> {
 }
 
 impl<F: Field> AddAssign<(F, Variable)> for LinearCombination<F> {
-    #[inline]
     fn add_assign(&mut self, (coeff, var): (F, Variable)) {
         match self.get_var_loc(&var) {
             Ok(found) => self.0[found].1 += &coeff,
@@ -114,7 +109,6 @@ impl<F: Field> AddAssign<(F, Variable)> for LinearCombination<F> {
 impl<F: Field> Sub<(F, Variable)> for LinearCombination<F> {
     type Output = Self;
 
-    #[inline]
     fn sub(self, (coeff, var): (F, Variable)) -> Self {
         self + (-coeff, var)
     }
@@ -123,7 +117,6 @@ impl<F: Field> Sub<(F, Variable)> for LinearCombination<F> {
 impl<F: Field> Neg for LinearCombination<F> {
     type Output = Self;
 
-    #[inline]
     fn neg(mut self) -> Self {
         self.negate_in_place();
         self
@@ -133,7 +126,6 @@ impl<F: Field> Neg for LinearCombination<F> {
 impl<F: Field> Mul<F> for LinearCombination<F> {
     type Output = Self;
 
-    #[inline]
     fn mul(mut self, scalar: F) -> Self {
         self *= scalar;
         self
@@ -141,7 +133,6 @@ impl<F: Field> Mul<F> for LinearCombination<F> {
 }
 
 impl<F: Field> MulAssign<F> for LinearCombination<F> {
-    #[inline]
     fn mul_assign(&mut self, scalar: F) {
         self.0.iter_mut().for_each(|(_, coeff)| *coeff *= &scalar);
     }
@@ -150,7 +141,6 @@ impl<F: Field> MulAssign<F> for LinearCombination<F> {
 impl<F: Field> Add<Variable> for LinearCombination<F> {
     type Output = Self;
 
-    #[inline]
     fn add(self, other: Variable) -> LinearCombination<F> {
         self + (F::ONE, other)
     }
@@ -159,7 +149,6 @@ impl<F: Field> Add<Variable> for LinearCombination<F> {
 impl<F: Field> Sub<Variable> for LinearCombination<F> {
     type Output = LinearCombination<F>;
 
-    #[inline]
     fn sub(self, other: Variable) -> LinearCombination<F> {
         self - (F::ONE, other)
     }

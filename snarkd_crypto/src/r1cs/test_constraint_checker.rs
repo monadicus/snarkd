@@ -40,17 +40,14 @@ impl<F: Field> TestConstraintChecker<F> {
         self.first_unsatisfied_constraint.clone()
     }
 
-    #[inline]
     pub fn is_satisfied(&self) -> bool {
         !self.found_unsatisfactory_constraint
     }
 
-    #[inline]
     pub fn num_constraints(&self) -> usize {
         self.num_constraints
     }
 
-    #[inline]
     pub fn public_inputs(&self) -> Vec<F> {
         self.public_variables[1..].to_vec()
     }
@@ -135,27 +132,22 @@ impl<F: Field> ConstraintSystem for TestConstraintChecker<F> {
         self.segments.pop();
     }
 
-    #[inline]
     fn get_root(&mut self) -> &mut Self::Root {
         self
     }
 
-    #[inline]
     fn num_constraints(&self) -> usize {
         self.num_constraints()
     }
 
-    #[inline]
     fn num_public_variables(&self) -> usize {
         self.public_variables.len()
     }
 
-    #[inline]
     fn num_private_variables(&self) -> usize {
         self.private_variables.len()
     }
 
-    #[inline]
     fn is_in_setup_mode(&self) -> bool {
         false
     }

@@ -10,12 +10,10 @@ impl<CS: ConstraintSystem> ConstraintSystem for Namespace<'_, CS> {
     type Root = CS::Root;
     type Field = CS::Field;
 
-    #[inline]
     fn one() -> Variable {
         CS::one()
     }
 
-    #[inline]
     fn alloc<FN, A, AR>(&mut self, annotation: A, f: FN) -> Result<Variable>
     where
         FN: FnOnce() -> Result<Self::Field>,
@@ -25,7 +23,6 @@ impl<CS: ConstraintSystem> ConstraintSystem for Namespace<'_, CS> {
         self.0.alloc(annotation, f)
     }
 
-    #[inline]
     fn alloc_input<FN, A, AR>(&mut self, annotation: A, f: FN) -> Result<Variable>
     where
         FN: FnOnce() -> Result<Self::Field>,
@@ -35,7 +32,6 @@ impl<CS: ConstraintSystem> ConstraintSystem for Namespace<'_, CS> {
         self.0.alloc_input(annotation, f)
     }
 
-    #[inline]
     fn enforce<A, AR, LA, LB, LC>(&mut self, annotation: A, a: LA, b: LB, c: LC)
     where
         A: FnOnce() -> AR,
@@ -51,7 +47,6 @@ impl<CS: ConstraintSystem> ConstraintSystem for Namespace<'_, CS> {
     // functions and they will never be invoked because the namespace is
     // never a root constraint system.
 
-    #[inline]
     fn push_namespace<NR, N>(&mut self, _: N)
     where
         NR: AsRef<str>,
@@ -60,39 +55,32 @@ impl<CS: ConstraintSystem> ConstraintSystem for Namespace<'_, CS> {
         panic!("only the root's push_namespace should be called");
     }
 
-    #[inline]
     fn pop_namespace(&mut self) {
         panic!("only the root's pop_namespace should be called");
     }
 
-    #[inline]
     fn get_root(&mut self) -> &mut Self::Root {
         self.0.get_root()
     }
 
-    #[inline]
     fn num_constraints(&self) -> usize {
         self.0.num_constraints()
     }
 
-    #[inline]
     fn num_public_variables(&self) -> usize {
         self.0.num_public_variables()
     }
 
-    #[inline]
     fn num_private_variables(&self) -> usize {
         self.0.num_private_variables()
     }
 
-    #[inline]
     fn is_in_setup_mode(&self) -> bool {
         self.0.is_in_setup_mode()
     }
 }
 
 impl<CS: ConstraintSystem> Drop for Namespace<'_, CS> {
-    #[inline]
     fn drop(&mut self) {
         self.get_root().pop_namespace()
     }

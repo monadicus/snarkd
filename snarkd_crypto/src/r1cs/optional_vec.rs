@@ -20,7 +20,7 @@ impl<T> Default for OptionalVec<T> {
 
 impl<T> OptionalVec<T> {
     /// Creates a new `OptionalVec` with the given underlying capacity.
-    #[inline]
+
     pub fn with_capacity(cap: usize) -> Self {
         Self {
             values: Vec::with_capacity(cap),
@@ -30,7 +30,7 @@ impl<T> OptionalVec<T> {
 
     /// Inserts a new value either into the first existing hole or extending the vector
     /// of values, i.e. pushing it to its end.
-    #[inline]
+
     pub fn insert(&mut self, elem: T) -> usize {
         let idx = self.holes.pop().unwrap_or(self.values.len());
         if idx < self.values.len() {
@@ -42,14 +42,14 @@ impl<T> OptionalVec<T> {
     }
 
     /// Returns the index of the next value inserted into the `OptionalVec`.
-    #[inline]
+
     pub fn next_idx(&self) -> usize {
         self.holes.last().copied().unwrap_or(self.values.len())
     }
 
     /// Removes a value at the specified index; assumes that the index points to
     /// an existing value that is a `Some(T)` (i.e. not a hole).
-    #[inline]
+
     pub fn remove(&mut self, idx: usize) -> T {
         let val = self.values[idx].take();
         self.holes.push(idx);
@@ -57,18 +57,17 @@ impl<T> OptionalVec<T> {
     }
 
     /// Iterates over all the `Some(T)` values in the list.
-    #[inline]
+
     pub fn iter(&self) -> impl Iterator<Item = &T> {
         self.values.iter().filter_map(|v| v.as_ref())
     }
 
     /// Returns the number of `Some(T)` values.
-    #[inline]
+
     pub fn len(&self) -> usize {
         self.values.len() - self.holes.len()
     }
 
-    #[inline]
     /// Returns `true` if there are no `Some(T)` values
     pub fn is_empty(&self) -> bool {
         self.len() == 0

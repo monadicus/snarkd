@@ -163,7 +163,6 @@ impl<F: Field> TestConstraintSystem<F> {
         }
     }
 
-    #[inline]
     fn intern_path(&self, path: &str) -> InternedPath {
         let mut vec = vec![];
 
@@ -245,12 +244,10 @@ impl<F: Field> TestConstraintSystem<F> {
         None
     }
 
-    #[inline]
     pub fn is_satisfied(&self) -> bool {
         self.which_is_unsatisfied().is_none()
     }
 
-    #[inline]
     pub fn num_non_zero(&self) -> (usize, usize, usize) {
         let mut non_zero_a = 0;
         let mut non_zero_b = 0;
@@ -263,12 +260,10 @@ impl<F: Field> TestConstraintSystem<F> {
         (non_zero_a, non_zero_b, non_zero_c)
     }
 
-    #[inline]
     pub fn num_constraints(&self) -> usize {
         self.constraints.len()
     }
 
-    #[inline]
     pub fn get_constraint_path(&self, i: usize) -> String {
         self.unintern_path(self.constraints.iter().nth(i).unwrap().interned_path)
     }
@@ -308,7 +303,6 @@ impl<F: Field> TestConstraintSystem<F> {
         *self.interned_fields.get_index(interned_field).unwrap()
     }
 
-    #[inline]
     fn set_named_obj(&mut self, interned_path: InternedPath, to: NamedObject) -> NamespaceIndex {
         match self.named_objects.entry(interned_path) {
             Entry::Vacant(e) => {
@@ -326,7 +320,6 @@ impl<F: Field> TestConstraintSystem<F> {
         }
     }
 
-    #[inline]
     fn compute_path(&mut self, new_segment: &str) -> InternedPath {
         let (interned_segment, new) =
             if let Some(index) = self.interned_path_segments.get_index_of(new_segment) {
@@ -354,7 +347,6 @@ impl<F: Field> TestConstraintSystem<F> {
         interned_path
     }
 
-    #[inline]
     fn register_object_in_namespace(&mut self, named_obj: NamedObject) {
         if let NamedObject::Namespace(ref mut ns) = self
             .named_objects
@@ -464,27 +456,22 @@ impl<F: Field> ConstraintSystem for TestConstraintSystem<F> {
         self.current_namespace.pop();
     }
 
-    #[inline]
     fn get_root(&mut self) -> &mut Self::Root {
         self
     }
 
-    #[inline]
     fn num_constraints(&self) -> usize {
         self.num_constraints()
     }
 
-    #[inline]
     fn num_public_variables(&self) -> usize {
         self.public_variables.len()
     }
 
-    #[inline]
     fn num_private_variables(&self) -> usize {
         self.private_variables.len()
     }
 
-    #[inline]
     fn is_in_setup_mode(&self) -> bool {
         false
     }
