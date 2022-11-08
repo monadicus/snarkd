@@ -460,6 +460,12 @@ pub fn field_test<F: Field>(a: F, b: F) {
     // (a - b)^2 = (-(b - a))^2
     assert_eq!((a - b).square(), (-(b - a)).square());
 
+    let mut c = a.clone();
+    c.inverse_in_place();
+    assert_eq!(a * c, one);
+
+    assert_eq!(a / a, one);
+
     for len in 0..10 {
         let mut a = Vec::new();
         let mut b = Vec::new();
