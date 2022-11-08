@@ -1,20 +1,20 @@
-use std::sync::{Arc, RwLock};
-
 use anyhow::Result;
-pub use jsonrpsee::{http_server, ws_server, RpcModule};
+use jsonrpsee::{
+    ws_server::{self, WsServerHandle},
+    RpcModule,
+};
+use std::net::SocketAddr;
 
-pub trait RPCServer: Send + Sync + Sized {
-    /// Returns foo
-    fn foo(&self) -> String;
+/// Serves this RpcServer via websocket
+pub async fn websocket_server<C>(
+    module: RpcModule<C>,
+    addr: SocketAddr,
+) -> Result<(SocketAddr, WsServerHandle)> {
+    // in the future, we can replace this default with settings
+    let server = ws_server::WsServerBuilder::default().build(addr).await?;
+    let addr = server.local_addr()?;
+    let handle = server.start(module)?;
 
-    fn module(&'static mut self) -> Result<RpcModule<Arc<RwLock<&'static mut Self>>>> {
-        let mut module = RpcModule::new(Arc::new(RwLock::new(self)));
-
-        // calls foo
-        module.register_method("foo", |_params, ctx| {
-            Ok(ctx.read().map_err(|e| anyhow::anyhow!("{e:?}"))?.foo())
-        })?;
-
-        Ok(module)
-    }
+    // this handle can call handle.stop() to stop
+    Ok((addr, handle))
 }

@@ -6,8 +6,10 @@ edition = "2021"
 [dependencies]
 jsonrpsee = { version = "0.15.1", optional = true, default-features = false }
 anyhow = { workspace = true }
+tokio = { workspace = true }
+async-trait = { workspace = true }
 
 [features]
 default = ["client", "server"]
-client = ["jsonrpsee/client"]
-server = ["jsonrpsee/server"]
+client = ["jsonrpsee/client", "jsonrpsee/client-ws-transport"]
+server = ["jsonrpsee/server", "jsonrpsee/macros"]
