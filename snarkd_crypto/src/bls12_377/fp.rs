@@ -9,7 +9,7 @@ use rand::{distributions::Standard, Rng};
 use ruint::{uint, Uint};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct Fq(pub Uint<384, 6>);
+pub struct Fp(pub Uint<384, 6>);
 
 pub const POWERS_OF_G: &[Uint<384, 6>] = &[
     uint!(11759432984210757955515102394259421622842731805301722003778799460755806109766954778381794158916389006258470283894_U384),
@@ -63,7 +63,7 @@ pub const TWO_ADICITY: u32 = 46u32;
 
 pub const TWO_ADIC_ROOT_OF_UNITY: Uint<384, 6> = uint!(146552004846884389553264564610149105174701957497228680529098805315416492923550540437026734404078567406251254115855_U384);
 
-pub const TWO_ADIC_ROOT_OF_UNITY_AS_FIELD: Fq = Fq(
+pub const TWO_ADIC_ROOT_OF_UNITY_AS_FIELD: Fp = Fp(
     uint!(224889470004741437790876857038605399989314902261086046762625433320979911756295853335464037764645098727193119245337_U384),
 );
 
@@ -72,7 +72,7 @@ pub const CAPACITY: u32 = MODULUS_BITS - 1;
 /// GENERATOR = -5
 pub const GENERATOR: Uint<384, 6> = uint!(92261639910053574722182574790803529333160366917737991650341130812388023949653897454961487930322210790384999596794_U384);
 
-pub const GENERATOR_AS_FIELD: Fq = Fq(
+pub const GENERATOR_AS_FIELD: Fp = Fp(
     uint!(258664426012969094010652733694893533536393512754914660539884262666720468348340822774968888139573360124440321458172_U384),
 );
 
@@ -99,7 +99,9 @@ pub const T: Uint<384, 6> = uint!(3675842578061421676390135839012792950148785745
 /// 1837921289030710838195067919506396475074392872918698035817074744121558668640693829665401097909504529
 pub const T_MINUS_ONE_DIV_TWO: Uint<384, 6> = uint!(1837921289030710838195067919506396475074392872918698035817074744121558668640693829665401097909504529_U384);
 
-impl Fq {
+impl Fp {
+    pub const MULTIPLICATIVE_GENERATOR: Self = GENERATOR_AS_FIELD;
+
     pub fn legendre(&self) -> LegendreSymbol {
         // s = self^((MODULUS - 1) // 2)
         let s = self.pow(MODULUS_MINUS_ONE_DIV_TWO.as_limbs());
@@ -116,10 +118,6 @@ impl Fq {
         Self((MODULUS + uint!(1_U384)) >> 1)
     }
 
-    pub fn multiplicative_generator() -> Self {
-        GENERATOR_AS_FIELD
-    }
-
     pub fn is_valid(&self) -> bool {
         self.0 < MODULUS
     }
@@ -131,25 +129,20 @@ impl Fq {
     }
 }
 
-impl Field for Fq {
-    const PHI: Fq = Fq(
+impl Field for Fp {
+    const PHI: Fp = Fp(
         uint!(80949648264912719408558363140637477264845294720710499478137287262712535938301461879813459410945_U384),
     );
 
-    fn zero() -> Self {
-        Self(uint!(0_U384))
-    }
+    const ZERO: Fp = Self(uint!(0_U384));
+    const ONE: Fp = Self(uint!(1_U384));
 
     fn is_zero(&self) -> bool {
-        self.0 == Self::zero().0
-    }
-
-    fn one() -> Self {
-        Self(uint!(1_U384))
+        self.0 == Self::ZERO.0
     }
 
     fn is_one(&self) -> bool {
-        self.0 == Self::one().0
+        self.0 == Self::ONE.0
     }
 
     fn rand() -> Self {
@@ -158,8 +151,8 @@ impl Field for Fq {
         a
     }
 
-    fn characteristic<'a>() -> Self {
-        Self(MODULUS)
+    fn characteristic() -> Vec<u64> {
+        MODULUS.as_limbs().to_vec()
     }
 
     fn double(&self) -> Self {
@@ -232,7 +225,7 @@ impl Field for Fq {
                 let find = |delta: Self| -> u64 {
                     let mut mu = delta;
                     let mut i = 0;
-                    while mu != -Self::one() {
+                    while mu != -Self::ONE {
                         mu.square_in_place();
                         i += 1;
                     }
@@ -241,7 +234,7 @@ impl Field for Fq {
 
                 let eval = |mut delta: Self| -> u64 {
                     let mut s = 0u64;
-                    while delta != Self::one() {
+                    while delta != Self::ONE {
                         let i = find(delta);
                         let n_minus_one_minus_i = n - 1 - i;
                         s += 2u64.pow(n_minus_one_minus_i as u32);
@@ -260,7 +253,7 @@ impl Field for Fq {
 
                 let calc_gamma =
                     |i: usize, q_s: &Vec<BitVec>, last: bool| -> Self {
-                        let mut gamma = Self::one();
+                        let mut gamma = Self::ONE;
                         if i != 0 {
                             q_s.iter()
                                 .zip(l_s.iter())
@@ -309,16 +302,12 @@ impl Field for Fq {
         }
     }
 
-    fn frobenius_map(&mut self, _: usize) {
-        // No-op
-    }
-
     fn glv_endomorphism(&self) -> Self {
         *self * Self::PHI
     }
 }
 
-impl Add for Fq {
+impl Add for Fp {
     type Output = Self;
 
     fn add(self, other: Self) -> Self {
@@ -326,13 +315,13 @@ impl Add for Fq {
     }
 }
 
-impl AddAssign for Fq {
+impl AddAssign for Fp {
     fn add_assign(&mut self, other: Self) {
         *self = *self + other
     }
 }
 
-impl Sub for Fq {
+impl Sub for Fp {
     type Output = Self;
 
     fn sub(mut self, other: Self) -> Self {
@@ -343,13 +332,13 @@ impl Sub for Fq {
     }
 }
 
-impl SubAssign for Fq {
+impl SubAssign for Fp {
     fn sub_assign(&mut self, other: Self) {
         *self = *self - other;
     }
 }
 
-impl Mul for Fq {
+impl Mul for Fp {
     type Output = Self;
 
     fn mul(self, other: Self) -> Self {
@@ -357,13 +346,13 @@ impl Mul for Fq {
     }
 }
 
-impl MulAssign for Fq {
+impl MulAssign for Fp {
     fn mul_assign(&mut self, other: Self) {
         *self = *self * other;
     }
 }
 
-impl Neg for Fq {
+impl Neg for Fp {
     type Output = Self;
 
     fn neg(self) -> Self {
@@ -373,7 +362,7 @@ impl Neg for Fq {
     }
 }
 
-impl Div for Fq {
+impl Div for Fp {
     type Output = Self;
 
     fn div(self, other: Self) -> Self {
@@ -381,13 +370,13 @@ impl Div for Fq {
     }
 }
 
-impl DivAssign for Fq {
+impl DivAssign for Fp {
     fn div_assign(&mut self, other: Self) {
         *self = *self / other;
     }
 }
 
-impl<'a> Add<&'a Self> for Fq {
+impl<'a> Add<&'a Self> for Fp {
     type Output = Self;
 
     fn add(self, other: &Self) -> Self {
@@ -395,13 +384,13 @@ impl<'a> Add<&'a Self> for Fq {
     }
 }
 
-impl<'a> AddAssign<&'a Self> for Fq {
+impl<'a> AddAssign<&'a Self> for Fp {
     fn add_assign(&mut self, other: &Self) {
         *self = *self + other;
     }
 }
 
-impl<'a> Sub<&'a Self> for Fq {
+impl<'a> Sub<&'a Self> for Fp {
     type Output = Self;
 
     fn sub(mut self, other: &Self) -> Self {
@@ -412,13 +401,13 @@ impl<'a> Sub<&'a Self> for Fq {
     }
 }
 
-impl<'a> SubAssign<&'a Self> for Fq {
+impl<'a> SubAssign<&'a Self> for Fp {
     fn sub_assign(&mut self, other: &Self) {
         *self = *self - other;
     }
 }
 
-impl<'a> Mul<&'a Self> for Fq {
+impl<'a> Mul<&'a Self> for Fp {
     type Output = Self;
 
     fn mul(self, other: &Self) -> Self {
@@ -426,13 +415,13 @@ impl<'a> Mul<&'a Self> for Fq {
     }
 }
 
-impl<'a> MulAssign<&'a Self> for Fq {
+impl<'a> MulAssign<&'a Self> for Fp {
     fn mul_assign(&mut self, other: &Self) {
         *self = *self * other;
     }
 }
 
-impl<'a> Div<&'a Self> for Fq {
+impl<'a> Div<&'a Self> for Fp {
     type Output = Self;
 
     fn div(self, other: &Self) -> Self {
@@ -440,20 +429,20 @@ impl<'a> Div<&'a Self> for Fq {
     }
 }
 
-impl<'a> DivAssign<&'a Self> for Fq {
+impl<'a> DivAssign<&'a Self> for Fp {
     fn div_assign(&mut self, other: &Self) {
         *self = *self / other;
     }
 }
 
-impl Sum<Fq> for Fq {
+impl Sum<Fp> for Fp {
     /// Returns the `sum` of `self` and `other`.
-    fn sum<I: Iterator<Item = Fq>>(iter: I) -> Self {
-        iter.fold(Fq::zero(), |a, b| a + b)
+    fn sum<I: Iterator<Item = Fp>>(iter: I) -> Self {
+        iter.fold(Fp::ZERO, |a, b| a + b)
     }
 }
 
-impl Display for Fq {
+impl Display for Fp {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         write!(f, "{}", self.0)
     }
@@ -465,10 +454,10 @@ mod tests {
 
     #[test]
     fn test_powers_of_g() {
-        let two = Fq(uint!(2_U384));
+        let two = Fp(uint!(2_U384));
 
         // Compute the expected powers of G.
-        let g = Fq(GENERATOR).pow(T.as_limbs());
+        let g = Fp(GENERATOR).pow(T.as_limbs());
         let powers = (0..TWO_ADICITY - 1)
             .map(|i| g.pow(two.pow(&[i as u64]).0.as_limbs()))
             .collect::<Vec<_>>();
@@ -480,7 +469,7 @@ mod tests {
         // Ensure the expected and candidate powers match.
         for (expected, candidate) in powers.iter().zip(POWERS_OF_G.iter()) {
             println!("{:?} =?= {:?}", expected, candidate);
-            assert_eq!(*expected, Fq(*candidate));
+            assert_eq!(*expected, Fp(*candidate));
         }
     }
 }
