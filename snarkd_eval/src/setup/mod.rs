@@ -30,12 +30,12 @@ use snarkd_ir::{InputData, Program};
 use crate::{ConstrainedValue, ConstraintSystem, Evaluator};
 
 /// An evaluator for filling out a R1CS while also producing an expected output.
-pub struct SetupEvaluator<F: Field, G: Group, CS: ConstraintSystem<F>> {
+pub struct SetupEvaluator<F: Field, G: Parameters, CS: ConstraintSystem<F>> {
     cs: CS,
     _p: PhantomData<(F, G)>,
 }
 
-impl<F: Field, G: Group, CS: ConstraintSystem<F>> SetupEvaluator<F, G, CS> {
+impl<F: Field, G: Parameters, CS: ConstraintSystem<F>> SetupEvaluator<F, G, CS> {
     pub fn new(cs: CS) -> Self {
         Self {
             cs,
@@ -44,7 +44,9 @@ impl<F: Field, G: Group, CS: ConstraintSystem<F>> SetupEvaluator<F, G, CS> {
     }
 }
 
-impl<F: Field, G: Group, CS: ConstraintSystem<F>> Evaluator<F, G> for SetupEvaluator<F, G, CS> {
+impl<F: Field, G: Parameters, CS: ConstraintSystem<F>> Evaluator<F, G>
+    for SetupEvaluator<F, G, CS>
+{
     type Error = anyhow::Error;
     type Output = ConstrainedValue<F, G>;
 

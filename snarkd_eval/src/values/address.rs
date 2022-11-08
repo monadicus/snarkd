@@ -3,12 +3,12 @@ use crate::ConstraintSystem;
 use super::*;
 
 #[derive(Clone, Debug)]
-pub struct ConstrainedAddress<G: Group> {
+pub struct ConstrainedAddress<G: Parameters> {
     pub address: G,
     pub bytes: Vec<u8>,
 }
 
-impl<G: Group> ConstrainedAddress<G> {
+impl<G: Parameters> ConstrainedAddress<G> {
     pub fn conditionally_select<F: Field, CS: ConstraintSystem<F>>(
         mut cs: CS,
         cond: &ConstrainedBool,

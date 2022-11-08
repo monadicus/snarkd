@@ -23,7 +23,7 @@ impl<F: Field> ConstrainedField<F> {
         todo!()
     }
 
-    pub fn from_input<G: Group, CS: ConstraintSystem<F>>(
+    pub fn from_input<G: Parameters, CS: ConstraintSystem<F>>(
         cs: &mut CS,
         name: &str,
         operand: Operand,

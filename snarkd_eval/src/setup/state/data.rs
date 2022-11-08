@@ -1,7 +1,7 @@
 use super::*;
 
 /// stores data about the state for scope recursion
-pub struct StateData<'a, F: Field, G: Group> {
+pub struct StateData<'a, F: Field, G: Parameters> {
     /// the arguments passed to the function
     pub arguments: Rc<Vec<ConstrainedValue<F, G>>>,
     /// the function currently being evaluated
@@ -22,7 +22,7 @@ pub struct StateData<'a, F: Field, G: Group> {
 }
 
 /// implemented this so i could easily debug execution flow
-impl<'a, F: Field, G: Group> fmt::Debug for StateData<'a, F, G> {
+impl<'a, F: Field, G: Parameters> fmt::Debug for StateData<'a, F, G> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -59,7 +59,7 @@ impl<'a, F: Field, G: Group> fmt::Debug for StateData<'a, F, G> {
     }
 }
 
-impl<'a, F: Field, G: Group> StateData<'a, F, G> {
+impl<'a, F: Field, G: Parameters> StateData<'a, F, G> {
     /// creates the initial state at the start of a programs function evaluation step.
     /// the function passed should be main and the index should point to main
     pub fn create_initial_state_data(

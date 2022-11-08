@@ -9,7 +9,7 @@ use std::{borrow::Cow, fmt, mem, rc::Rc};
 
 use anyhow::{anyhow, Result};
 use indexmap::IndexMap;
-use snarkd_crypto::{Field, Group};
+use snarkd_crypto::{Field, Parameters};
 use snarkd_ir::{Function, InputType, InputValue, Instruction, Operand, Program, Type};
 
 use crate::{

@@ -1,7 +1,7 @@
 use super::*;
 
 #[derive(Clone, Debug)]
-pub struct EvaluatorState<'a, F: Field, G: Group> {
+pub struct EvaluatorState<'a, F: Field, G: Parameters> {
     pub program: &'a Program,
     pub variables: IndexMap<u32, ConstrainedValue<F, G>>,
     pub call_depth: u32,
@@ -11,7 +11,7 @@ pub struct EvaluatorState<'a, F: Field, G: Group> {
     pub namespace_id: usize,
 }
 
-impl<'a, F: Field, G: Group> EvaluatorState<'a, F, G> {
+impl<'a, F: Field, G: Parameters> EvaluatorState<'a, F, G> {
     /// creates a new state with no information other than a reference to the program its evaluating
     pub fn new(program: &'a Program) -> Self {
         Self {

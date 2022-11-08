@@ -1,12 +1,12 @@
 use super::*;
 
-pub(super) struct FunctionEvaluator<'a, F: Field, G: Group> {
+pub(super) struct FunctionEvaluator<'a, F: Field, G: Parameters> {
     call_stack: Vec<StateData<'a, F, G>>,
     state_data: StateData<'a, F, G>,
     namespace_id_counter: usize,
 }
 
-impl<'a, F: Field, G: Group> FunctionEvaluator<'a, F, G> {
+impl<'a, F: Field, G: Parameters> FunctionEvaluator<'a, F, G> {
     fn nest(&mut self, state: StateData<'a, F, G>) {
         self.call_stack
             .push(mem::replace(&mut self.state_data, state));

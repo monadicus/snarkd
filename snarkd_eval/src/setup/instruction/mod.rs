@@ -19,7 +19,7 @@ use snarkd_ir::Instruction;
 
 use super::*;
 
-impl<'a, F: Field, G: Group> EvaluatorState<'a, F, G> {
+impl<'a, F: Field, G: Parameters> EvaluatorState<'a, F, G> {
     /// Evaluates a single instruction in the local [`EvaluatorState`] context. Panics if `instruction` is a control instruction.
     pub(super) fn evaluate_instruction<'b, CS: ConstraintSystem<F>>(
         &mut self,

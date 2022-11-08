@@ -3,7 +3,7 @@
 use core::fmt;
 use std::marker::PhantomData;
 
-use snarkd_crypto::{Field, Group};
+use snarkd_crypto::{Field, Parameters};
 use snarkd_ir::Operand;
 
 use crate::ConstrainedValue;
@@ -13,7 +13,7 @@ pub type Variable = ();
 
 pub struct LinearCombination<F>(PhantomData<F>);
 
-pub fn bool_from_input<F: Field, G: Group, CS: ConstraintSystem<F>>(
+pub fn bool_from_input<F: Field, G: Parameters, CS: ConstraintSystem<F>>(
     cs: &mut CS,
     name: &str,
     value: Operand,

@@ -5,7 +5,7 @@ use crate::ConstraintSystem;
 use super::*;
 
 #[derive(Clone, Debug)]
-pub enum ConstrainedValue<F: Field, G: Group> {
+pub enum ConstrainedValue<F: Field, G: Parameters> {
     Address(ConstrainedAddress<G>),
     Boolean(ConstrainedBool),
     Field(ConstrainedField<F>),
@@ -17,7 +17,7 @@ pub enum ConstrainedValue<F: Field, G: Group> {
     Record(ConstrainedRecord<F, G>),
 }
 
-impl<F: Field, G: Group> ConstrainedValue<F, G> {
+impl<F: Field, G: Parameters> ConstrainedValue<F, G> {
     pub fn extract_bool(&self) -> Result<&ConstrainedBool, &Self> {
         match self {
             ConstrainedValue::Boolean(x) => Ok(x),
@@ -53,7 +53,7 @@ impl<F: Field, G: Group> ConstrainedValue<F, G> {
     }
 }
 
-impl<F: Field, G: Group> ConstrainedValue<F, G> {
+impl<F: Field, G: Parameters> ConstrainedValue<F, G> {
     pub fn conditionally_select<CS: ConstraintSystem<F>>(
         mut cs: CS,
         cond: &ConstrainedBool,
