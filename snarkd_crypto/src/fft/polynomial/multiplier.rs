@@ -1,19 +1,23 @@
+use crate::{
+    bls12_377::{Field, Scalar},
+    fft::domain::{FFTPrecomputation, IFFTPrecomputation},
+    utils::*,
+};
+use rayon::prelude::*;
 use std::{borrow::Borrow, collections::BTreeMap};
-
-use crate::fft::domain::{FFTPrecomputation, IFFTPrecomputation};
 
 /// A struct that helps multiply a batch of polynomials
 use super::*;
 
 #[derive(Default)]
-pub struct PolyMultiplier<'a, F: PrimeField> {
-    polynomials: Vec<(String, Cow<'a, DensePolynomial<F>>)>,
-    evaluations: Vec<(String, Cow<'a, crate::fft::Evaluations<F>>)>,
-    fft_precomputation: Option<Cow<'a, FFTPrecomputation<F>>>,
-    ifft_precomputation: Option<Cow<'a, IFFTPrecomputation<F>>>,
+pub struct PolyMultiplier<'a> {
+    polynomials: Vec<(String, Cow<'a, DensePolynomial>)>,
+    evaluations: Vec<(String, Cow<'a, crate::fft::Evaluations>)>,
+    fft_precomputation: Option<Cow<'a, FFTPrecomputation>>,
+    ifft_precomputation: Option<Cow<'a, IFFTPrecomputation>>,
 }
 
-impl<'a, F: PrimeField> PolyMultiplier<'a, F> {
+impl<'a> PolyMultiplier<'a> {
     #[inline]
     pub fn new() -> Self {
         Self {
@@ -27,32 +31,32 @@ impl<'a, F: PrimeField> PolyMultiplier<'a, F> {
     #[inline]
     pub fn add_precomputation(
         &mut self,
-        fft_pc: &'a FFTPrecomputation<F>,
-        ifft_pc: &'a IFFTPrecomputation<F>,
+        fft_pc: &'a FFTPrecomputation,
+        ifft_pc: &'a IFFTPrecomputation,
     ) {
         self.fft_precomputation = Some(Cow::Borrowed(fft_pc));
         self.ifft_precomputation = Some(Cow::Borrowed(ifft_pc));
     }
 
     #[inline]
-    pub fn add_polynomial(&mut self, poly: DensePolynomial<F>, label: impl ToString) {
+    pub fn add_polynomial(&mut self, poly: DensePolynomial, label: impl ToString) {
         self.polynomials.push((label.to_string(), Cow::Owned(poly)))
     }
 
     #[inline]
-    pub fn add_evaluation(&mut self, evals: Evaluations<F>, label: impl ToString) {
+    pub fn add_evaluation(&mut self, evals: Evaluations, label: impl ToString) {
         self.evaluations
             .push((label.to_string(), Cow::Owned(evals)))
     }
 
     #[inline]
-    pub fn add_polynomial_ref(&mut self, poly: &'a DensePolynomial<F>, label: impl ToString) {
+    pub fn add_polynomial_ref(&mut self, poly: &'a DensePolynomial, label: impl ToString) {
         self.polynomials
             .push((label.to_string(), Cow::Borrowed(poly)))
     }
 
     #[inline]
-    pub fn add_evaluation_ref(&mut self, evals: &'a Evaluations<F>, label: impl ToString) {
+    pub fn add_evaluation_ref(&mut self, evals: &'a Evaluations, label: impl ToString) {
         self.evaluations
             .push((label.to_string(), Cow::Borrowed(evals)))
     }
@@ -62,7 +66,7 @@ impl<'a, F: PrimeField> PolyMultiplier<'a, F> {
     /// Returns `None` if any of the stored evaluations are over a domain that's
     /// insufficiently large to interpolate the product, or if `F` does not contain
     /// a sufficiently large subgroup for interpolation.
-    pub fn multiply(mut self) -> Option<DensePolynomial<F>> {
+    pub fn multiply(mut self) -> Option<DensePolynomial> {
         if self.polynomials.is_empty() && self.evaluations.is_empty() {
             Some(DensePolynomial::zero())
         } else {
@@ -92,7 +96,7 @@ impl<'a, F: PrimeField> PolyMultiplier<'a, F> {
                 for (_, p) in self.polynomials {
                     pool.add_job(move || {
                         let mut p = p.clone().into_owned().coeffs;
-                        p.resize(domain.size(), F::zero());
+                        p.resize(domain.size(), Scalar::ZERO);
                         domain.out_order_fft_in_place_with_pc(&mut p, fft_pc);
                         p
                     })
@@ -100,13 +104,12 @@ impl<'a, F: PrimeField> PolyMultiplier<'a, F> {
                 for (_, e) in self.evaluations {
                     pool.add_job(move || {
                         let mut e = e.clone().into_owned().evaluations;
-                        e.resize(domain.size(), F::zero());
+                        e.resize(domain.size(), Scalar::ZERO);
                         crate::fft::domain::derange(&mut e);
                         e
                     })
                 }
                 let results = pool.execute_all();
-                #[cfg(feature = "parallel")]
                 let mut result = results
                     .into_par_iter()
                     .reduce_with(|mut a, b| {
@@ -114,26 +117,18 @@ impl<'a, F: PrimeField> PolyMultiplier<'a, F> {
                         a
                     })
                     .unwrap();
-                #[cfg(not(feature = "parallel"))]
-                let mut result = results
-                    .into_iter()
-                    .reduce(|mut a, b| {
-                        cfg_iter_mut!(a).zip(b).for_each(|(a, b)| *a *= b);
-                        a
-                    })
-                    .unwrap();
                 domain.out_order_ifft_in_place_with_pc(&mut result, ifft_pc);
-                Some(DensePolynomial::from_coefficients_vec(result))
+                Some(DensePolynomial::from_coefficients_vec(result.to_vec()))
             }
         }
     }
 
     pub fn element_wise_arithmetic_4_over_domain<T: Borrow<str>>(
         mut self,
-        domain: EvaluationDomain<F>,
+        domain: EvaluationDomain,
         labels: [T; 4],
-        f: impl Fn(F, F, F, F) -> F + Sync,
-    ) -> Option<DensePolynomial<F>> {
+        f: impl Fn(Scalar, Scalar, Scalar, Scalar) -> Scalar + Sync,
+    ) -> Option<DensePolynomial> {
         if self.fft_precomputation.is_none() {
             self.fft_precomputation = Some(Cow::Owned(domain.precompute_fft()));
         }
@@ -150,7 +145,7 @@ impl<'a, F: PrimeField> PolyMultiplier<'a, F> {
         for (l, p) in self.polynomials {
             pool.add_job(move || {
                 let mut p = p.clone().into_owned().coeffs;
-                p.resize(domain.size(), F::zero());
+                p.resize(domain.size(), Scalar::ZERO);
                 domain.out_order_fft_in_place_with_pc(&mut p, fft_pc);
                 (l, p)
             })
@@ -158,7 +153,7 @@ impl<'a, F: PrimeField> PolyMultiplier<'a, F> {
         for (l, e) in self.evaluations {
             pool.add_job(move || {
                 let mut e = e.clone().into_owned().evaluations;
-                e.resize(domain.size(), F::zero());
+                e.resize(domain.size(), Scalar::ZERO);
                 crate::fft::domain::derange(&mut e);
                 (l, e)
             })
@@ -173,6 +168,6 @@ impl<'a, F: PrimeField> PolyMultiplier<'a, F> {
             .collect::<Vec<_>>();
         drop(p);
         domain.out_order_ifft_in_place_with_pc(&mut result, &self.ifft_precomputation.unwrap());
-        Some(DensePolynomial::from_coefficients_vec(result))
+        Some(DensePolynomial::from_coefficients_vec(result.to_vec()))
     }
 }

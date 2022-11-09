@@ -9,7 +9,7 @@ use crate::{
         proof, prover, witness_label, CircuitProvingKey, CircuitVerifyingKey, MarlinError,
         MarlinMode, Proof, UniversalSRS,
     },
-    AlgebraicSponge, Prepare, SNARKError, SNARK, SRS,
+    AlgebraicSponge, ConstraintSynthesizer, Prepare, SNARKError, SNARK, SRS,
 };
 use core::{
     marker::PhantomData,

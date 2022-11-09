@@ -1,7 +1,11 @@
 use super::PolynomialLabel;
-use crate::fft::{
-    DensePolynomial, EvaluationDomain, Evaluations as EvaluationsOnDomain, Polynomial,
-    SparsePolynomial,
+use crate::{
+    bls12_377::Fr,
+    fft::{
+        DensePolynomial, EvaluationDomain, Evaluations as EvaluationsOnDomain, Polynomial,
+        SparsePolynomial,
+    },
+    Field,
 };
 use hashbrown::HashMap;
 use std::borrow::Cow;
@@ -11,7 +15,7 @@ use itertools::Itertools;
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
 
-#[derive(Clone, Debug, CanonicalSerialize, CanonicalDeserialize, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PolynomialInfo {
     label: PolynomialLabel,
     degree_bound: Option<usize>,
@@ -56,25 +60,25 @@ impl PolynomialInfo {
 /// A polynomial along with information about its degree bound (if any), and the
 /// maximum number of queries that will be made to it. This latter number determines
 /// the amount of protection that will be provided to a commitment for this polynomial.
-#[derive(Debug, Clone, CanonicalSerialize, CanonicalDeserialize)]
-pub struct LabeledPolynomial<F: Field> {
+#[derive(Debug, Clone)]
+pub struct LabeledPolynomial {
     pub info: PolynomialInfo,
-    pub polynomial: Polynomial<'static, F>,
+    pub polynomial: Polynomial<'static, Fr>,
 }
 
-impl<F: Field> core::ops::Deref for LabeledPolynomial<F> {
-    type Target = Polynomial<'static, F>;
+impl core::ops::Deref for LabeledPolynomial {
+    type Target = Polynomial<'static>;
 
     fn deref(&self) -> &Self::Target {
         &self.polynomial
     }
 }
 
-impl<F: Field> LabeledPolynomial<F> {
+impl LabeledPolynomial {
     /// Construct a new labeled polynomial by consuming `polynomial`.
     pub fn new(
         label: PolynomialLabel,
-        polynomial: impl Into<Polynomial<'static, F>>,
+        polynomial: impl Into<Polynomial<'static>>,
         degree_bound: Option<usize>,
         hiding_bound: Option<usize>,
     ) -> Self {
@@ -95,17 +99,17 @@ impl<F: Field> LabeledPolynomial<F> {
     }
 
     /// Retrieve the polynomial from `self`.
-    pub fn polynomial(&self) -> &Polynomial<F> {
+    pub fn polynomial(&self) -> &Polynomial {
         &self.polynomial
     }
 
     /// Retrieve a mutable reference to the enclosed polynomial.
-    pub fn polynomial_mut(&mut self) -> &mut Polynomial<'static, F> {
+    pub fn polynomial_mut(&mut self) -> &mut Polynomial<'static> {
         &mut self.polynomial
     }
 
     /// Evaluate the polynomial in `self`.
-    pub fn evaluate(&self, point: F) -> F {
+    pub fn evaluate(&self, point: Fr) -> Fr {
         self.polynomial.evaluate(point)
     }
 
@@ -131,16 +135,16 @@ impl<F: Field> LabeledPolynomial<F> {
 /////////////////////////////////////////////////////////////////////////////////////
 
 #[derive(Debug, Clone)]
-pub struct LabeledPolynomialWithBasis<'a, F: PrimeField> {
+pub struct LabeledPolynomialWithBasis<'a> {
     pub info: PolynomialInfo,
-    pub polynomial: Vec<(F, PolynomialWithBasis<'a, F>)>,
+    pub polynomial: Vec<(Fr, PolynomialWithBasis<'a>)>,
 }
 
-impl<'a, F: PrimeField> LabeledPolynomialWithBasis<'a, F> {
+impl<'a> LabeledPolynomialWithBasis<'a> {
     /// Construct a new labeled polynomial by consuming `polynomial`.
     pub fn new_monomial_basis(
         label: PolynomialLabel,
-        polynomial: &'a Polynomial<F>,
+        polynomial: &'a Polynomial,
         degree_bound: Option<usize>,
         hiding_bound: Option<usize>,
     ) -> Self {
@@ -148,14 +152,14 @@ impl<'a, F: PrimeField> LabeledPolynomialWithBasis<'a, F> {
         let info = PolynomialInfo::new(label, degree_bound, hiding_bound);
         Self {
             info,
-            polynomial: vec![(F::one(), polynomial)],
+            polynomial: vec![(Fr::one(), polynomial)],
         }
     }
 
     /// Construct a new labeled polynomial by consuming `polynomial`.
     pub fn new_linear_combination(
         label: PolynomialLabel,
-        polynomial: Vec<(F, PolynomialWithBasis<'a, F>)>,
+        polynomial: Vec<(Fr, PolynomialWithBasis<'a>)>,
         hiding_bound: Option<usize>,
     ) -> Self {
         let info = PolynomialInfo::new(label, None, hiding_bound);
@@ -164,27 +168,27 @@ impl<'a, F: PrimeField> LabeledPolynomialWithBasis<'a, F> {
 
     pub fn new_lagrange_basis(
         label: PolynomialLabel,
-        polynomial: EvaluationsOnDomain<F>,
+        polynomial: EvaluationsOnDomain,
         hiding_bound: Option<usize>,
     ) -> Self {
         let polynomial = PolynomialWithBasis::new_lagrange_basis(polynomial);
         let info = PolynomialInfo::new(label, None, hiding_bound);
         Self {
             info,
-            polynomial: vec![(F::one(), polynomial)],
+            polynomial: vec![(Fr::one(), polynomial)],
         }
     }
 
     pub fn new_lagrange_basis_ref(
         label: PolynomialLabel,
-        polynomial: &'a EvaluationsOnDomain<F>,
+        polynomial: &'a EvaluationsOnDomain,
         hiding_bound: Option<usize>,
     ) -> Self {
         let polynomial = PolynomialWithBasis::new_lagrange_basis_ref(polynomial);
         let info = PolynomialInfo::new(label, None, hiding_bound);
         Self {
             info,
-            polynomial: vec![(F::one(), polynomial)],
+            polynomial: vec![(Fr::one(), polynomial)],
         }
     }
 
@@ -210,7 +214,7 @@ impl<'a, F: PrimeField> LabeledPolynomialWithBasis<'a, F> {
     }
 
     /// Evaluate the polynomial in `self`.
-    pub fn evaluate(&self, point: F) -> F {
+    pub fn evaluate(&self, point: Fr) -> Fr {
         self.polynomial
             .iter()
             .map(|(coeff, p)| p.evaluate(point) * coeff)
@@ -219,13 +223,13 @@ impl<'a, F: PrimeField> LabeledPolynomialWithBasis<'a, F> {
 
     /// Compute a linear combination of the terms in `self.polynomial`, producing an iterator
     /// over polynomials of the same time.
-    pub fn sum(&self) -> impl Iterator<Item = PolynomialWithBasis<'a, F>> {
+    pub fn sum(&self) -> impl Iterator<Item = PolynomialWithBasis<'a>> {
         if self.polynomial.len() == 1 && self.polynomial[0].0.is_one() {
             vec![self.polynomial[0].1.clone()].into_iter()
         } else {
             use PolynomialWithBasis::*;
             let mut lagrange_polys = HashMap::<usize, Vec<_>>::new();
-            let mut dense_polys = HashMap::<_, DensePolynomial<F>>::new();
+            let mut dense_polys = HashMap::<_, DensePolynomial>::new();
             let mut sparse_poly = SparsePolynomial::zero();
             // We have sets of polynomials divided along three critera:
             // 1. All `Lagrange` polynomials are in the set corresponding to their domain.
@@ -317,60 +321,57 @@ impl<'a, F: PrimeField> LabeledPolynomialWithBasis<'a, F> {
     }
 }
 
-impl<'a, F: PrimeField> From<&'a LabeledPolynomial<F>> for LabeledPolynomialWithBasis<'a, F> {
-    fn from(other: &'a LabeledPolynomial<F>) -> Self {
+impl<'a> From<&'a LabeledPolynomial> for LabeledPolynomialWithBasis<'a> {
+    fn from(other: &'a LabeledPolynomial) -> Self {
         let polynomial = PolynomialWithBasis::Monomial {
             polynomial: Cow::Borrowed(other.polynomial()),
             degree_bound: other.degree_bound(),
         };
         Self {
             info: other.info.clone(),
-            polynomial: vec![(F::one(), polynomial)],
+            polynomial: vec![(Fr::one(), polynomial)],
         }
     }
 }
 
-impl<'a, F: PrimeField> From<LabeledPolynomial<F>> for LabeledPolynomialWithBasis<'a, F> {
-    fn from(other: LabeledPolynomial<F>) -> Self {
+impl<'a> From<LabeledPolynomial> for LabeledPolynomialWithBasis<'a> {
+    fn from(other: LabeledPolynomial) -> Self {
         let polynomial = PolynomialWithBasis::Monomial {
             polynomial: Cow::Owned(other.polynomial),
             degree_bound: other.info.degree_bound,
         };
         Self {
             info: other.info.clone(),
-            polynomial: vec![(F::one(), polynomial)],
+            polynomial: vec![(Fr::one(), polynomial)],
         }
     }
 }
 
 #[derive(Debug, Clone)]
-pub enum PolynomialWithBasis<'a, F: PrimeField> {
+pub enum PolynomialWithBasis<'a> {
     /// A polynomial in monomial basis, along with information about
     /// its degree bound (if any).
     Monomial {
-        polynomial: Cow<'a, Polynomial<'a, F>>,
+        polynomial: Cow<'a, Polynomial<'a>>,
         degree_bound: Option<usize>,
     },
 
     /// A polynomial in Lagrange basis, along with information about
     /// its degree bound (if any).
     Lagrange {
-        evaluations: Cow<'a, EvaluationsOnDomain<F>>,
+        evaluations: Cow<'a, EvaluationsOnDomain>,
     },
 }
 
-impl<'a, F: PrimeField> PolynomialWithBasis<'a, F> {
-    pub fn new_monomial_basis_ref(
-        polynomial: &'a Polynomial<F>,
-        degree_bound: Option<usize>,
-    ) -> Self {
+impl<'a> PolynomialWithBasis<'a> {
+    pub fn new_monomial_basis_ref(polynomial: &'a Polynomial, degree_bound: Option<usize>) -> Self {
         Self::Monomial {
             polynomial: Cow::Borrowed(polynomial),
             degree_bound,
         }
     }
 
-    pub fn new_monomial_basis(polynomial: Polynomial<'a, F>, degree_bound: Option<usize>) -> Self {
+    pub fn new_monomial_basis(polynomial: Polynomial<'a>, degree_bound: Option<usize>) -> Self {
         Self::Monomial {
             polynomial: Cow::Owned(polynomial),
             degree_bound,
@@ -378,7 +379,7 @@ impl<'a, F: PrimeField> PolynomialWithBasis<'a, F> {
     }
 
     pub fn new_dense_monomial_basis_ref(
-        polynomial: &'a DensePolynomial<F>,
+        polynomial: &'a DensePolynomial,
         degree_bound: Option<usize>,
     ) -> Self {
         let polynomial = Polynomial::Dense(Cow::Borrowed(polynomial));
@@ -389,7 +390,7 @@ impl<'a, F: PrimeField> PolynomialWithBasis<'a, F> {
     }
 
     pub fn new_dense_monomial_basis(
-        polynomial: DensePolynomial<F>,
+        polynomial: DensePolynomial,
         degree_bound: Option<usize>,
     ) -> Self {
         let polynomial = Polynomial::from(polynomial);
@@ -400,7 +401,7 @@ impl<'a, F: PrimeField> PolynomialWithBasis<'a, F> {
     }
 
     pub fn new_sparse_monomial_basis_ref(
-        polynomial: &'a SparsePolynomial<F>,
+        polynomial: &'a SparsePolynomial,
         degree_bound: Option<usize>,
     ) -> Self {
         let polynomial = Polynomial::Sparse(Cow::Borrowed(polynomial));
@@ -411,7 +412,7 @@ impl<'a, F: PrimeField> PolynomialWithBasis<'a, F> {
     }
 
     pub fn new_sparse_monomial_basis(
-        polynomial: SparsePolynomial<F>,
+        polynomial: SparsePolynomial,
         degree_bound: Option<usize>,
     ) -> Self {
         let polynomial = Polynomial::from(polynomial);
@@ -421,13 +422,13 @@ impl<'a, F: PrimeField> PolynomialWithBasis<'a, F> {
         }
     }
 
-    pub fn new_lagrange_basis(evaluations: EvaluationsOnDomain<F>) -> Self {
+    pub fn new_lagrange_basis(evaluations: EvaluationsOnDomain) -> Self {
         Self::Lagrange {
             evaluations: Cow::Owned(evaluations),
         }
     }
 
-    pub fn new_lagrange_basis_ref(evaluations: &'a EvaluationsOnDomain<F>) -> Self {
+    pub fn new_lagrange_basis_ref(evaluations: &'a EvaluationsOnDomain) -> Self {
         Self::Lagrange {
             evaluations: Cow::Borrowed(evaluations),
         }
@@ -459,20 +460,20 @@ impl<'a, F: PrimeField> PolynomialWithBasis<'a, F> {
         matches!(self, Self::Lagrange { .. })
     }
 
-    pub fn domain(&self) -> Option<EvaluationDomain<F>> {
+    pub fn domain(&self) -> Option<EvaluationDomain> {
         match self {
             Self::Lagrange { evaluations } => Some(evaluations.domain()),
             _ => None,
         }
     }
 
-    pub fn evaluate(&self, point: F) -> F {
+    pub fn evaluate(&self, point: Fr) -> Fr {
         match self {
             Self::Monomial { polynomial, .. } => polynomial.evaluate(point),
             Self::Lagrange { evaluations } => {
                 let domain = evaluations.domain();
                 let degree = domain.size() as u64;
-                let multiplier = (point.pow([degree]) - F::one()) / F::from(degree);
+                let multiplier = (point.pow([degree]) - Fr::one()) / Fr::from(degree);
                 let powers: Vec<_> = domain.elements().collect();
                 let mut denominators = cfg_iter!(powers).map(|pow| point - pow).collect::<Vec<_>>();
                 snarkvm_fields::batch_inversion(&mut denominators);
@@ -480,7 +481,7 @@ impl<'a, F: PrimeField> PolynomialWithBasis<'a, F> {
                     .zip_eq(powers)
                     .zip_eq(&evaluations.evaluations)
                     .map(|((denom, power), coeff)| *denom * power * coeff)
-                    .sum::<F>()
+                    .sum::<Fr>()
                     * multiplier
             }
         }

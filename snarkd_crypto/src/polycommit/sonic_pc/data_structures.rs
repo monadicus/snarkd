@@ -1,4 +1,11 @@
-use crate::{crypto_hash::sha256::sha256, fft::EvaluationDomain, polycommit::kzg10, Prepare};
+use super::{LabeledPolynomial, PolynomialInfo};
+use crate::{
+    bls12_377::{Field, Fp, Fr, G1Affine, G1Projective, G2Affine},
+    crypto_hash::sha256::sha256,
+    fft::EvaluationDomain,
+    polycommit::kzg10,
+    Prepare,
+};
 use hashbrown::HashMap;
 use std::{
     borrow::{Borrow, Cow},
@@ -7,55 +14,53 @@ use std::{
     ops::{AddAssign, MulAssign, SubAssign},
 };
 
-use super::{LabeledPolynomial, PolynomialInfo};
-
 /// `UniversalParams` are the universal parameters for the KZG10 scheme.
-pub type UniversalParams<E> = kzg10::UniversalParams<E>;
+pub type UniversalParams = kzg10::UniversalParams;
 
 /// `Randomness` is the randomness for the KZG10 scheme.
-pub type Randomness<E> = kzg10::Randomness<E>;
+pub type Randomness = kzg10::Randomness;
 
 /// `Commitment` is the commitment for the KZG10 scheme.
-pub type Commitment<E> = kzg10::Commitment<E>;
+pub type Commitment = kzg10::Commitment;
 
 /// `PreparedCommitment` is the prepared commitment for the KZG10 scheme.
-pub type PreparedCommitment<E> = kzg10::PreparedCommitment<E>;
+pub type PreparedCommitment = kzg10::PreparedCommitment;
 
-impl<E: PairingEngine> Prepare for Commitment<E> {
-    type Prepared = PreparedCommitment<E>;
+impl Prepare for Commitment {
+    type Prepared = PreparedCommitment;
 
     /// prepare `PreparedCommitment` from `Commitment`
-    fn prepare(&self) -> PreparedCommitment<E> {
-        let mut prepared_comm = Vec::<E::G1Affine>::new();
-        let mut cur = E::G1Projective::from(self.0);
+    fn prepare(&self) -> PreparedCommitment {
+        let mut prepared_comm = Vec::<G1Affine>::new();
+        let mut cur = G1Projective::from(self.0);
         for _ in 0..128 {
             prepared_comm.push(cur.into());
             cur.double_in_place();
         }
 
-        kzg10::PreparedCommitment::<E>(prepared_comm)
+        kzg10::PreparedCommitment(prepared_comm)
     }
 }
 
 /// `CommitterKey` is used to commit to, and create evaluation proofs for, a given polynomial.
-#[derive(Clone, Debug, Default, Hash, CanonicalSerialize, CanonicalDeserialize)]
-pub struct CommitterKey<E: PairingEngine> {
+#[derive(Clone, Debug, Default, Hash)]
+pub struct CommitterKey {
     /// The key used to commit to polynomials.
-    pub powers_of_beta_g: Vec<E::G1Affine>,
+    pub powers_of_beta_g: Vec<G1Affine>,
 
     /// The key used to commit to polynomials.
-    pub lagrange_bases_at_beta_g: BTreeMap<usize, Vec<E::G1Affine>>,
+    pub lagrange_bases_at_beta_g: BTreeMap<usize, Vec<G1Affine>>,
 
     /// The key used to commit to hiding polynomials.
-    pub powers_of_beta_times_gamma_g: Vec<E::G1Affine>,
+    pub powers_of_beta_times_gamma_g: Vec<G1Affine>,
 
     /// The powers used to commit to shifted polynomials.
     /// This is `None` if `self` does not support enforcing any degree bounds.
-    pub shifted_powers_of_beta_g: Option<Vec<E::G1Affine>>,
+    pub shifted_powers_of_beta_g: Option<Vec<G1Affine>>,
 
     /// The powers used to commit to shifted hiding polynomials.
     /// This is `None` if `self` does not support enforcing any degree bounds.
-    pub shifted_powers_of_beta_times_gamma_g: Option<BTreeMap<usize, Vec<E::G1Affine>>>,
+    pub shifted_powers_of_beta_times_gamma_g: Option<BTreeMap<usize, Vec<G1Affine>>>,
 
     /// The degree bounds that are supported by `self`.
     /// Sorted in ascending order from smallest bound to largest bound.
@@ -66,256 +71,9 @@ pub struct CommitterKey<E: PairingEngine> {
     pub max_degree: usize,
 }
 
-impl<E: PairingEngine> FromBytes for CommitterKey<E> {
-    fn read_le<R: Read>(mut reader: R) -> io::Result<Self> {
-        // Deserialize `powers`.
-        let powers_len: u32 = FromBytes::read_le(&mut reader)?;
-        let mut powers_of_beta_g = Vec::with_capacity(powers_len as usize);
-        for _ in 0..powers_len {
-            let power: E::G1Affine = FromBytes::read_le(&mut reader)?;
-            powers_of_beta_g.push(power);
-        }
-
-        // Deserialize `lagrange_basis_at_beta`.
-        let lagrange_bases_at_beta_len: u32 = FromBytes::read_le(&mut reader)?;
-        let mut lagrange_bases_at_beta_g = BTreeMap::new();
-        for _ in 0..lagrange_bases_at_beta_len {
-            let size: u32 = FromBytes::read_le(&mut reader)?;
-            let mut basis = Vec::with_capacity(size as usize);
-            for _ in 0..size {
-                let power: E::G1Affine = FromBytes::read_le(&mut reader)?;
-                basis.push(power);
-            }
-            lagrange_bases_at_beta_g.insert(size as usize, basis);
-        }
-
-        // Deserialize `powers_of_beta_times_gamma_g`.
-        let powers_of_beta_times_gamma_g_len: u32 = FromBytes::read_le(&mut reader)?;
-        let mut powers_of_beta_times_gamma_g =
-            Vec::with_capacity(powers_of_beta_times_gamma_g_len as usize);
-        for _ in 0..powers_of_beta_times_gamma_g_len {
-            let powers_of_g: E::G1Affine = FromBytes::read_le(&mut reader)?;
-            powers_of_beta_times_gamma_g.push(powers_of_g);
-        }
-
-        // Deserialize `shifted_powers_of_beta_g`.
-        let has_shifted_powers_of_beta_g: bool = FromBytes::read_le(&mut reader)?;
-        let shifted_powers_of_beta_g = match has_shifted_powers_of_beta_g {
-            true => {
-                let shifted_powers_len: u32 = FromBytes::read_le(&mut reader)?;
-                let mut shifted_powers_of_beta_g = Vec::with_capacity(shifted_powers_len as usize);
-                for _ in 0..shifted_powers_len {
-                    let shifted_power: E::G1Affine = FromBytes::read_le(&mut reader)?;
-                    shifted_powers_of_beta_g.push(shifted_power);
-                }
-
-                Some(shifted_powers_of_beta_g)
-            }
-            false => None,
-        };
-
-        // Deserialize `shifted_powers_of_beta_times_gamma_g`.
-        let has_shifted_powers_of_beta_times_gamma_g: bool = FromBytes::read_le(&mut reader)?;
-        let shifted_powers_of_beta_times_gamma_g = match has_shifted_powers_of_beta_times_gamma_g {
-            true => {
-                let mut shifted_powers_of_beta_times_gamma_g = BTreeMap::new();
-                let shifted_powers_of_beta_times_gamma_g_num_elements: u32 =
-                    FromBytes::read_le(&mut reader)?;
-                for _ in 0..shifted_powers_of_beta_times_gamma_g_num_elements {
-                    let key: u32 = FromBytes::read_le(&mut reader)?;
-
-                    let value_len: u32 = FromBytes::read_le(&mut reader)?;
-                    let mut value = Vec::with_capacity(value_len as usize);
-                    for _ in 0..value_len {
-                        let val: E::G1Affine = FromBytes::read_le(&mut reader)?;
-                        value.push(val);
-                    }
-
-                    shifted_powers_of_beta_times_gamma_g.insert(key as usize, value);
-                }
-
-                Some(shifted_powers_of_beta_times_gamma_g)
-            }
-            false => None,
-        };
-
-        // Deserialize `enforced_degree_bounds`.
-        let has_enforced_degree_bounds: bool = FromBytes::read_le(&mut reader)?;
-        let enforced_degree_bounds = match has_enforced_degree_bounds {
-            true => {
-                let enforced_degree_bounds_len: u32 = FromBytes::read_le(&mut reader)?;
-                let mut enforced_degree_bounds =
-                    Vec::with_capacity(enforced_degree_bounds_len as usize);
-                for _ in 0..enforced_degree_bounds_len {
-                    let enforced_degree_bound: u32 = FromBytes::read_le(&mut reader)?;
-                    enforced_degree_bounds.push(enforced_degree_bound as usize);
-                }
-
-                Some(enforced_degree_bounds)
-            }
-            false => None,
-        };
-
-        // Deserialize `max_degree`.
-        let max_degree: u32 = FromBytes::read_le(&mut reader)?;
-
-        // Construct the hash of the group elements.
-        let mut hash_input = powers_of_beta_g
-            .to_bytes_le()
-            .map_err(|_| error("Could not serialize powers"))?;
-
-        hash_input.extend_from_slice(
-            &powers_of_beta_times_gamma_g
-                .to_bytes_le()
-                .map_err(|_| error("Could not serialize powers_of_beta_times_gamma_g"))?,
-        );
-
-        if let Some(shifted_powers_of_beta_g) = &shifted_powers_of_beta_g {
-            hash_input.extend_from_slice(
-                &shifted_powers_of_beta_g
-                    .to_bytes_le()
-                    .map_err(|_| error("Could not serialize shifted_powers_of_beta_g"))?,
-            );
-        }
-
-        if let Some(shifted_powers_of_beta_times_gamma_g) = &shifted_powers_of_beta_times_gamma_g {
-            for value in shifted_powers_of_beta_times_gamma_g.values() {
-                hash_input.extend_from_slice(
-                    &value
-                        .to_bytes_le()
-                        .map_err(|_| error("Could not serialize shifted_power_of_gamma_g"))?,
-                );
-            }
-        }
-
-        // Deserialize `hash`.
-        let hash = sha256(&hash_input);
-        let expected_hash: [u8; 32] = FromBytes::read_le(&mut reader)?;
-
-        // Enforce the group elements construct the expected hash.
-        if expected_hash != hash {
-            return Err(error("Mismatching group elements"));
-        }
-
-        Ok(Self {
-            powers_of_beta_g,
-            lagrange_bases_at_beta_g,
-            powers_of_beta_times_gamma_g,
-            shifted_powers_of_beta_g,
-            shifted_powers_of_beta_times_gamma_g,
-            enforced_degree_bounds,
-            max_degree: max_degree as usize,
-        })
-    }
-}
-
-impl<E: PairingEngine> ToBytes for CommitterKey<E> {
-    fn write_le<W: Write>(&self, mut writer: W) -> io::Result<()> {
-        // Serialize `powers`.
-        (self.powers_of_beta_g.len() as u32).write_le(&mut writer)?;
-        for power in &self.powers_of_beta_g {
-            power.write_le(&mut writer)?;
-        }
-
-        // Serialize `powers`.
-        (self.lagrange_bases_at_beta_g.len() as u32).write_le(&mut writer)?;
-        for (size, powers) in &self.lagrange_bases_at_beta_g {
-            (*size as u32).write_le(&mut writer)?;
-            for power in powers {
-                power.write_le(&mut writer)?;
-            }
-        }
-
-        // Serialize `powers_of_beta_times_gamma_g`.
-        (self.powers_of_beta_times_gamma_g.len() as u32).write_le(&mut writer)?;
-        for power_of_gamma_g in &self.powers_of_beta_times_gamma_g {
-            power_of_gamma_g.write_le(&mut writer)?;
-        }
-
-        // Serialize `shifted_powers_of_beta_g`.
-        self.shifted_powers_of_beta_g
-            .is_some()
-            .write_le(&mut writer)?;
-        if let Some(shifted_powers_of_beta_g) = &self.shifted_powers_of_beta_g {
-            (shifted_powers_of_beta_g.len() as u32).write_le(&mut writer)?;
-            for shifted_power in shifted_powers_of_beta_g {
-                shifted_power.write_le(&mut writer)?;
-            }
-        }
-
-        // Serialize `shifted_powers_of_beta_times_gamma_g`.
-        self.shifted_powers_of_beta_times_gamma_g
-            .is_some()
-            .write_le(&mut writer)?;
-        if let Some(shifted_powers_of_beta_times_gamma_g) =
-            &self.shifted_powers_of_beta_times_gamma_g
-        {
-            (shifted_powers_of_beta_times_gamma_g.len() as u32).write_le(&mut writer)?;
-            for (key, shifted_powers_of_beta_g) in shifted_powers_of_beta_times_gamma_g {
-                (*key as u32).write_le(&mut writer)?;
-                (shifted_powers_of_beta_g.len() as u32).write_le(&mut writer)?;
-                for shifted_power in shifted_powers_of_beta_g {
-                    shifted_power.write_le(&mut writer)?;
-                }
-            }
-        }
-
-        // Serialize `enforced_degree_bounds`.
-        self.enforced_degree_bounds
-            .is_some()
-            .write_le(&mut writer)?;
-        if let Some(enforced_degree_bounds) = &self.enforced_degree_bounds {
-            (enforced_degree_bounds.len() as u32).write_le(&mut writer)?;
-            for enforced_degree_bound in enforced_degree_bounds {
-                (*enforced_degree_bound as u32).write_le(&mut writer)?;
-            }
-        }
-
-        // Serialize `max_degree`.
-        (self.max_degree as u32).write_le(&mut writer)?;
-
-        // Construct the hash of the group elements.
-        let mut hash_input = self
-            .powers_of_beta_g
-            .to_bytes_le()
-            .map_err(|_| error("Could not serialize powers"))?;
-
-        hash_input.extend_from_slice(
-            &self
-                .powers_of_beta_times_gamma_g
-                .to_bytes_le()
-                .map_err(|_| error("Could not serialize powers_of_beta_times_gamma_g"))?,
-        );
-
-        if let Some(shifted_powers_of_beta_g) = &self.shifted_powers_of_beta_g {
-            hash_input.extend_from_slice(
-                &shifted_powers_of_beta_g
-                    .to_bytes_le()
-                    .map_err(|_| error("Could not serialize shifted_powers_of_beta_g"))?,
-            );
-        }
-
-        if let Some(shifted_powers_of_beta_times_gamma_g) =
-            &self.shifted_powers_of_beta_times_gamma_g
-        {
-            for value in shifted_powers_of_beta_times_gamma_g.values() {
-                hash_input.extend_from_slice(
-                    &value
-                        .to_bytes_le()
-                        .map_err(|_| error("Could not serialize shifted_power_of_gamma_g"))?,
-                );
-            }
-        }
-
-        // Serialize `hash`
-        let hash = sha256(&hash_input);
-        hash.write_le(&mut writer)
-    }
-}
-
-impl<E: PairingEngine> CommitterKey<E> {
+impl CommitterKey {
     /// Obtain powers for the underlying KZG10 construction
-    pub fn powers(&self) -> kzg10::Powers<E> {
+    pub fn powers(&self) -> kzg10::Powers {
         kzg10::Powers {
             powers_of_beta_g: self.powers_of_beta_g.as_slice().into(),
             powers_of_beta_times_gamma_g: self.powers_of_beta_times_gamma_g.as_slice().into(),
@@ -326,7 +84,7 @@ impl<E: PairingEngine> CommitterKey<E> {
     pub fn shifted_powers_of_beta_g(
         &self,
         degree_bound: impl Into<Option<usize>>,
-    ) -> Option<kzg10::Powers<E>> {
+    ) -> Option<kzg10::Powers> {
         match (
             &self.shifted_powers_of_beta_g,
             &self.shifted_powers_of_beta_times_gamma_g,
@@ -365,10 +123,7 @@ impl<E: PairingEngine> CommitterKey<E> {
 
     /// Obtain elements of the SRS in the lagrange basis powers, for use with the underlying
     /// KZG10 construction.
-    pub fn lagrange_basis(
-        &self,
-        domain: EvaluationDomain<E::Fr>,
-    ) -> Option<kzg10::LagrangeBasis<E>> {
+    pub fn lagrange_basis(&self, domain: EvaluationDomain<Fr>) -> Option<kzg10::LagrangeBasis> {
         self.lagrange_bases_at_beta_g
             .get(&domain.size())
             .map(|basis| kzg10::LagrangeBasis {
@@ -379,7 +134,7 @@ impl<E: PairingEngine> CommitterKey<E> {
     }
 }
 
-impl<E: PairingEngine> CommitterKey<E> {
+impl CommitterKey {
     pub fn max_degree(&self) -> usize {
         self.max_degree
     }
@@ -391,17 +146,17 @@ impl<E: PairingEngine> CommitterKey<E> {
 
 /// `VerifierKey` is used to check evaluation proofs for a given commitment.
 #[derive(Clone, Debug, Default, PartialEq, Eq, CanonicalSerialize, CanonicalDeserialize)]
-pub struct VerifierKey<E: PairingEngine> {
+pub struct VerifierKey {
     /// The verification key for the underlying KZG10 scheme.
-    pub vk: kzg10::VerifierKey<E>,
+    pub vk: kzg10::VerifierKey,
 
     /// Pairs a degree_bound with its corresponding G2 element.
     /// Each pair is in the form `(degree_bound, \beta^{degree_bound - max_degree} h),` where `h` is the generator of G2 above
-    pub degree_bounds_and_neg_powers_of_h: Option<Vec<(usize, E::G2Affine)>>,
+    pub degree_bounds_and_neg_powers_of_h: Option<Vec<(usize, G2Affine)>>,
 
     /// The prepared version of `degree_bounds_and_neg_powers_of_h`.
     pub degree_bounds_and_prepared_neg_powers_of_h:
-        Option<Vec<(usize, <E::G2Affine as PairingCurve>::Prepared)>>,
+        Option<Vec<(usize, <G2Affine as PairingCurve>::Prepared)>>,
 
     /// The maximum degree supported by the trimmed parameters that `self` is
     /// a part of.
@@ -412,23 +167,9 @@ pub struct VerifierKey<E: PairingEngine> {
     pub max_degree: usize,
 }
 
-impl<E: PairingEngine> FromBytes for VerifierKey<E> {
-    fn read_le<R: Read>(mut reader: R) -> io::Result<Self> {
-        CanonicalDeserialize::deserialize_compressed(&mut reader)
-            .map_err(|_| error("could not deserialize VerifierKey"))
-    }
-}
-
-impl<E: PairingEngine> ToBytes for VerifierKey<E> {
-    fn write_le<W: Write>(&self, mut writer: W) -> io::Result<()> {
-        CanonicalSerialize::serialize_compressed(self, &mut writer)
-            .map_err(|_| error("could not serialize VerifierKey"))
-    }
-}
-
-impl<E: PairingEngine> VerifierKey<E> {
+impl VerifierKey {
     /// Find the appropriate shift for the degree bound.
-    pub fn get_shift_power(&self, degree_bound: usize) -> Option<E::G2Affine> {
+    pub fn get_shift_power(&self, degree_bound: usize) -> Option<G2Affine> {
         self.degree_bounds_and_neg_powers_of_h
             .as_ref()
             .and_then(|v| {
@@ -441,7 +182,7 @@ impl<E: PairingEngine> VerifierKey<E> {
     pub fn get_prepared_shift_power(
         &self,
         degree_bound: usize,
-    ) -> Option<<E::G2Affine as PairingCurve>::Prepared> {
+    ) -> Option<<G2Affine as PairingCurve>::Prepared> {
         self.degree_bounds_and_prepared_neg_powers_of_h
             .as_ref()
             .and_then(|v| {
@@ -452,7 +193,7 @@ impl<E: PairingEngine> VerifierKey<E> {
     }
 }
 
-impl<E: PairingEngine> VerifierKey<E> {
+impl VerifierKey {
     pub fn max_degree(&self) -> usize {
         self.max_degree
     }
@@ -462,14 +203,14 @@ impl<E: PairingEngine> VerifierKey<E> {
     }
 }
 
-impl<E: PairingEngine> ToConstraintField<E::Fq> for VerifierKey<E> {
-    fn to_field_elements(&self) -> Result<Vec<E::Fq>, ConstraintFieldError> {
+impl ToConstraintField<Fp> for VerifierKey {
+    fn to_field_elements(&self) -> Result<Vec<Fp>, ConstraintFieldError> {
         let mut res = Vec::new();
         res.extend_from_slice(&self.vk.to_field_elements()?);
 
         if let Some(degree_bounds_and_neg_powers_of_h) = &self.degree_bounds_and_neg_powers_of_h {
             for (d, neg_powers_of_h) in degree_bounds_and_neg_powers_of_h.iter() {
-                let d_elem: E::Fq = (*d as u64).into();
+                let d_elem: Fp = (*d as u64).into();
                 res.push(d_elem);
                 res.append(&mut neg_powers_of_h.to_field_elements()?);
             }
@@ -481,14 +222,14 @@ impl<E: PairingEngine> ToConstraintField<E::Fq> for VerifierKey<E> {
 
 /// `PreparedVerifierKey` is used to check evaluation proofs for a given commitment.
 #[derive(Clone, Debug)]
-pub struct PreparedVerifierKey<E: PairingEngine> {
+pub struct PreparedVerifierKey {
     /// The verification key for the underlying KZG10 scheme.
-    pub prepared_vk: kzg10::PreparedVerifierKey<E>,
+    pub prepared_vk: kzg10::PreparedVerifierKey,
     /// Information required to enforce degree bounds. Each pair
     /// is of the form `(degree_bound, shifting_advice)`.
     /// This is `None` if `self` does not support enforcing any degree bounds.
     pub degree_bounds_and_prepared_neg_powers_of_h:
-        Option<Vec<(usize, <E::G2Affine as PairingCurve>::Prepared)>>,
+        Option<Vec<(usize, <G2Affine as PairingCurve>::Prepared)>>,
     /// The maximum degree supported by the `UniversalParams` `self` was derived
     /// from.
     pub max_degree: usize,
@@ -497,12 +238,12 @@ pub struct PreparedVerifierKey<E: PairingEngine> {
     pub supported_degree: usize,
 }
 
-impl<E: PairingEngine> PreparedVerifierKey<E> {
+impl PreparedVerifierKey {
     /// Find the appropriate shift for the degree bound.
     pub fn get_prepared_shift_power(
         &self,
         bound: usize,
-    ) -> Option<<E::G2Affine as PairingCurve>::Prepared> {
+    ) -> Option<<G2Affine as PairingCurve>::Prepared> {
         self.degree_bounds_and_prepared_neg_powers_of_h
             .as_ref()
             .and_then(|v| {
@@ -513,14 +254,14 @@ impl<E: PairingEngine> PreparedVerifierKey<E> {
     }
 }
 
-impl<E: PairingEngine> Prepare for VerifierKey<E> {
-    type Prepared = PreparedVerifierKey<E>;
+impl Prepare for VerifierKey {
+    type Prepared = PreparedVerifierKey;
 
     /// prepare `PreparedVerifierKey` from `VerifierKey`
-    fn prepare(&self) -> PreparedVerifierKey<E> {
-        let prepared_vk = kzg10::PreparedVerifierKey::<E>::prepare(&self.vk);
+    fn prepare(&self) -> PreparedVerifierKey {
+        let prepared_vk = kzg10::PreparedVerifierKey::prepare(&self.vk);
 
-        PreparedVerifierKey::<E> {
+        PreparedVerifierKey {
             prepared_vk,
             degree_bounds_and_prepared_neg_powers_of_h: self
                 .degree_bounds_and_prepared_neg_powers_of_h
@@ -532,10 +273,10 @@ impl<E: PairingEngine> Prepare for VerifierKey<E> {
 }
 
 /// Evaluation proof at a query set.
-#[derive(Clone, Debug, Default, PartialEq, Eq, Hash, CanonicalSerialize, CanonicalDeserialize)]
-pub struct BatchProof<E: PairingEngine>(pub(crate) Vec<kzg10::Proof<E>>);
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
+pub struct BatchProof(pub(crate) Vec<kzg10::Proof>);
 
-impl<E: PairingEngine> BatchProof<E> {
+impl BatchProof {
     pub fn is_hiding(&self) -> bool {
         self.0.iter().any(|c| c.is_hiding())
     }
@@ -545,35 +286,20 @@ impl<E: PairingEngine> BatchProof<E> {
 pub type PolynomialLabel = String;
 
 /// A commitment along with information about its degree bound (if any).
-#[derive(Clone, Debug, CanonicalSerialize, PartialEq, Eq)]
-pub struct LabeledCommitment<C: CanonicalSerialize + 'static> {
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct LabeledCommitment {
     label: PolynomialLabel,
-    commitment: C,
+    commitment: Commitment,
     degree_bound: Option<usize>,
 }
 
-impl<F: Field, C: CanonicalSerialize + ToConstraintField<F>> ToConstraintField<F>
-    for LabeledCommitment<C>
-{
-    fn to_field_elements(&self) -> Result<Vec<F>, ConstraintFieldError> {
-        self.commitment.to_field_elements()
-    }
-}
-
-// NOTE: Serializing the LabeledCommitments struct is done by serializing
-// _WITHOUT_ the labels or the degree bound. Deserialization is _NOT_ supported,
-// and you should construct the struct via the `LabeledCommitment::new` method after
-// deserializing the Commitment.
-impl<C: CanonicalSerialize + ToBytes> ToBytes for LabeledCommitment<C> {
-    fn write_le<W: Write>(&self, mut writer: W) -> io::Result<()> {
-        CanonicalSerialize::serialize_compressed(&self.commitment, &mut writer)
-            .map_err(|_| error("could not serialize struct"))
-    }
-}
-
-impl<C: CanonicalSerialize> LabeledCommitment<C> {
+impl LabeledCommitment {
     /// Instantiate a new polynomial_context.
-    pub fn new(label: PolynomialLabel, commitment: C, degree_bound: Option<usize>) -> Self {
+    pub fn new(
+        label: PolynomialLabel,
+        commitment: Commitment,
+        degree_bound: Option<usize>,
+    ) -> Self {
         Self {
             label,
             commitment,
@@ -581,7 +307,7 @@ impl<C: CanonicalSerialize> LabeledCommitment<C> {
         }
     }
 
-    pub fn new_with_info(info: &PolynomialInfo, commitment: C) -> Self {
+    pub fn new_with_info(info: &PolynomialInfo, commitment: Commitment) -> Self {
         Self {
             label: info.label().to_string(),
             commitment,
@@ -595,7 +321,7 @@ impl<C: CanonicalSerialize> LabeledCommitment<C> {
     }
 
     /// Retrieve the commitment from `self`.
-    pub fn commitment(&self) -> &C {
+    pub fn commitment(&self) -> &Commitment {
         &self.commitment
     }
 
@@ -823,30 +549,16 @@ pub fn evaluate_query_set<'a, F: PrimeField>(
 }
 
 /// A proof of satisfaction of linear combinations.
-#[derive(Clone, Debug, PartialEq, Eq, CanonicalSerialize, CanonicalDeserialize)]
-pub struct BatchLCProof<E: PairingEngine> {
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct BatchLCProof {
     /// Evaluation proof.
-    pub proof: BatchProof<E>,
+    pub proof: BatchProof,
     /// Evaluations required to verify the proof.
-    pub evaluations: Option<Vec<E::Fr>>,
+    pub evaluations: Option<Vec<Fr>>,
 }
 
-impl<E: PairingEngine> BatchLCProof<E> {
+impl BatchLCProof {
     pub fn is_hiding(&self) -> bool {
         self.proof.is_hiding()
-    }
-}
-
-impl<E: PairingEngine> FromBytes for BatchLCProof<E> {
-    fn read_le<R: Read>(mut reader: R) -> io::Result<Self> {
-        CanonicalDeserialize::deserialize_compressed(&mut reader)
-            .map_err(|_| error("could not deserialize struct"))
-    }
-}
-
-impl<E: PairingEngine> ToBytes for BatchLCProof<E> {
-    fn write_le<W: Write>(&self, mut writer: W) -> io::Result<()> {
-        CanonicalSerialize::serialize_compressed(self, &mut writer)
-            .map_err(|_| error("could not serialize struct"))
     }
 }

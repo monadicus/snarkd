@@ -1,4 +1,4 @@
-use crate::{Field, Index, LinearCombination, Namespace, Variable};
+use crate::{bls12_377::Field, Index, LinearCombination, Namespace, Variable};
 
 use anyhow::Result;
 

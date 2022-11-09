@@ -6,6 +6,7 @@
 //! This construction achieves extractability in the algebraic group model (AGM).
 
 use crate::{
+    bls12_377::{Fr, G1Projective, G2Affine, G2Projective},
     fft::{DensePolynomial, Polynomial},
     msm::{FixedBase, VariableBase},
     polycommit::PCError,
@@ -72,9 +73,9 @@ impl KZG10DegreeBoundsConfig {
 ///
 /// [kzg10]: http://cacr.uwaterloo.ca/techreports/2010/cacr2010-10.pdf
 #[derive(Clone, Debug)]
-pub struct KZG10<E: PairingEngine>(PhantomData<E>);
+pub struct KZG10;
 
-impl<E: PairingEngine> KZG10<E> {
+impl KZG10 {
     /// Constructs public parameters when given as input the maximum degree `degree`
     /// for the polynomial commitment scheme.
     pub fn setup<R: RngCore>(
@@ -82,7 +83,7 @@ impl<E: PairingEngine> KZG10<E> {
         supported_degree_bounds_config: &KZG10DegreeBoundsConfig,
         produce_g2_powers: bool,
         rng: &mut R,
-    ) -> Result<UniversalParams<E>, PCError> {
+    ) -> Result<UniversalParams, PCError> {
         if max_degree < 1 {
             return Err(PCError::DegreeIsZero);
         }
@@ -102,17 +103,17 @@ impl<E: PairingEngine> KZG10<E> {
             return Err(PCError::LagrangeBasisSizeIsTooLarge);
         }
         let setup_time = start_timer!(|| format!("KZG10::Setup with degree {}", max_degree));
-        let scalar_bits = E::Fr::size_in_bits();
+        let scalar_bits = Fr::size_in_bits();
 
         // Compute the `toxic waste`.
-        let beta = E::Fr::rand(rng);
-        let g = E::G1Projective::rand(rng);
-        let gamma_g = E::G1Projective::rand(rng);
-        let h = E::G2Projective::rand(rng);
+        let beta = Fr::rand(rng);
+        let g = G1Projective::rand(rng);
+        let gamma_g = G1Projective::rand(rng);
+        let h = G2Projective::rand(rng);
 
         // Compute `beta^i G`.
         let powers_of_beta = {
-            let mut powers_of_beta = vec![E::Fr::one()];
+            let mut powers_of_beta = vec![Fr::one()];
             let mut cur = beta;
             for _ in 0..max_degree {
                 powers_of_beta.push(cur);
@@ -124,13 +125,13 @@ impl<E: PairingEngine> KZG10<E> {
         let g_time = start_timer!(|| "Generating powers of G");
         let g_table = FixedBase::get_window_table(scalar_bits, window_size, g);
         let powers_of_beta_g =
-            FixedBase::msm::<E::G1Projective>(scalar_bits, window_size, &g_table, &powers_of_beta);
+            FixedBase::msm::<G1Projective>(scalar_bits, window_size, &g_table, &powers_of_beta);
         end_timer!(g_time);
 
         // Compute `gamma beta^i G`.
         let gamma_g_time = start_timer!(|| "Generating powers of gamma * G");
         let gamma_g_table = FixedBase::get_window_table(scalar_bits, window_size, gamma_g);
-        let mut powers_of_beta_times_gamma_g = FixedBase::msm::<E::G1Projective>(
+        let mut powers_of_beta_times_gamma_g = FixedBase::msm::<G1Projective>(
             scalar_bits,
             window_size,
             &gamma_g_table,
@@ -142,15 +143,15 @@ impl<E: PairingEngine> KZG10<E> {
         end_timer!(gamma_g_time);
 
         // Reduce `beta^i G` and `gamma beta^i G` to affine representations.
-        let powers_of_beta_g = E::G1Projective::batch_normalization_into_affine(powers_of_beta_g);
+        let powers_of_beta_g = G1Projective::batch_normalization_into_affine(powers_of_beta_g);
         let powers_of_beta_times_gamma_g =
-            E::G1Projective::batch_normalization_into_affine(powers_of_beta_times_gamma_g)
+            G1Projective::batch_normalization_into_affine(powers_of_beta_times_gamma_g)
                 .into_iter()
                 .enumerate()
                 .collect();
 
         // This part is used to derive the universal verification parameters.
-        let list = supported_degree_bounds_config.get_list::<E::Fr>(max_degree);
+        let list = supported_degree_bounds_config.get_list::<Fr>(max_degree);
 
         let supported_degree_bounds =
             if *supported_degree_bounds_config != KZG10DegreeBoundsConfig::NONE {
@@ -165,7 +166,7 @@ impl<E: PairingEngine> KZG10<E> {
         let inverse_neg_powers_of_beta_h = if produce_g2_powers
             && *supported_degree_bounds_config != KZG10DegreeBoundsConfig::NONE
         {
-            let mut map = BTreeMap::<usize, E::G2Affine>::new();
+            let mut map = BTreeMap::<usize, G2Affine>::new();
 
             let mut neg_powers_of_beta = vec![];
             for i in list.iter() {
@@ -174,14 +175,14 @@ impl<E: PairingEngine> KZG10<E> {
 
             let window_size = FixedBase::get_mul_window_size(neg_powers_of_beta.len());
             let neg_h_table = FixedBase::get_window_table(scalar_bits, window_size, h);
-            let neg_powers_of_h = FixedBase::msm::<E::G2Projective>(
+            let neg_powers_of_h = FixedBase::msm::<G2Projective>(
                 scalar_bits,
                 window_size,
                 &neg_h_table,
                 &neg_powers_of_beta,
             );
 
-            let affines = E::G2Projective::batch_normalization_into_affine(neg_powers_of_h);
+            let affines = G2Projective::batch_normalization_into_affine(neg_powers_of_h);
 
             for (i, affine) in list.iter().zip_eq(affines.iter()) {
                 map.insert(*i, *affine);
@@ -198,7 +199,7 @@ impl<E: PairingEngine> KZG10<E> {
         let prepared_h = h.prepare();
         let prepared_beta_h = beta_h.prepare();
 
-        let powers = PowersOfG::<E>::setup(powers_of_beta_g, powers_of_beta_times_gamma_g)?;
+        let powers = PowersOfG::setup(powers_of_beta_g, powers_of_beta_times_gamma_g)?;
         let pp = UniversalParams {
             powers: Arc::new(RwLock::new(powers)),
             h,
@@ -214,12 +215,12 @@ impl<E: PairingEngine> KZG10<E> {
 
     /// Outputs a commitment to `polynomial`.
     pub fn commit(
-        powers: &Powers<E>,
-        polynomial: &Polynomial<'_, E::Fr>,
+        powers: &Powers,
+        polynomial: &Polynomial<'_, Fr>,
         hiding_bound: Option<usize>,
         terminator: &AtomicBool,
         rng: Option<&mut dyn RngCore>,
-    ) -> Result<(Commitment<E>, Randomness<E>), PCError> {
+    ) -> Result<(Commitment, Randomness), PCError> {
         Self::check_degree_is_too_large(polynomial.degree(), powers.size())?;
 
         let commit_time = start_timer!(|| format!(
@@ -287,12 +288,12 @@ impl<E: PairingEngine> KZG10<E> {
 
     /// Outputs a commitment to `polynomial`.
     pub fn commit_lagrange(
-        lagrange_basis: &LagrangeBasis<E>,
-        evaluations: &[E::Fr],
+        lagrange_basis: &LagrangeBasis,
+        evaluations: &[Fr],
         hiding_bound: Option<usize>,
         terminator: &AtomicBool,
         rng: Option<&mut dyn RngCore>,
-    ) -> Result<(Commitment<E>, Randomness<E>), PCError> {
+    ) -> Result<(Commitment, Randomness), PCError> {
         Self::check_degree_is_too_large(evaluations.len() - 1, lagrange_basis.size())?;
         assert_eq!(
             evaluations
@@ -360,11 +361,11 @@ impl<E: PairingEngine> KZG10<E> {
     /// p(z) is the remainder term. We can therefore omit p(z) when computing the quotient.
     #[allow(clippy::type_complexity)]
     pub fn compute_witness_polynomial(
-        polynomial: &DensePolynomial<E::Fr>,
-        point: E::Fr,
-        randomness: &Randomness<E>,
-    ) -> Result<(DensePolynomial<E::Fr>, Option<DensePolynomial<E::Fr>>), PCError> {
-        let divisor = DensePolynomial::from_coefficients_vec(vec![-point, E::Fr::one()]);
+        polynomial: &DensePolynomial<Fr>,
+        point: Fr,
+        randomness: &Randomness,
+    ) -> Result<(DensePolynomial<Fr>, Option<DensePolynomial<Fr>>), PCError> {
+        let divisor = DensePolynomial::from_coefficients_vec(vec![-point, Fr::one()]);
 
         let witness_time = start_timer!(|| "Computing witness polynomial");
         let witness_polynomial = polynomial / &divisor;
@@ -385,12 +386,12 @@ impl<E: PairingEngine> KZG10<E> {
     }
 
     pub(crate) fn open_with_witness_polynomial(
-        powers: &Powers<E>,
-        point: E::Fr,
-        randomness: &Randomness<E>,
-        witness_polynomial: &DensePolynomial<E::Fr>,
-        hiding_witness_polynomial: Option<&DensePolynomial<E::Fr>>,
-    ) -> Result<Proof<E>, PCError> {
+        powers: &Powers,
+        point: Fr,
+        randomness: &Randomness,
+        witness_polynomial: &DensePolynomial<Fr>,
+        hiding_witness_polynomial: Option<&DensePolynomial<Fr>>,
+    ) -> Result<Proof, PCError> {
         Self::check_degree_is_too_large(witness_polynomial.degree(), powers.size())?;
         let (num_leading_zeros, witness_coeffs) =
             skip_leading_zeros_and_convert_to_bigints(witness_polynomial);
@@ -426,11 +427,11 @@ impl<E: PairingEngine> KZG10<E> {
 
     /// On input a polynomial `p` and a point `point`, outputs a proof for the same.
     pub(crate) fn open(
-        powers: &Powers<E>,
-        polynomial: &DensePolynomial<E::Fr>,
-        point: E::Fr,
-        rand: &Randomness<E>,
-    ) -> Result<Proof<E>, PCError> {
+        powers: &Powers,
+        polynomial: &DensePolynomial<Fr>,
+        point: Fr,
+        rand: &Randomness,
+    ) -> Result<Proof, PCError> {
         Self::check_degree_is_too_large(polynomial.degree(), powers.size())?;
         let open_time =
             start_timer!(|| format!("Opening polynomial of degree {}", polynomial.degree()));
@@ -455,21 +456,21 @@ impl<E: PairingEngine> KZG10<E> {
     /// Verifies that `value` is the evaluation at `point` of the polynomial
     /// committed inside `commitment`.
     pub fn check(
-        vk: &VerifierKey<E>,
-        commitment: &Commitment<E>,
-        point: E::Fr,
-        value: E::Fr,
-        proof: &Proof<E>,
+        vk: &VerifierKey,
+        commitment: &Commitment,
+        point: Fr,
+        value: Fr,
+        proof: &Proof,
     ) -> Result<bool, PCError> {
         let check_time = start_timer!(|| "Checking evaluation");
         let mut inner = commitment.0.to_projective() - vk.g.to_projective().mul(value);
         if let Some(random_v) = proof.random_v {
             inner -= &vk.gamma_g.mul(random_v);
         }
-        let lhs = E::pairing(inner, vk.h);
+        let lhs = pairing(inner, vk.h);
 
         let inner = vk.beta_h.to_projective() - vk.h.mul(point);
-        let rhs = E::pairing(proof.w, inner);
+        let rhs = pairing(proof.w, inner);
 
         end_timer!(check_time, || format!("Result: {}", lhs == rhs));
         Ok(lhs == rhs)
@@ -478,11 +479,11 @@ impl<E: PairingEngine> KZG10<E> {
     /// Check that each `proof_i` in `proofs` is a valid proof of evaluation for
     /// `commitment_i` at `point_i`.
     pub fn batch_check<R: RngCore>(
-        vk: &VerifierKey<E>,
-        commitments: &[Commitment<E>],
-        points: &[E::Fr],
-        values: &[E::Fr],
-        proofs: &[Proof<E>],
+        vk: &VerifierKey,
+        commitments: &[Commitment],
+        points: &[Fr],
+        values: &[Fr],
+        proofs: &[Proof],
         rng: &mut R,
     ) -> Result<bool, PCError> {
         let check_time =
@@ -490,15 +491,15 @@ impl<E: PairingEngine> KZG10<E> {
         let g = vk.g.to_projective();
         let gamma_g = vk.gamma_g.to_projective();
 
-        let mut total_c = <E::G1Projective>::zero();
-        let mut total_w = <E::G1Projective>::zero();
+        let mut total_c = <G1Projective>::ZERO;
+        let mut total_w = <G1Projective>::ZERO;
 
         let combination_time = start_timer!(|| "Combining commitments and proofs");
-        let mut randomizer = E::Fr::one();
+        let mut randomizer = Fr::one();
         // Instead of multiplying g and gamma_g in each turn, we simply accumulate
         // their coefficients and perform a final multiplication at the end.
-        let mut g_multiplier = E::Fr::zero();
-        let mut gamma_g_multiplier = E::Fr::zero();
+        let mut g_multiplier = Fr::ZERO;
+        let mut gamma_g_multiplier = Fr::ZERO;
         for (((c, z), v), proof) in commitments
             .iter()
             .zip_eq(points)
@@ -524,13 +525,12 @@ impl<E: PairingEngine> KZG10<E> {
         end_timer!(combination_time);
 
         let to_affine_time = start_timer!(|| "Converting results to affine for pairing");
-        let affine_points =
-            E::G1Projective::batch_normalization_into_affine(vec![-total_w, total_c]);
+        let affine_points = G1Projective::batch_normalization_into_affine(vec![-total_w, total_c]);
         let (total_w, total_c) = (affine_points[0], affine_points[1]);
         end_timer!(to_affine_time);
 
         let pairing_time = start_timer!(|| "Performing product of pairings");
-        let result = E::product_of_pairings(
+        let result = product_of_pairings(
             [
                 (&total_w.prepare(), &vk.prepared_beta_h),
                 (&total_c.prepare(), &vk.prepared_h),
@@ -581,7 +581,7 @@ impl<E: PairingEngine> KZG10<E> {
         supported_degree: usize,
         max_degree: usize,
         enforced_degree_bounds: Option<&[usize]>,
-        p: impl Into<LabeledPolynomialWithBasis<'a, E::Fr>>,
+        p: impl Into<LabeledPolynomialWithBasis<'a, Fr>>,
     ) -> Result<(), PCError> {
         let p = p.into();
         if let Some(bound) = p.degree_bound() {
@@ -638,15 +638,13 @@ mod tests {
 
     use std::borrow::Cow;
 
-    type KZG_Bls12_377 = KZG10<Bls12_377>;
-
-    impl<E: PairingEngine> KZG10<E> {
+    impl KZG10 {
         /// Specializes the public parameters for a given maximum degree `d` for polynomials
         /// `d` should be less that `pp.max_degree()`.
         pub(crate) fn trim(
-            pp: &UniversalParams<E>,
+            pp: &UniversalParams,
             mut supported_degree: usize,
-        ) -> (Powers<E>, VerifierKey<E>) {
+        ) -> (Powers, VerifierKey) {
             if supported_degree == 1 {
                 supported_degree += 1;
             }
@@ -679,7 +677,7 @@ mod tests {
         let rng = &mut TestRng::default();
 
         let degree = 4;
-        let pp = KZG_Bls12_377::setup(degree, &KZG10DegreeBoundsConfig::NONE, false, rng).unwrap();
+        let pp = KZG10::setup(degree, &KZG10DegreeBoundsConfig::NONE, false, rng).unwrap();
 
         let pp_bytes = pp.to_bytes_le().unwrap();
         let pp_recovered: UniversalParams<Bls12_377> = FromBytes::read_le(&pp_bytes[..]).unwrap();
@@ -695,22 +693,22 @@ mod tests {
             while degree <= 1 {
                 degree = usize::rand(rng) % 20;
             }
-            let pp = KZG10::<E>::setup(degree, &KZG10DegreeBoundsConfig::NONE, false, rng)?;
+            let pp = KZG10::setup(degree, &KZG10DegreeBoundsConfig::NONE, false, rng)?;
             let (ck, vk) = KZG10::trim(&pp, degree);
             let p = DensePolynomial::rand(degree, rng);
             let hiding_bound = Some(1);
-            let (comm, rand) = KZG10::<E>::commit(
+            let (comm, rand) = KZG10::commit(
                 &ck,
                 &(&p).into(),
                 hiding_bound,
                 &AtomicBool::new(false),
                 Some(rng),
             )?;
-            let point = E::Fr::rand(rng);
+            let point = Fr::rand(rng);
             let value = p.evaluate(point);
-            let proof = KZG10::<E>::open(&ck, &p, point, &rand)?;
+            let proof = KZG10::open(&ck, &p, point, &rand)?;
             assert!(
-                KZG10::<E>::check(&vk, &comm, point, value, &proof)?,
+                KZG10::check(&vk, &comm, point, value, &proof)?,
                 "proof was incorrect for max_degree = {}, polynomial_degree = {}, hiding_bound = {:?}",
                 degree,
                 p.degree(),
@@ -720,26 +718,26 @@ mod tests {
         Ok(())
     }
 
-    fn linear_polynomial_test_template<E: PairingEngine>() -> Result<(), PCError> {
+    fn linear_polynomial_test_template() -> Result<(), PCError> {
         let rng = &mut TestRng::default();
         for _ in 0..100 {
             let degree = 50;
-            let pp = KZG10::<E>::setup(degree, &KZG10DegreeBoundsConfig::NONE, false, rng)?;
+            let pp = KZG10::setup(degree, &KZG10DegreeBoundsConfig::NONE, false, rng)?;
             let (ck, vk) = KZG10::trim(&pp, 2);
             let p = DensePolynomial::rand(1, rng);
             let hiding_bound = Some(1);
-            let (comm, rand) = KZG10::<E>::commit(
+            let (comm, rand) = KZG10::commit(
                 &ck,
                 &(&p).into(),
                 hiding_bound,
                 &AtomicBool::new(false),
                 Some(rng),
             )?;
-            let point = E::Fr::rand(rng);
+            let point = Fr::rand(rng);
             let value = p.evaluate(point);
-            let proof = KZG10::<E>::open(&ck, &p, point, &rand)?;
+            let proof = KZG10::open(&ck, &p, point, &rand)?;
             assert!(
-                KZG10::<E>::check(&vk, &comm, point, value, &proof)?,
+                KZG10::check(&vk, &comm, point, value, &proof)?,
                 "proof was incorrect for max_degree = {}, polynomial_degree = {}, hiding_bound = {:?}",
                 degree,
                 p.degree(),
@@ -749,14 +747,14 @@ mod tests {
         Ok(())
     }
 
-    fn batch_check_test_template<E: PairingEngine>() -> Result<(), PCError> {
+    fn batch_check_test_template() -> Result<(), PCError> {
         let rng = &mut TestRng::default();
         for _ in 0..10 {
             let mut degree = 0;
             while degree <= 1 {
                 degree = usize::rand(rng) % 20;
             }
-            let pp = KZG10::<E>::setup(degree, &KZG10DegreeBoundsConfig::NONE, false, rng)?;
+            let pp = KZG10::setup(degree, &KZG10DegreeBoundsConfig::NONE, false, rng)?;
             let (ck, vk) = KZG10::trim(&pp, degree);
 
             let mut comms = Vec::new();
@@ -767,24 +765,24 @@ mod tests {
             for _ in 0..10 {
                 let p = DensePolynomial::rand(degree, rng);
                 let hiding_bound = Some(1);
-                let (comm, rand) = KZG10::<E>::commit(
+                let (comm, rand) = KZG10::commit(
                     &ck,
                     &(&p).into(),
                     hiding_bound,
                     &AtomicBool::new(false),
                     Some(rng),
                 )?;
-                let point = E::Fr::rand(rng);
+                let point = Fr::rand(rng);
                 let value = p.evaluate(point);
-                let proof = KZG10::<E>::open(&ck, &p, point, &rand)?;
+                let proof = KZG10::open(&ck, &p, point, &rand)?;
 
-                assert!(KZG10::<E>::check(&vk, &comm, point, value, &proof)?);
+                assert!(KZG10::check(&vk, &comm, point, value, &proof)?);
                 comms.push(comm);
                 values.push(value);
                 points.push(point);
                 proofs.push(proof);
             }
-            assert!(KZG10::<E>::batch_check(
+            assert!(KZG10::batch_check(
                 &vk, &comms, &points, &values, &proofs, rng
             )?);
         }
