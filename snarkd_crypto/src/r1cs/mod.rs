@@ -23,8 +23,12 @@ mod variable;
 pub use variable::*;
 
 #[cfg(test)]
-mod linear_combination_test;
-#[cfg(test)]
-pub mod test_constraint_checker;
-#[cfg(test)]
-pub mod test_constraint_system;
+#[path = ""]
+mod test {
+    use super::*;
+
+    mod linear_combination_test;
+    mod optional_vec_test;
+    // pub mod test_constraint_checker;
+    // pub mod test_constraint_system;
+}
