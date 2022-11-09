@@ -264,7 +264,7 @@ impl EvaluationDomain {
                 r *= &self.group_gen;
             }
 
-            batch_inversion(u.as_mut_slice());
+            Scalar::batch_inversion(u.as_mut_slice());
             cfg_iter_mut!(u).zip_eq(ls).for_each(|(tau_minus_r, l)| {
                 *tau_minus_r = l * *tau_minus_r;
             });
@@ -811,7 +811,7 @@ pub struct FFTPrecomputation {
 impl FFTPrecomputation {
     pub fn to_ifft_precomputation(&self) -> IFFTPrecomputation {
         let mut inverse_roots = self.roots.clone();
-        batch_inversion(&mut inverse_roots);
+        Scalar::batch_inversion(&mut inverse_roots);
         IFFTPrecomputation {
             inverse_roots,
             domain: self.domain,
