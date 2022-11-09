@@ -11,6 +11,18 @@ use ruint::{uint, Uint};
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Fp(pub Uint<384, 6>);
 
+impl From<Uint<384, 6>> for Fp {
+    fn from(v: Uint<384, 6>) -> Self {
+        Self(v)
+    }
+}
+
+impl From<u64> for Fp {
+    fn from(v: u64) -> Self {
+        Self(Uint::from(v))
+    }
+}
+
 pub const POWERS_OF_G: &[Uint<384, 6>] = &[
     uint!(11759432984210757955515102394259421622842731805301722003778799460755806109766954778381794158916389006258470283894_U384),
     uint!(76728627332054330107215521437663829484089413964084084888354490166669576688184173341868214290394688896870888326044_U384),
