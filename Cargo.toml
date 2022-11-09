@@ -20,21 +20,27 @@ anyhow = "1.0"
 arc-swap = "1.0"
 async-trait = "0.1"
 bech32 = "0.9.1"
+bitvec = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4.0", features = ["derive"] }
 colored = "2.0"
 dashmap = "5.4"
 env_logger = "0.9"
 error-stack = "0.2"
+fxhash = "0.2.1"
 hex = "0.4"
 indexmap = { version = "1.9.1", features = ["serde"] }
 itertools = "0.10"
 lazy_static = "1.4"
 log = "0.4"
+num-bigint = "0.4"
 num_enum = "0.5.7"
 prost = "0.11.0"
 prost-build = "0.11.1"
 rand = "0.8"
+rand_xorshift = "0.3"
+rayon = "1.5"
+ruint = { version = "1.7", features = ["rand"] }
 refinery = { version = "0.8.6", features = [
     "rusqlite-bundled",
 ], git = "https://github.com/rust-db/refinery.git" }
