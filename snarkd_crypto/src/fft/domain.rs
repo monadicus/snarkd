@@ -116,7 +116,7 @@ impl EvaluationDomain {
             size_inv,
             group_gen,
             group_gen_inv: group_gen.inverse()?,
-            generator_inv: Scalar::multiplicative_generator().inverse()?,
+            generator_inv: Scalar(scalar::GENERATOR).inverse()?,
         })
     }
 
@@ -178,7 +178,7 @@ impl EvaluationDomain {
     /// in place.
     pub fn coset_fft_in_place(&self, coeffs: &mut Vec<Scalar>) {
         execute_with_max_available_threads(|| {
-            Self::distribute_powers(coeffs, Scalar::multiplicative_generator());
+            Self::distribute_powers(coeffs, Scalar(scalar::GENERATOR));
             self.fft_in_place(coeffs);
         });
     }
@@ -298,7 +298,7 @@ impl EvaluationDomain {
     /// a coset.
     pub fn divide_by_vanishing_poly_on_coset_in_place(&self, evals: &mut [Scalar]) {
         let i = self
-            .evaluate_vanishing_polynomial(Scalar::multiplicative_generator())
+            .evaluate_vanishing_polynomial(Scalar(scalar::GENERATOR))
             .inverse()
             .unwrap();
 
@@ -1027,7 +1027,7 @@ mod tests {
             let polynomial_evaluations = domain.fft(&random_polynomial.coeffs);
             let polynomial_coset_evaluations = domain.coset_fft(&random_polynomial.coeffs);
             for (i, x) in domain.elements().enumerate() {
-                let coset_x = Scalar::multiplicative_generator() * x;
+                let coset_x = Scalar(scalar::GENERATOR) * x;
 
                 assert_eq!(polynomial_evaluations[i], random_polynomial.evaluate(x));
                 assert_eq!(

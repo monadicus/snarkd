@@ -1,4 +1,7 @@
-use crate::fft::{domain::*, DensePolynomial};
+use crate::{
+    bls12_377::{scalar, Scalar},
+    fft::{domain::*, DensePolynomial},
+};
 use rand::Rng;
 
 #[test]
@@ -6,10 +9,10 @@ fn vanishing_polynomial_evaluation() {
     let rng = &mut TestRng::default();
 
     for coeffs in 0..10 {
-        let domain = EvaluationDomain::<Fr>::new(coeffs).unwrap();
+        let domain = EvaluationDomain::new(coeffs).unwrap();
         let z = domain.vanishing_polynomial();
         for _ in 0..100 {
-            let point: Fr = rng.gen();
+            let point: Scalar = rng.gen();
             assert_eq!(
                 z.evaluate(point),
                 domain.evaluate_vanishing_polynomial(point)
@@ -21,7 +24,7 @@ fn vanishing_polynomial_evaluation() {
 #[test]
 fn vanishing_polynomial_vanishes_on_domain() {
     for coeffs in 0..1000 {
-        let domain = EvaluationDomain::<Fr>::new(coeffs).unwrap();
+        let domain = EvaluationDomain::new(coeffs).unwrap();
         let z = domain.vanishing_polynomial();
         for point in domain.elements() {
             assert!(z.evaluate(point).is_zero())
@@ -33,7 +36,7 @@ fn vanishing_polynomial_vanishes_on_domain() {
 fn size_of_elements() {
     for coeffs in 1..10 {
         let size = 1 << coeffs;
-        let domain = EvaluationDomain::<Fr>::new(size).unwrap();
+        let domain = EvaluationDomain::new(size).unwrap();
         let domain_size = domain.size();
         assert_eq!(domain_size, domain.elements().count());
     }
@@ -43,7 +46,7 @@ fn size_of_elements() {
 fn elements_contents() {
     for coeffs in 1..10 {
         let size = 1 << coeffs;
-        let domain = EvaluationDomain::<Fr>::new(size).unwrap();
+        let domain = EvaluationDomain::new(size).unwrap();
         for (i, element) in domain.elements().enumerate() {
             assert_eq!(element, domain.group_gen.pow([i as u64]));
         }
@@ -58,19 +61,19 @@ fn non_systematic_lagrange_coefficients_test() {
 
     for domain_dim in 1..10 {
         let domain_size = 1 << domain_dim;
-        let domain = EvaluationDomain::<Fr>::new(domain_size).unwrap();
+        let domain = EvaluationDomain::new(domain_size).unwrap();
         // Get random pt + lagrange coefficients
-        let rand_pt = Fr::rand(&mut rng);
+        let rand_pt = Scalar::rand(&mut rng);
         let lagrange_coeffs = domain.evaluate_all_lagrange_coefficients(rand_pt);
 
         // Sample the random polynomial, evaluate it over the domain and the random
         // point.
-        let rand_poly = DensePolynomial::<Fr>::rand(domain_size - 1, &mut rng);
+        let rand_poly = DensePolynomial::rand(domain_size - 1, &mut rng);
         let poly_evals = domain.fft(rand_poly.coeffs());
         let actual_eval = rand_poly.evaluate(rand_pt);
 
         // Do lagrange interpolation, and compare against the actual evaluation
-        let mut interpolated_eval = Fr::zero();
+        let mut interpolated_eval = Scalar::zero();
         for i in 0..domain_size {
             interpolated_eval += lagrange_coeffs[i] * poly_evals[i];
         }
@@ -85,16 +88,16 @@ fn systematic_lagrange_coefficients_test() {
     // low. We generate lagrange coefficients for each element in the domain.
     for domain_dim in 1..5 {
         let domain_size = 1 << domain_dim;
-        let domain = EvaluationDomain::<Fr>::new(domain_size).unwrap();
-        let all_domain_elements: Vec<Fr> = domain.elements().collect();
+        let domain = EvaluationDomain::new(domain_size).unwrap();
+        let all_domain_elements: Vec<Scalar> = domain.elements().collect();
         for (i, element) in all_domain_elements.iter().enumerate().take(domain_size) {
             let lagrange_coeffs = domain.evaluate_all_lagrange_coefficients(*element);
             for (j, &coeff) in lagrange_coeffs.iter().enumerate().take(domain_size) {
                 // Lagrange coefficient for the evaluation point, which should be 1
                 if i == j {
-                    assert_eq!(coeff, Fr::one());
+                    assert_eq!(coeff, Scalar::one());
                 } else {
-                    assert_eq!(coeff, Fr::zero());
+                    assert_eq!(coeff, Scalar::zero());
                 }
             }
         }
@@ -111,15 +114,15 @@ fn test_fft_correctness() {
     // Runs in time O(degree^2)
     let log_degree = 5;
     let degree = 1 << log_degree;
-    let rand_poly = DensePolynomial::<Fr>::rand(degree - 1, &mut TestRng::default());
+    let rand_poly = DensePolynomial::rand(degree - 1, &mut TestRng::default());
 
     for log_domain_size in log_degree..(log_degree + 2) {
         let domain_size = 1 << log_domain_size;
-        let domain = EvaluationDomain::<Fr>::new(domain_size).unwrap();
+        let domain = EvaluationDomain::new(domain_size).unwrap();
         let poly_evals = domain.fft(&rand_poly.coeffs);
         let poly_coset_evals = domain.coset_fft(&rand_poly.coeffs);
         for (i, x) in domain.elements().enumerate() {
-            let coset_x = Fr::multiplicative_generator() * x;
+            let coset_x = Scalar(scalar::GENERATOR) * x;
 
             assert_eq!(poly_evals[i], rand_poly.evaluate(x));
             assert_eq!(poly_coset_evals[i], rand_poly.evaluate(coset_x));
@@ -149,7 +152,7 @@ fn test_roots_of_unity() {
     let max_degree = 10;
     for log_domain_size in 0..max_degree {
         let domain_size = 1 << log_domain_size;
-        let domain = EvaluationDomain::<Fr>::new(domain_size).unwrap();
+        let domain = EvaluationDomain::new(domain_size).unwrap();
         let actual_roots = domain.roots_of_unity(domain.group_gen);
         for &value in &actual_roots {
             assert!(domain.evaluate_vanishing_polynomial(value).is_zero());
@@ -167,7 +170,7 @@ fn test_roots_of_unity() {
 fn parallel_fft_consistency() {
     // This implements the Cooley-Turkey FFT, derived from libfqfft
     // The libfqfft implementation uses pseudocode from [CLRS 2n Ed, pp. 864].
-    fn serial_radix2_fft(a: &mut [Fr], omega: Fr, log_n: u32) {
+    fn serial_radix2_fft(a: &mut [Scalar], omega: Scalar, log_n: u32) {
         #[inline]
         pub(crate) fn bitreverse(mut n: u32, l: u32) -> u32 {
             let mut r = 0;
@@ -198,7 +201,7 @@ fn parallel_fft_consistency() {
             let mut k = 0;
             while k < n {
                 // w = w_m^j at the start of every loop iteration
-                let mut w = Fr::one();
+                let mut w = Scalar::one();
                 for j in 0..m {
                     let mut t = a[(k + j + m) as usize];
                     t *= w;
@@ -216,17 +219,17 @@ fn parallel_fft_consistency() {
         }
     }
 
-    fn serial_radix2_ifft(a: &mut [Fr], omega: Fr, log_n: u32) {
+    fn serial_radix2_ifft(a: &mut [Scalar], omega: Scalar, log_n: u32) {
         serial_radix2_fft(a, omega.inverse().unwrap(), log_n);
-        let domain_size_inv = Fr::from(a.len() as u64).inverse().unwrap();
+        let domain_size_inv = Scalar::from(a.len() as u64).inverse().unwrap();
         for coeff in a.iter_mut() {
             *coeff *= domain_size_inv;
         }
     }
 
-    fn serial_radix2_coset_fft(a: &mut [Fr], omega: Fr, log_n: u32) {
-        let coset_shift = Fr::multiplicative_generator();
-        let mut cur_pow = Fr::one();
+    fn serial_radix2_coset_fft(a: &mut [Scalar], omega: Scalar, log_n: u32) {
+        let coset_shift = Scalar(scalar::GENERATOR);
+        let mut cur_pow = Scalar::one();
         for coeff in a.iter_mut() {
             *coeff *= cur_pow;
             cur_pow *= coset_shift;
@@ -234,10 +237,10 @@ fn parallel_fft_consistency() {
         serial_radix2_fft(a, omega, log_n);
     }
 
-    fn serial_radix2_coset_ifft(a: &mut [Fr], omega: Fr, log_n: u32) {
+    fn serial_radix2_coset_ifft(a: &mut [Scalar], omega: Scalar, log_n: u32) {
         serial_radix2_ifft(a, omega, log_n);
-        let coset_shift = Fr::multiplicative_generator().inverse().unwrap();
-        let mut cur_pow = Fr::one();
+        let coset_shift = Scalar(scalar::GENERATOR).inverse().unwrap();
+        let mut cur_pow = Scalar::one();
         for coeff in a.iter_mut() {
             *coeff *= cur_pow;
             cur_pow *= coset_shift;
@@ -249,7 +252,7 @@ fn parallel_fft_consistency() {
             for log_d in 0..max_coeffs {
                 let d = 1 << log_d;
 
-                let expected_poly = (0..d).map(|_| Fr::rand(rng)).collect::<Vec<_>>();
+                let expected_poly = (0..d).map(|_| Scalar::rand(rng)).collect::<Vec<_>>();
                 let mut expected_vec = expected_poly.clone();
                 let mut actual_vec = expected_vec.clone();
 
@@ -323,8 +326,8 @@ fn fft_composition() {
 
     let rng = &mut TestRng::default();
 
-    test_fft_composition::<Fr, Fr, _>(rng, 10);
-    test_fft_composition::<Fr, G1Projective, _>(rng, 10);
+    test_fft_composition::<Scalar, Scalar, _>(rng, 10);
+    test_fft_composition::<Scalar, G1Projective, _>(rng, 10);
 }
 
 #[test]
@@ -332,7 +335,7 @@ fn evaluate_over_domain() {
     let rng = &mut TestRng::default();
 
     for domain_size in (1..10).map(|i| 2usize.pow(i)) {
-        let domain = EvaluationDomain::<Fr>::new(domain_size).unwrap();
+        let domain = EvaluationDomain::new(domain_size).unwrap();
         for degree in [domain_size - 2, domain_size - 1, domain_size + 10] {
             let p = DensePolynomial::rand(degree, rng);
             assert_eq!(
