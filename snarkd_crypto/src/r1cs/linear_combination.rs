@@ -1,7 +1,3 @@
-// TODO tmp
-#![allow(unreachable_code, unused)]
-#![warn(clippy::panic)]
-
 use crate::{Field, Variable};
 use anyhow::{bail, Result};
 
@@ -48,7 +44,7 @@ impl<F: Field> LinearCombination<F> {
                 if cur == last {
                     bail!("Can't contain duplicate variables")
                 }
-                let last = cur;
+                last = cur;
             }
             Ok(Self(values))
         }
@@ -67,14 +63,12 @@ impl<F: Field> LinearCombination<F> {
 
     /// Negate the coefficients of all variables in `self`.
     pub fn negate_in_place(&mut self) {
-        panic!("unhit");
         self.0.iter_mut().for_each(|(_, coeff)| *coeff = -(*coeff));
     }
 
     /// Double the coefficients of all variables in `self`.
     pub fn double_in_place(&mut self) {
         self.0.iter_mut().for_each(|(_, coeff)| {
-            panic!("unhit");
             coeff.double_in_place();
         });
     }
@@ -130,7 +124,6 @@ impl<F: Field> Sub<(F, Variable)> for LinearCombination<F> {
     type Output = Self;
 
     fn sub(self, (coeff, var): (F, Variable)) -> Self {
-        panic!("unhit");
         self + (-coeff, var)
     }
 }
@@ -139,7 +132,7 @@ impl<F: Field> Neg for LinearCombination<F> {
     type Output = Self;
 
     fn neg(mut self) -> Self {
-        self.0.iter_mut().for_each(|(_, coeff)| *coeff = -(*coeff));
+        self.negate_in_place();
         self
     }
 }
@@ -148,7 +141,6 @@ impl<F: Field> Mul<F> for LinearCombination<F> {
     type Output = Self;
 
     fn mul(mut self, scalar: F) -> Self {
-        panic!("unhit");
         self *= scalar;
         self
     }
@@ -164,7 +156,6 @@ impl<F: Field> Add<Variable> for LinearCombination<F> {
     type Output = Self;
 
     fn add(self, other: Variable) -> LinearCombination<F> {
-        panic!("unhit");
         self + (F::ONE, other)
     }
 }
@@ -297,8 +288,7 @@ impl<F: Field> Sub<&LinearCombination<F>> for &LinearCombination<F> {
             let cur = self.clone();
             return cur;
         } else if self.0.is_empty() {
-            let mut other = other.clone();
-            return -other;
+            return -other.clone();
         }
 
         op_impl(
@@ -317,8 +307,7 @@ impl<'a, F: Field> Sub<&'a LinearCombination<F>> for LinearCombination<F> {
         if other.0.is_empty() {
             return self;
         } else if self.0.is_empty() {
-            let mut other = other.clone();
-            return -other;
+            return -other.clone();
         }
         op_impl(
             &self,
@@ -332,7 +321,7 @@ impl<'a, F: Field> Sub<&'a LinearCombination<F>> for LinearCombination<F> {
 impl<F: Field> Sub<LinearCombination<F>> for &LinearCombination<F> {
     type Output = LinearCombination<F>;
 
-    fn sub(self, mut other: LinearCombination<F>) -> LinearCombination<F> {
+    fn sub(self, other: LinearCombination<F>) -> LinearCombination<F> {
         if self.0.is_empty() {
             return -other;
         } else if other.0.is_empty() {
@@ -351,7 +340,7 @@ impl<F: Field> Sub<LinearCombination<F>> for &LinearCombination<F> {
 impl<F: Field> Sub<LinearCombination<F>> for LinearCombination<F> {
     type Output = LinearCombination<F>;
 
-    fn sub(self, mut other: LinearCombination<F>) -> LinearCombination<F> {
+    fn sub(self, other: LinearCombination<F>) -> LinearCombination<F> {
         if other.0.is_empty() {
             return self;
         } else if self.0.is_empty() {

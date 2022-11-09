@@ -2,7 +2,7 @@ use std::fmt;
 
 use ruint::uint;
 
-use crate::{Field, Fp, Index, Variable};
+use crate::{Fp, Index, Variable};
 
 use super::*;
 
@@ -90,6 +90,8 @@ macro_rules! test_op {
     }
 }
 
+const FP_TWO: Fp = Fp(uint!(2_U384));
+
 impl fmt::Display for LinearCombination<Fp> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "[")?;
@@ -169,7 +171,28 @@ fn linear_combination_append_100() {
     assert_eq!(create.0.len(), 100);
 }
 
-const FP_TWO: Fp = Fp(uint!(2_U384));
+#[test]
+fn stray_math() {
+    let fp = FP_TWO;
+    let var = Variable::new_unchecked(Index::Public(1));
+    let combo = create_multi(&[(0, 1), (1, 5), (2, 0)]);
+
+    // add (fp, var)
+    let out = combo.clone() + (fp, var);
+    assert_eq!(out, create_multi(&[(0, 1), (1, 7), (2, 0)]));
+    // sub (fp, var)
+    let out = combo.clone() - (fp, var);
+    assert_eq!(out, create_multi(&[(0, 1), (1, 3), (2, 0)]));
+    // mul Fp
+    let out = combo.clone() * fp;
+    assert_eq!(out, create_multi(&[(0, 2), (1, 10), (2, 0)]));
+    // add var
+    let out = combo.clone() + var;
+    assert_eq!(out, create_multi(&[(0, 1), (1, 6), (2, 0)]));
+    // sub var
+    let out = combo - var;
+    assert_eq!(out, create_multi(&[(0, 1), (1, 4), (2, 0)]));
+}
 
 #[test]
 fn add_combo() {
