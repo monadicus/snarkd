@@ -9,6 +9,7 @@ members = [
     "snarkd_node",
     "snarkd_storage",
     "snarkd_peer",
+    "tools/coverage",
 ]
 
 [workspace.dependencies]
