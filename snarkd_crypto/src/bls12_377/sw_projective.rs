@@ -1,7 +1,8 @@
 use crate::bls12_377::{
-    field::Field, group::Group, sw_affine::SWAffine, Affine, Fr, Projective, B1, B2, HALF_R, Q1,
-    Q2, R128,
+    field::Field, parameters::Parameters, sw_affine::SWAffine, Affine, Projective, Scalar, B1, B2,
+    HALF_R, Q1, Q2, R128,
 };
+use bitvec::prelude::*;
 use core::{
     fmt::{Display, Formatter, Result as FmtResult},
     hash::{Hash, Hasher},
@@ -11,42 +12,43 @@ use rand::{
     distributions::{Distribution, Standard},
     Rng,
 };
+use rayon::prelude::*;
 use ruint::{uint, Uint};
 
 #[derive(Copy, Clone, Debug)]
-pub struct SWProjective<G: Group> {
-    pub x: G::BaseField,
-    pub y: G::BaseField,
-    pub z: G::BaseField,
+pub struct SWProjective<P: Parameters> {
+    pub x: P::BaseField,
+    pub y: P::BaseField,
+    pub z: P::BaseField,
 }
 
-impl<G: Group> SWProjective<G> {
-    pub const fn new(x: G::BaseField, y: G::BaseField, z: G::BaseField) -> Self {
+impl<P: Parameters> SWProjective<P> {
+    pub const fn new(x: P::BaseField, y: P::BaseField, z: P::BaseField) -> Self {
         Self { x, y, z }
     }
 }
 
-impl<G: Group> Default for SWProjective<G> {
+impl<P: Parameters> Default for SWProjective<P> {
     fn default() -> Self {
-        Self::zero()
+        Self::ZERO
     }
 }
 
-impl<G: Group> Display for SWProjective<G> {
+impl<P: Parameters> Display for SWProjective<P> {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         write!(f, "{}", self.to_affine())
     }
 }
 
-impl<G: Group> Hash for SWProjective<G> {
+impl<P: Parameters> Hash for SWProjective<P> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.to_affine().hash(state);
     }
 }
 
-impl<G: Group> Eq for SWProjective<G> {}
+impl<P: Parameters> Eq for SWProjective<P> {}
 
-impl<G: Group> PartialEq for SWProjective<G> {
+impl<P: Parameters> PartialEq for SWProjective<P> {
     fn eq(&self, other: &Self) -> bool {
         if self.is_zero() {
             return other.is_zero();
@@ -66,8 +68,8 @@ impl<G: Group> PartialEq for SWProjective<G> {
     }
 }
 
-impl<G: Group> PartialEq<SWAffine<G>> for SWProjective<G> {
-    fn eq(&self, other: &SWAffine<G>) -> bool {
+impl<P: Parameters> PartialEq<SWAffine<P>> for SWProjective<P> {
+    fn eq(&self, other: &SWAffine<P>) -> bool {
         if self.is_zero() {
             return other.is_zero();
         }
@@ -84,34 +86,35 @@ impl<G: Group> PartialEq<SWAffine<G>> for SWProjective<G> {
     }
 }
 
-impl<G: Group> Distribution<SWProjective<G>> for Standard {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> SWProjective<G> {
+impl<P: Parameters> Distribution<SWProjective<P>> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> SWProjective<P> {
         loop {
-            let x = G::BaseField::rand();
+            let x = P::BaseField::rand();
             let greatest = rng.gen();
 
             if let Some(p) = SWAffine::from_x_coordinate(x, greatest) {
-                return p.mul_by_cofactor_to_projective();
+                return p.mul_bits(
+                    P::COFACTOR
+                        .iter()
+                        .flat_map(|limb| limb.view_bits::<Lsb0>())
+                        .map(|b| *b)
+                        .rev()
+                        .collect::<Vec<bool>>(),
+                );
             }
         }
     }
 }
 
-impl<G: Group> Projective for SWProjective<G> {
-    type Affine = SWAffine<G>;
-    type Parameters = G;
+impl<P: Parameters> Projective for SWProjective<P> {
+    type Affine = SWAffine<P>;
+    type Parameters = P;
+
+    /// The point at infinity is always represented by Z = 0.
+    const ZERO: Self = Self::new(P::BaseField::ZERO, P::BaseField::ONE, P::BaseField::ZERO);
 
     fn rand() -> Self {
         rand::thread_rng().sample(Standard)
-    }
-
-    // The point at infinity is always represented by Z = 0.
-    fn zero() -> Self {
-        Self::new(
-            G::BaseField::zero(),
-            G::BaseField::one(),
-            G::BaseField::zero(),
-        )
     }
 
     fn is_zero(&self) -> bool {
@@ -123,7 +126,7 @@ impl<G: Group> Projective for SWProjective<G> {
     }
 
     fn cofactor() -> &'static [u64] {
-        G::COFACTOR
+        P::COFACTOR
     }
 
     fn is_normalized(&self) -> bool {
@@ -136,16 +139,16 @@ impl<G: Group> Projective for SWProjective<G> {
         // Section 3.2
 
         // First pass: compute [a, ab, abc, ...]
-        let mut prod = Vec::with_capacity(v.len());
-        let mut tmp = G::BaseField::one();
-        for g in v
-            .iter_mut()
-            // Ignore normalized elements
-            .filter(|g| !g.is_normalized())
-        {
-            tmp.mul_assign(&g.z);
-            prod.push(tmp);
-        }
+        let mut tmp = P::BaseField::ONE;
+        let prod = v
+            .iter()
+            .filter_map(|g| {
+                (!g.is_normalized()).then(|| {
+                    tmp.mul_assign(&g.z);
+                    tmp
+                })
+            })
+            .collect::<Vec<_>>();
 
         // Invert `tmp`.
         tmp = tmp.inverse().unwrap(); // Guaranteed to be nonzero.
@@ -162,7 +165,7 @@ impl<G: Group> Projective for SWProjective<G> {
                 prod.into_iter()
                     .rev()
                     .skip(1)
-                    .chain(Some(G::BaseField::one())),
+                    .chain(Some(P::BaseField::ONE)),
             )
         {
             // tmp := tmp * g.z; g.z := tmp * s = 1/z
@@ -170,41 +173,27 @@ impl<G: Group> Projective for SWProjective<G> {
             g.z = tmp * s;
             tmp = newtmp;
         }
-        #[cfg(not(feature = "parallel"))]
-        {
-            // Perform affine transformations
-            for g in v.iter_mut().filter(|g| !g.is_normalized()) {
+
+        // Perform affine transformations
+        v.par_iter_mut()
+            .filter(|g| !g.is_normalized())
+            .for_each(|g| {
                 let z2 = g.z.square(); // 1/z
                 g.x *= &z2; // x/z^2
                 g.y *= &(z2 * g.z); // y/z^3
-                g.z = G::BaseField::one(); // z = 1
-            }
-        }
-
-        #[cfg(feature = "parallel")]
-        {
-            use rayon::prelude::*;
-            // Perform affine transformations
-            v.par_iter_mut()
-                .filter(|g| !g.is_normalized())
-                .for_each(|g| {
-                    let z2 = g.z.square(); // 1/z
-                    g.x *= &z2; // x/z^2
-                    g.y *= &(z2 * g.z); // y/z^3
-                    g.z = G::BaseField::one(); // z = 1
-                });
-        }
+                g.z = P::BaseField::ONE; // z = 1
+            });
     }
 
     /// Adds an affine element to this element.
-    fn add_mixed(&self, other: &SWAffine<G>) -> Self {
+    fn add_mixed(&self, other: &SWAffine<P>) -> Self {
         let mut copy = *self;
         copy.add_assign_mixed(other);
         copy
     }
 
     #[allow(clippy::many_single_char_names)]
-    fn add_assign_mixed(&mut self, other: &SWAffine<G>) {
+    fn add_assign_mixed(&mut self, other: &SWAffine<P>) {
         if other.is_zero() {
             return;
         }
@@ -212,7 +201,7 @@ impl<G: Group> Projective for SWProjective<G> {
         if self.is_zero() {
             self.x = other.x;
             self.y = other.y;
-            self.z = G::BaseField::one();
+            self.z = P::BaseField::ONE;
             return;
         }
 
@@ -265,7 +254,7 @@ impl<G: Group> Projective for SWProjective<G> {
             self.x -= &v.double();
 
             // Y3 = r*(V-X3)-2*Y1*J
-            self.y = G::BaseField::sum_of_products(
+            self.y = P::BaseField::sum_of_products(
                 [r, -self.y.double()].into_iter(),
                 [(v - self.x), j].into_iter(),
             );
@@ -323,12 +312,12 @@ impl<G: Group> Projective for SWProjective<G> {
         self.y = (d - self.x) * e - c;
     }
 
-    fn to_affine(&self) -> SWAffine<G> {
+    fn to_affine(&self) -> SWAffine<P> {
         (*self).into()
     }
 }
 
-impl<G: Group> Neg for SWProjective<G> {
+impl<P: Parameters> Neg for SWProjective<P> {
     type Output = Self;
 
     fn neg(self) -> Self {
@@ -340,7 +329,7 @@ impl<G: Group> Neg for SWProjective<G> {
     }
 }
 
-impl<G: Group> Add<Self> for SWProjective<G> {
+impl<P: Parameters> Add<Self> for SWProjective<P> {
     type Output = Self;
 
     fn add(mut self, other: Self) -> Self {
@@ -349,13 +338,13 @@ impl<G: Group> Add<Self> for SWProjective<G> {
     }
 }
 
-impl<G: Group> AddAssign<Self> for SWProjective<G> {
+impl<P: Parameters> AddAssign<Self> for SWProjective<P> {
     fn add_assign(&mut self, other: Self) {
         *self += &other;
     }
 }
 
-impl<G: Group> Sub<Self> for SWProjective<G> {
+impl<P: Parameters> Sub<Self> for SWProjective<P> {
     type Output = Self;
 
     fn sub(mut self, other: Self) -> Self {
@@ -364,13 +353,13 @@ impl<G: Group> Sub<Self> for SWProjective<G> {
     }
 }
 
-impl<G: Group> SubAssign<Self> for SWProjective<G> {
+impl<P: Parameters> SubAssign<Self> for SWProjective<P> {
     fn sub_assign(&mut self, other: Self) {
         *self -= &other;
     }
 }
 
-impl<'a, G: Group> Add<&'a Self> for SWProjective<G> {
+impl<'a, P: Parameters> Add<&'a Self> for SWProjective<P> {
     type Output = Self;
 
     fn add(self, other: &'a Self) -> Self {
@@ -380,7 +369,7 @@ impl<'a, G: Group> Add<&'a Self> for SWProjective<G> {
     }
 }
 
-impl<'a, G: Group> AddAssign<&'a Self> for SWProjective<G> {
+impl<'a, P: Parameters> AddAssign<&'a Self> for SWProjective<P> {
     #[allow(clippy::many_single_char_names)]
     #[allow(clippy::suspicious_op_assign_impl)]
     fn add_assign(&mut self, other: &'a Self) {
@@ -439,7 +428,7 @@ impl<'a, G: Group> AddAssign<&'a Self> for SWProjective<G> {
             self.x = r.square() - j - (v.double());
 
             // Y3 = r*(V - X3) - 2*S1*J
-            self.y = G::BaseField::sum_of_products(
+            self.y = P::BaseField::sum_of_products(
                 [r, -s1.double()].into_iter(),
                 [(v - self.x), j].into_iter(),
             );
@@ -450,7 +439,7 @@ impl<'a, G: Group> AddAssign<&'a Self> for SWProjective<G> {
     }
 }
 
-impl<'a, G: Group> Sub<&'a Self> for SWProjective<G> {
+impl<'a, P: Parameters> Sub<&'a Self> for SWProjective<P> {
     type Output = Self;
 
     fn sub(self, other: &'a Self) -> Self {
@@ -460,18 +449,18 @@ impl<'a, G: Group> Sub<&'a Self> for SWProjective<G> {
     }
 }
 
-impl<'a, G: Group> SubAssign<&'a Self> for SWProjective<G> {
+impl<'a, P: Parameters> SubAssign<&'a Self> for SWProjective<P> {
     fn sub_assign(&mut self, other: &'a Self) {
         *self += &(-(*other));
     }
 }
 
-impl<G: Group> Mul<Fr> for SWProjective<G> {
+impl<P: Parameters> Mul<Scalar> for SWProjective<P> {
     type Output = Self;
 
     /// Performs scalar multiplication of this element.
     #[allow(clippy::suspicious_arithmetic_impl)]
-    fn mul(self, other: Fr) -> Self {
+    fn mul(self, other: Scalar) -> Self {
         /// The scalar multiplication window size.
         const GLV_WINDOW_SIZE: usize = 4;
 
@@ -491,12 +480,12 @@ impl<G: Group> Mul<Fr> for SWProjective<G> {
         for i in 1..L {
             t_1.push(t_1[i - 1].add_mixed(&double));
         }
-        SWProjective::<G>::batch_normalization(&mut t_1);
+        SWProjective::<P>::batch_normalization(&mut t_1);
         let t_1 = t_1.into_iter().map(|v| v.to_affine()).collect::<Vec<_>>();
 
         let t_2 = t_1
-            .clone()
-            .into_iter()
+            .iter()
+            .cloned()
             .map(|mut v| {
                 v.x = v.x.glv_endomorphism();
                 v
@@ -511,7 +500,7 @@ impl<G: Group> Mul<Fr> for SWProjective<G> {
                 d_mod_window_size
             }
         };
-        let to_wnaf = |mut e: Fr| -> Vec<i32> {
+        let to_wnaf = |mut e: Scalar| -> Vec<i32> {
             let mut naf = vec![];
             while !e.is_zero() {
                 let next = if e.0 % uint!(2_U256) == uint!(1_U256) {
@@ -532,7 +521,7 @@ impl<G: Group> Mul<Fr> for SWProjective<G> {
             naf
         };
 
-        let wnaf = |k1: Fr, k2: Fr, s1: bool, s2: bool| -> (Vec<i32>, Vec<i32>) {
+        let wnaf = |k1: Scalar, k2: Scalar, s1: bool, s2: bool| -> (Vec<i32>, Vec<i32>) {
             let mut wnaf_1 = to_wnaf(k1);
             let mut wnaf_2 = to_wnaf(k2);
 
@@ -546,7 +535,7 @@ impl<G: Group> Mul<Fr> for SWProjective<G> {
             (wnaf_1, wnaf_2)
         };
 
-        let naf_add = |table: &[SWAffine<G>], naf: i32, acc: &mut SWProjective<G>| {
+        let naf_add = |table: &[SWAffine<P>], naf: i32, acc: &mut SWProjective<P>| {
             if naf != 0 {
                 let mut p_1 = table[(naf.abs() >> 1) as usize];
                 if naf < 0 {
@@ -564,7 +553,7 @@ impl<G: Group> Mul<Fr> for SWProjective<G> {
             decomposition.3,
         );
         let max_len = naf_1.len().max(naf_2.len());
-        let mut acc = SWProjective::<G>::zero();
+        let mut acc = SWProjective::<P>::ZERO;
         for i in (0..max_len).rev() {
             if i < naf_1.len() {
                 naf_add(&t_1, naf_1[i], &mut acc)
@@ -583,20 +572,20 @@ impl<G: Group> Mul<Fr> for SWProjective<G> {
     }
 }
 
-impl<G: Group> MulAssign<Fr> for SWProjective<G> {
+impl<P: Parameters> MulAssign<Scalar> for SWProjective<P> {
     /// Performs scalar multiplication of this element.
-    fn mul_assign(&mut self, other: Fr) {
+    fn mul_assign(&mut self, other: Scalar) {
         *self = *self * other
     }
 }
 
 /// The affine point X, Y is represented in the Jacobian coordinates with Z = 1.
-impl<G: Group> From<SWAffine<G>> for SWProjective<G> {
-    fn from(p: SWAffine<G>) -> SWProjective<G> {
+impl<P: Parameters> From<SWAffine<P>> for SWProjective<P> {
+    fn from(p: SWAffine<P>) -> SWProjective<P> {
         if p.is_zero() {
-            Self::zero()
+            Self::ZERO
         } else {
-            Self::new(p.x, p.y, G::BaseField::one())
+            Self::new(p.x, p.y, P::BaseField::ONE)
         }
     }
 }
