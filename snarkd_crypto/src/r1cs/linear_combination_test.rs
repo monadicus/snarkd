@@ -2,7 +2,7 @@ use std::fmt;
 
 use ruint::uint;
 
-use crate::{Fp, Index, Variable};
+use crate::{bls12_377::Fp, Index, Variable};
 
 use super::*;
 

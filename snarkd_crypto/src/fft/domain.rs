@@ -25,7 +25,7 @@ use itertools::Itertools;
 /// Returns the ceiling of the base-2 logarithm of `x`.
 ///
 /// ```
-/// use snarkvm_algorithms::fft::domain::log2;
+/// use snarkd_crypto::fft::domain::log2;
 ///
 /// assert_eq!(log2(16), 4);
 /// assert_eq!(log2(17), 5);
@@ -883,20 +883,17 @@ impl IFFTPrecomputation {
 
 #[cfg(test)]
 mod tests {
-    use crate::fft::{DensePolynomial, EvaluationDomain};
-    use rand::Rng;
-    use snarkvm_curves::bls12_377::Scalar;
-    use snarkvm_fields::{FftField, Field, One, Zero};
-    use snarkvm_utilities::{TestRng, Uniform};
+    use super::*;
+    use crate::fft::DensePolynomial;
 
     #[test]
     fn vanishing_polynomial_evaluation() {
-        let rng = &mut TestRng::default();
+        let rng = &mut rand::thread_rng();
         for coeffs in 0..10 {
-            let domain = EvaluationDomain::<Scalar>::new(coeffs).unwrap();
+            let domain = EvaluationDomain::new(coeffs).unwrap();
             let z = domain.vanishing_polynomial();
             for _ in 0..100 {
-                let point = rng.gen();
+                let point = Scalar::rand();
                 assert_eq!(
                     z.evaluate(point),
                     domain.evaluate_vanishing_polynomial(point)
@@ -908,7 +905,7 @@ mod tests {
     #[test]
     fn vanishing_polynomial_vanishes_on_domain() {
         for coeffs in 0..1000 {
-            let domain = EvaluationDomain::<Scalar>::new(coeffs).unwrap();
+            let domain = EvaluationDomain::new(coeffs).unwrap();
             let z = domain.vanishing_polynomial();
             for point in domain.elements() {
                 assert!(z.evaluate(point).is_zero())
@@ -920,7 +917,7 @@ mod tests {
     fn size_of_elements() {
         for coeffs in 1..10 {
             let size = 1 << coeffs;
-            let domain = EvaluationDomain::<Scalar>::new(size).unwrap();
+            let domain = EvaluationDomain::new(size).unwrap();
             let domain_size = domain.size();
             assert_eq!(domain_size, domain.elements().count());
         }
@@ -930,9 +927,9 @@ mod tests {
     fn elements_contents() {
         for coeffs in 1..10 {
             let size = 1 << coeffs;
-            let domain = EvaluationDomain::<Scalar>::new(size).unwrap();
+            let domain = EvaluationDomain::new(size).unwrap();
             for (i, element) in domain.elements().enumerate() {
-                assert_eq!(element, domain.group_gen.pow([i as u64]));
+                assert_eq!(element, domain.group_gen.pow(&[i as u64]));
             }
         }
     }
@@ -940,16 +937,16 @@ mod tests {
     /// Test that lagrange interpolation for a random polynomial at a random point works.
     #[test]
     fn non_systematic_lagrange_coefficients_test() {
-        let mut rng = TestRng::default();
+        let mut rng = rand::thread_rng();
         for domain_dimension in 1..10 {
             let domain_size = 1 << domain_dimension;
-            let domain = EvaluationDomain::<Scalar>::new(domain_size).unwrap();
+            let domain = EvaluationDomain::new(domain_size).unwrap();
             // Get random point & lagrange coefficients
             let random_point = Scalar::rand();
             let lagrange_coefficients = domain.evaluate_all_lagrange_coefficients(random_point);
 
             // Sample the random polynomial, evaluate it over the domain and the random point.
-            let random_polynomial = DensePolynomial::<Scalar>::rand(domain_size - 1, &mut rng);
+            let random_polynomial = DensePolynomial::rand(domain_size - 1, &mut rng);
             let polynomial_evaluations = domain.fft(random_polynomial.coeffs());
             let actual_evaluations = random_polynomial.evaluate(random_point);
 
@@ -969,7 +966,7 @@ mod tests {
         // We generate lagrange coefficients for each element in the domain.
         for domain_dimension in 1..5 {
             let domain_size = 1 << domain_dimension;
-            let domain = EvaluationDomain::<Scalar>::new(domain_size).unwrap();
+            let domain = EvaluationDomain::new(domain_size).unwrap();
             let all_domain_elements: Vec<Scalar> = domain.elements().collect();
             for (i, domain_element) in all_domain_elements.iter().enumerate().take(domain_size) {
                 let lagrange_coefficients =
@@ -994,7 +991,7 @@ mod tests {
         let max_degree = 10;
         for log_domain_size in 0..max_degree {
             let domain_size = 1 << log_domain_size;
-            let domain = EvaluationDomain::<Scalar>::new(domain_size).unwrap();
+            let domain = EvaluationDomain::new(domain_size).unwrap();
             let actual_roots = domain.roots_of_unity(domain.group_gen);
             for &value in &actual_roots {
                 assert!(domain.evaluate_vanishing_polynomial(value).is_zero());
@@ -1014,16 +1011,16 @@ mod tests {
         // It tests consistency of FFT/IFFT, and coset_fft/coset_ifft,
         // along with testing that each individual evaluation is correct.
 
-        let mut rng = TestRng::default();
+        let mut rng = rand::thread_rng();
 
         // Runs in time O(degree^2)
         let log_degree = 5;
         let degree = 1 << log_degree;
-        let random_polynomial = DensePolynomial::<Scalar>::rand(degree - 1, &mut rng);
+        let random_polynomial = DensePolynomial::rand(degree - 1, &mut rng);
 
         for log_domain_size in log_degree..(log_degree + 2) {
             let domain_size = 1 << log_domain_size;
-            let domain = EvaluationDomain::<Scalar>::new(domain_size).unwrap();
+            let domain = EvaluationDomain::new(domain_size).unwrap();
             let polynomial_evaluations = domain.fft(&random_polynomial.coeffs);
             let polynomial_coset_evaluations = domain.coset_fft(&random_polynomial.coeffs);
             for (i, x) in domain.elements().enumerate() {
@@ -1059,10 +1056,10 @@ mod tests {
     #[test]
     fn test_fft_precomputation() {
         for i in 1..10 {
-            let big_domain = EvaluationDomain::<Scalar>::new(i).unwrap();
+            let big_domain = EvaluationDomain::new(i).unwrap();
             let pc = big_domain.precompute_fft();
             for j in 1..i {
-                let small_domain = EvaluationDomain::<Scalar>::new(j).unwrap();
+                let small_domain = EvaluationDomain::new(j).unwrap();
                 let small_pc = small_domain.precompute_fft();
                 assert_eq!(
                     pc.precomputation_for_subdomain(&small_domain)
@@ -1078,10 +1075,10 @@ mod tests {
     #[test]
     fn test_ifft_precomputation() {
         for i in 1..10 {
-            let big_domain = EvaluationDomain::<Scalar>::new(i).unwrap();
+            let big_domain = EvaluationDomain::new(i).unwrap();
             let pc = big_domain.precompute_ifft();
             for j in 1..i {
-                let small_domain = EvaluationDomain::<Scalar>::new(j).unwrap();
+                let small_domain = EvaluationDomain::new(j).unwrap();
                 let small_pc = small_domain.precompute_ifft();
                 assert_eq!(
                     pc.precomputation_for_subdomain(&small_domain)
@@ -1098,7 +1095,7 @@ mod tests {
     #[test]
     fn test_ifft_precomputation_from_fft() {
         for i in 1..10 {
-            let domain = EvaluationDomain::<Scalar>::new(i).unwrap();
+            let domain = EvaluationDomain::new(i).unwrap();
             let pc = domain.precompute_ifft();
             let fft_pc = domain.precompute_fft();
             assert_eq!(pc, fft_pc.to_ifft_precomputation())

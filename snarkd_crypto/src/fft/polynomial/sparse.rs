@@ -159,20 +159,19 @@ impl<'a> core::ops::AddAssign<(Scalar, &'a Self)> for SparsePolynomial {
 
 #[cfg(test)]
 mod tests {
-    use crate::fft::{DensePolynomial, EvaluationDomain, SparsePolynomial};
-    use snarkvm_curves::bls12_377::Scalar;
-    use snarkvm_fields::One;
+    use super::*;
+    use crate::fft::DensePolynomial;
 
     #[test]
     fn evaluate_over_domain() {
         for size in 2..10 {
             let domain_size = 1 << size;
             let domain = EvaluationDomain::new(domain_size).unwrap();
-            let two = Scalar::one() + Scalar::one();
+            let two = Scalar::ONE + Scalar::ONE;
             let sparse_poly = SparsePolynomial::from_coefficients(vec![(0, two), (1, two)]);
             let evals1 = sparse_poly.evaluate_over_domain_by_ref(domain);
 
-            let dense_poly: DensePolynomial<Scalar> = sparse_poly.into();
+            let dense_poly: DensePolynomial = sparse_poly.into();
             let evals2 = dense_poly.clone().evaluate_over_domain(domain);
             assert_eq!(evals1.clone().interpolate(), evals2.clone().interpolate());
             assert_eq!(evals1.interpolate(), dense_poly);

@@ -480,16 +480,13 @@ impl DerefMut for DensePolynomial {
 
 #[cfg(test)]
 mod tests {
-    use crate::fft::polynomial::*;
-    use snarkvm_curves::bls12_377::Scalar;
-    use snarkvm_fields::{Field, One, Zero};
-    use snarkvm_utilities::rand::{TestRng, Uniform};
+    use super::*;
 
     #[test]
     fn double_polynomials_random() {
-        let rng = &mut TestRng::default();
+        let rng = &mut rand::thread_rng();
         for degree in 0..70 {
-            let p = DensePolynomial::<Scalar>::rand(degree, rng);
+            let p = DensePolynomial::rand(degree, rng);
             let p_double = &p + &p;
             let p_quad = &p_double + &p_double;
             assert_eq!(&(&(&p + &p) + &p) + &p, p_quad);
@@ -498,11 +495,11 @@ mod tests {
 
     #[test]
     fn add_polynomials() {
-        let rng = &mut TestRng::default();
+        let rng = &mut rand::thread_rng();
         for a_degree in 0..70 {
             for b_degree in 0..70 {
-                let p1 = DensePolynomial::<Scalar>::rand(a_degree, rng);
-                let p2 = DensePolynomial::<Scalar>::rand(b_degree, rng);
+                let p1 = DensePolynomial::rand(a_degree, rng);
+                let p2 = DensePolynomial::rand(b_degree, rng);
                 let res1 = &p1 + &p2;
                 let res2 = &p2 + &p1;
                 assert_eq!(res1, res2);
@@ -512,7 +509,7 @@ mod tests {
 
     #[test]
     fn add_polynomials_with_mul() {
-        let rng = &mut TestRng::default();
+        let rng = &mut rand::thread_rng();
         for a_degree in 0..70 {
             for b_degree in 0..70 {
                 let mut p1 = DensePolynomial::rand(a_degree, rng);
@@ -531,9 +528,9 @@ mod tests {
 
     #[test]
     fn sub_polynomials() {
-        let rng = &mut TestRng::default();
-        let p1 = DensePolynomial::<Scalar>::rand(5, rng);
-        let p2 = DensePolynomial::<Scalar>::rand(3, rng);
+        let rng = &mut rand::thread_rng();
+        let p1 = DensePolynomial::rand(5, rng);
+        let p2 = DensePolynomial::rand(3, rng);
         let res1 = &p1 - &p2;
         let res2 = &p2 - &p1;
         assert_eq!(
@@ -547,17 +544,17 @@ mod tests {
     #[test]
     fn divide_polynomials_fixed() {
         let dividend = DensePolynomial::from_coefficients_slice(&[
-            "4".parse().unwrap(),
-            "8".parse().unwrap(),
-            "5".parse().unwrap(),
-            "1".parse().unwrap(),
+            Scalar::from(4),
+            Scalar::from(8),
+            Scalar::from(5),
+            Scalar::from(1),
         ]);
-        let divisor = DensePolynomial::from_coefficients_slice(&[Scalar::one(), Scalar::one()]); // Construct a monic linear polynomial.
+        let divisor = DensePolynomial::from_coefficients_slice(&[Scalar::ONE, Scalar::ONE]); // Construct a monic linear polynomial.
         let result = &dividend / &divisor;
         let expected_result = DensePolynomial::from_coefficients_slice(&[
-            "4".parse().unwrap(),
-            "4".parse().unwrap(),
-            "1".parse().unwrap(),
+            Scalar::from(4),
+            Scalar::from(4),
+            Scalar::from(1),
         ]);
         assert_eq!(expected_result, result);
     }
@@ -565,12 +562,12 @@ mod tests {
     #[test]
     #[allow(clippy::needless_borrow)]
     fn divide_polynomials_random() {
-        let rng = &mut TestRng::default();
+        let rng = &mut rand::thread_rng();
 
         for a_degree in 0..70 {
             for b_degree in 0..70 {
-                let dividend = DensePolynomial::<Scalar>::rand(a_degree, rng);
-                let divisor = DensePolynomial::<Scalar>::rand(b_degree, rng);
+                let dividend = DensePolynomial::rand(a_degree, rng);
+                let divisor = DensePolynomial::rand(b_degree, rng);
                 if let Some((quotient, remainder)) =
                     Polynomial::divide_with_q_and_r(&(&dividend).into(), &(&divisor).into())
                 {
@@ -582,13 +579,13 @@ mod tests {
 
     #[test]
     fn evaluate_polynomials() {
-        let rng = &mut TestRng::default();
+        let rng = &mut rand::thread_rng();
         for a_degree in 0..70 {
             let p = DensePolynomial::rand(a_degree, rng);
             let point: Scalar = Scalar::from(10u64);
             let mut total = Scalar::ZERO;
             for (i, coeff) in p.coeffs.iter().enumerate() {
-                total += point.pow([i as u64]) * coeff;
+                total += point.pow(&[i as u64]) * coeff;
             }
             assert_eq!(p.evaluate(point), total);
         }
@@ -596,13 +593,13 @@ mod tests {
 
     #[test]
     fn mul_polynomials_random() {
-        let rng = &mut TestRng::default();
+        let rng = &mut rand::thread_rng();
         for a_degree in 0..70 {
             for b_degree in 0..70 {
                 dbg!(a_degree);
                 dbg!(b_degree);
-                let a = DensePolynomial::<Scalar>::rand(a_degree, rng);
-                let b = DensePolynomial::<Scalar>::rand(b_degree, rng);
+                let a = DensePolynomial::rand(a_degree, rng);
+                let b = DensePolynomial::rand(b_degree, rng);
                 assert_eq!(&a * &b, a.naive_mul(&b))
             }
         }
@@ -610,11 +607,11 @@ mod tests {
 
     #[test]
     fn mul_by_vanishing_poly() {
-        let rng = &mut TestRng::default();
+        let rng = &mut rand::thread_rng();
         for size in 1..10 {
             let domain = EvaluationDomain::new(1 << size).unwrap();
             for degree in 0..70 {
-                let p = DensePolynomial::<Scalar>::rand(degree, rng);
+                let p = DensePolynomial::rand(degree, rng);
                 let ans1 = p.mul_by_vanishing_poly(domain);
                 let ans2 = &p * &domain.vanishing_polynomial().into();
                 assert_eq!(ans1, ans2);
