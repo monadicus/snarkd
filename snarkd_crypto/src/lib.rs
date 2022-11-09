@@ -4,9 +4,7 @@ extern crate thiserror;
 mod utils;
 
 pub mod bls12_377;
-// pub mod marlin;
-mod objects;
-// mod polycommit;
 mod fft;
+mod objects;
 mod r1cs;
 pub use r1cs::*;
