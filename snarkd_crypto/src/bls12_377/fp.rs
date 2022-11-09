@@ -11,6 +11,12 @@ use ruint::{uint, Uint};
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Fp(pub Uint<384, 6>);
 
+impl From<Uint<384, 6>> for Fp {
+    fn from(v: Uint<384, 6>) -> Self {
+        Self(v)
+    }
+}
+
 impl From<u64> for Fp {
     fn from(v: u64) -> Self {
         Self(Uint::from(v))

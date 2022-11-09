@@ -17,9 +17,9 @@ impl<F: Field> From<Variable> for ConstraintVariable<F> {
     }
 }
 
-impl<F: Field> From<(F, Variable)> for ConstraintVariable<F> {
-    fn from(coeff_var: (F, Variable)) -> Self {
-        ConstraintVariable::LC(coeff_var.into())
+impl<F: Field> From<(Variable, F)> for ConstraintVariable<F> {
+    fn from(v: (Variable, F)) -> Self {
+        ConstraintVariable::LC(v.into())
     }
 }
 
@@ -36,11 +36,11 @@ impl<F: Field> From<(F, LinearCombination<F>)> for ConstraintVariable<F> {
     }
 }
 
-impl<F: Field> From<(F, ConstraintVariable<F>)> for ConstraintVariable<F> {
-    fn from((coeff, var): (F, ConstraintVariable<F>)) -> Self {
+impl<F: Field> From<(ConstraintVariable<F>, F)> for ConstraintVariable<F> {
+    fn from((var, coeff): (ConstraintVariable<F>, F)) -> Self {
         match var {
             ConstraintVariable::LC(lc) => (coeff, lc).into(),
-            ConstraintVariable::Var(var) => (coeff, var).into(),
+            ConstraintVariable::Var(var) => (var, coeff).into(),
         }
     }
 }
@@ -56,7 +56,7 @@ impl<F: Field> ConstraintVariable<F> {
     pub fn negate_in_place(&mut self) {
         match self {
             ConstraintVariable::LC(ref mut lc) => lc.negate_in_place(),
-            ConstraintVariable::Var(var) => *self = (-F::ONE, *var).into(),
+            ConstraintVariable::Var(var) => *self = (*var, -F::ONE).into(),
         }
     }
 
@@ -64,7 +64,7 @@ impl<F: Field> ConstraintVariable<F> {
     pub fn double_in_place(&mut self) {
         match self {
             ConstraintVariable::LC(lc) => lc.double_in_place(),
-            ConstraintVariable::Var(var) => *self = (F::ONE.double(), *var).into(),
+            ConstraintVariable::Var(var) => *self = (*var, F::ONE.double()).into(),
         }
     }
 }
@@ -153,7 +153,7 @@ impl<F: Field> Mul<F> for ConstraintVariable<F> {
     fn mul(self, scalar: F) -> Self {
         match self {
             ConstraintVariable::LC(lc) => ConstraintVariable::LC(lc * scalar),
-            ConstraintVariable::Var(var) => (scalar, var).into(),
+            ConstraintVariable::Var(var) => (var, scalar).into(),
         }
     }
 }
@@ -162,7 +162,7 @@ impl<F: Field> MulAssign<F> for ConstraintVariable<F> {
     fn mul_assign(&mut self, scalar: F) {
         match self {
             ConstraintVariable::LC(lc) => *lc *= scalar,
-            ConstraintVariable::Var(var) => *self = (scalar, *var).into(),
+            ConstraintVariable::Var(var) => *self = (*var, scalar).into(),
         }
     }
 }

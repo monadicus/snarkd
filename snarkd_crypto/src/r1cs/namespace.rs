@@ -46,7 +46,6 @@ impl<CS: ConstraintSystem> ConstraintSystem for Namespace<'_, CS> {
     // Downstream users who use `namespace` will never interact with these
     // functions and they will never be invoked because the namespace is
     // never a root constraint system.
-
     fn push_namespace<NR, N>(&mut self, _: N)
     where
         NR: AsRef<str>,

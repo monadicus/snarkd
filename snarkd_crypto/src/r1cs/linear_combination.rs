@@ -1,4 +1,9 @@
+// TODO tmp
+#![allow(unreachable_code, unused)]
+#![warn(clippy::panic)]
+
 use crate::{Field, Variable};
+use anyhow::{bail, Result};
 
 use std::{
     cmp::Ordering,
@@ -10,7 +15,7 @@ use std::{
 /// The `(coeff, var)` pairs in a `LinearCombination` are kept sorted according
 /// to the index of the variable in its constraint system.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct LinearCombination<F: Field>(pub Vec<(Variable, F)>);
+pub struct LinearCombination<F: Field>(pub(crate) Vec<(Variable, F)>);
 
 impl<F: Field> AsRef<[(Variable, F)]> for LinearCombination<F> {
     fn as_ref(&self) -> &[(Variable, F)] {
@@ -18,9 +23,9 @@ impl<F: Field> AsRef<[(Variable, F)]> for LinearCombination<F> {
     }
 }
 
-impl<F: Field> From<(F, Variable)> for LinearCombination<F> {
-    fn from((coeff, var): (F, Variable)) -> Self {
-        LinearCombination(vec![(var, coeff)])
+impl<F: Field> From<(Variable, F)> for LinearCombination<F> {
+    fn from(v: (Variable, F)) -> Self {
+        LinearCombination(vec![v])
     }
 }
 
@@ -31,6 +36,24 @@ impl<F: Field> From<Variable> for LinearCombination<F> {
 }
 
 impl<F: Field> LinearCombination<F> {
+    /// constructs a LinearCombination using the given points.
+    /// will return an error if any duplicate variable's exist
+    pub fn new(mut values: Vec<(Variable, F)>) -> Result<Self> {
+        if values.is_empty() {
+            Ok(Self::zero())
+        } else {
+            values.sort_by(|a, b| a.0.cmp(&b.0));
+            let mut last = &values[0].0;
+            for (cur, _) in &values[1..] {
+                if cur == last {
+                    bail!("Can't contain duplicate variables")
+                }
+                let last = cur;
+            }
+            Ok(Self(values))
+        }
+    }
+
     /// Outputs an empty linear combination.
     pub fn zero() -> LinearCombination<F> {
         LinearCombination(Vec::new())
@@ -44,12 +67,14 @@ impl<F: Field> LinearCombination<F> {
 
     /// Negate the coefficients of all variables in `self`.
     pub fn negate_in_place(&mut self) {
+        panic!("unhit");
         self.0.iter_mut().for_each(|(_, coeff)| *coeff = -(*coeff));
     }
 
     /// Double the coefficients of all variables in `self`.
     pub fn double_in_place(&mut self) {
         self.0.iter_mut().for_each(|(_, coeff)| {
+            panic!("unhit");
             coeff.double_in_place();
         });
     }
@@ -105,6 +130,7 @@ impl<F: Field> Sub<(F, Variable)> for LinearCombination<F> {
     type Output = Self;
 
     fn sub(self, (coeff, var): (F, Variable)) -> Self {
+        panic!("unhit");
         self + (-coeff, var)
     }
 }
@@ -113,7 +139,7 @@ impl<F: Field> Neg for LinearCombination<F> {
     type Output = Self;
 
     fn neg(mut self) -> Self {
-        self.negate_in_place();
+        self.0.iter_mut().for_each(|(_, coeff)| *coeff = -(*coeff));
         self
     }
 }
@@ -122,6 +148,7 @@ impl<F: Field> Mul<F> for LinearCombination<F> {
     type Output = Self;
 
     fn mul(mut self, scalar: F) -> Self {
+        panic!("unhit");
         self *= scalar;
         self
     }
@@ -129,6 +156,7 @@ impl<F: Field> Mul<F> for LinearCombination<F> {
 
 impl<F: Field> MulAssign<F> for LinearCombination<F> {
     fn mul_assign(&mut self, scalar: F) {
+        panic!("unhit");
         self.0.iter_mut().for_each(|(_, coeff)| *coeff *= &scalar);
     }
 }
@@ -137,6 +165,7 @@ impl<F: Field> Add<Variable> for LinearCombination<F> {
     type Output = Self;
 
     fn add(self, other: Variable) -> LinearCombination<F> {
+        panic!("unhit");
         self + (F::ONE, other)
     }
 }
@@ -270,8 +299,7 @@ impl<F: Field> Sub<&LinearCombination<F>> for &LinearCombination<F> {
             return cur;
         } else if self.0.is_empty() {
             let mut other = other.clone();
-            other.negate_in_place();
-            return other;
+            return -other;
         }
 
         op_impl(
@@ -291,8 +319,7 @@ impl<'a, F: Field> Sub<&'a LinearCombination<F>> for LinearCombination<F> {
             return self;
         } else if self.0.is_empty() {
             let mut other = other.clone();
-            other.negate_in_place();
-            return other;
+            return -other;
         }
         op_impl(
             &self,
@@ -308,8 +335,7 @@ impl<F: Field> Sub<LinearCombination<F>> for &LinearCombination<F> {
 
     fn sub(self, mut other: LinearCombination<F>) -> LinearCombination<F> {
         if self.0.is_empty() {
-            other.negate_in_place();
-            return other;
+            return -other;
         } else if other.0.is_empty() {
             return self.clone();
         }
@@ -330,8 +356,7 @@ impl<F: Field> Sub<LinearCombination<F>> for LinearCombination<F> {
         if other.0.is_empty() {
             return self;
         } else if self.0.is_empty() {
-            other.negate_in_place();
-            return other;
+            return -other;
         }
         op_impl(
             &self,
@@ -347,6 +372,7 @@ impl<F: Field> Add<(F, &LinearCombination<F>)> for &LinearCombination<F> {
 
     #[allow(clippy::suspicious_arithmetic_impl)]
     fn add(self, (mul_coeff, other): (F, &LinearCombination<F>)) -> LinearCombination<F> {
+        panic!("unhit");
         if other.0.is_empty() {
             return self.clone();
         } else if self.0.is_empty() {
@@ -368,6 +394,7 @@ impl<'a, F: Field> Add<(F, &'a LinearCombination<F>)> for LinearCombination<F> {
 
     #[allow(clippy::suspicious_arithmetic_impl)]
     fn add(self, (mul_coeff, other): (F, &'a LinearCombination<F>)) -> LinearCombination<F> {
+        panic!("unhit");
         if other.0.is_empty() {
             return self;
         } else if self.0.is_empty() {
@@ -389,6 +416,7 @@ impl<F: Field> Add<(F, LinearCombination<F>)> for &LinearCombination<F> {
 
     #[allow(clippy::suspicious_arithmetic_impl)]
     fn add(self, (mul_coeff, mut other): (F, LinearCombination<F>)) -> LinearCombination<F> {
+        panic!("unhit");
         if other.0.is_empty() {
             return self.clone();
         } else if self.0.is_empty() {
@@ -409,6 +437,7 @@ impl<F: Field> Add<(F, Self)> for LinearCombination<F> {
 
     #[allow(clippy::suspicious_arithmetic_impl)]
     fn add(self, (mul_coeff, other): (F, Self)) -> Self {
+        panic!("unhit");
         if other.0.is_empty() {
             return self;
         } else if self.0.is_empty() {
@@ -429,6 +458,7 @@ impl<F: Field> Sub<(F, &LinearCombination<F>)> for &LinearCombination<F> {
     type Output = LinearCombination<F>;
 
     fn sub(self, (coeff, other): (F, &LinearCombination<F>)) -> LinearCombination<F> {
+        panic!("unhit");
         self + (-coeff, other)
     }
 }
@@ -437,6 +467,7 @@ impl<'a, F: Field> Sub<(F, &'a LinearCombination<F>)> for LinearCombination<F> {
     type Output = LinearCombination<F>;
 
     fn sub(self, (coeff, other): (F, &'a LinearCombination<F>)) -> LinearCombination<F> {
+        panic!("unhit");
         self + (-coeff, other)
     }
 }
@@ -445,6 +476,7 @@ impl<F: Field> Sub<(F, LinearCombination<F>)> for &LinearCombination<F> {
     type Output = LinearCombination<F>;
 
     fn sub(self, (coeff, other): (F, LinearCombination<F>)) -> LinearCombination<F> {
+        panic!("unhit");
         self + (-coeff, other)
     }
 }
@@ -453,6 +485,7 @@ impl<F: Field> Sub<(F, LinearCombination<F>)> for LinearCombination<F> {
     type Output = LinearCombination<F>;
 
     fn sub(self, (coeff, other): (F, LinearCombination<F>)) -> LinearCombination<F> {
+        panic!("unhit");
         self + (-coeff, other)
     }
 }
