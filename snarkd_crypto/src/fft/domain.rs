@@ -104,7 +104,7 @@ impl EvaluationDomain {
         let group_gen = Scalar::get_root_of_unity(size as usize)?;
 
         // Check that it is indeed the 2^(log_size_of_group) root of unity.
-        debug_assert_eq!(group_gen.pow([size]), Scalar::ONE);
+        debug_assert_eq!(group_gen.pow(&[size]), Scalar::ONE);
 
         let size_as_field_element = Scalar::from(size);
         let size_inv = size_as_field_element.inverse()?;
