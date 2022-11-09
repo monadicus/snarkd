@@ -2,9 +2,93 @@ use std::fmt;
 
 use ruint::uint;
 
-use crate::{Fp, Index, Variable};
+use crate::{Field, Fp, Index, Variable};
 
 use super::*;
+
+macro_rules! test_op {
+    (
+        $op:tt,
+        $(
+            [
+                $name:expr,
+                $lhs:expr,
+                $rhs:expr,
+                $unswapped_out:expr,
+                $swapped_out:expr,
+                $coeff:expr,
+                $unswapped_coeff_out:expr,
+                $swapped_coeff_out:expr
+            ]
+        ),+
+    ) => {
+        $(
+            println!("{}: ", $name);
+            let lhs = create_multi(&$lhs);
+            let rhs = create_multi::<u64>(&$rhs);
+            let unswapped_out = create_multi(&$unswapped_out);
+            let swapped_out = create_multi(&$swapped_out);
+            let unswapped_coeff_out = create_multi(&$unswapped_coeff_out);
+            let swapped_coeff_out = create_multi(&$swapped_coeff_out);
+            let str_op = stringify!($op);
+
+            print!("    lhs {str_op} rhs:   ");
+            test_op!(@op $op, lhs.clone(), rhs.clone(), unswapped_out);
+            print!("    rhs {str_op} lhs:   ");
+            test_op!(@op $op, rhs.clone(), lhs.clone(), swapped_out);
+
+            print!("    &lhs {str_op} rhs:  ");
+            test_op!(@op $op, &lhs, rhs.clone(), unswapped_out);
+            print!("    &rhs {str_op} lhs:  ");
+            test_op!(@op $op, &rhs, lhs.clone(), swapped_out);
+
+            print!("    lhs {str_op} &rhs:  ");
+            test_op!(@op $op, lhs.clone(), &rhs, unswapped_out);
+            print!("    rhs {str_op} &lhs:  ");
+            test_op!(@op $op, rhs.clone(), &lhs, swapped_out);
+
+            print!("    &lhs {str_op} &rhs: ");
+            test_op!(@op $op, &lhs, &rhs, unswapped_out);
+            print!("    &rhs {str_op} &lhs: ");
+            test_op!(@op $op, &rhs, &lhs, swapped_out);
+
+
+
+            print!("    lhs {str_op} (coeff, rhs):   ");
+            test_op!(@coeff $op, lhs.clone(), rhs.clone(), $coeff, unswapped_coeff_out);
+            print!("    rhs {str_op} (coeff, lhs):   ");
+            test_op!(@coeff $op, rhs.clone(), lhs.clone(), $coeff, swapped_coeff_out);
+
+            print!("    &lhs {str_op} (coeff, rhs):  ");
+            test_op!(@coeff $op, &lhs, rhs.clone(), $coeff, unswapped_coeff_out);
+            print!("    &rhs {str_op} (coeff, lhs):  ");
+            test_op!(@coeff $op, &rhs, lhs.clone(), $coeff, swapped_coeff_out);
+
+            print!("    lhs {str_op} (coeff, &rhs):  ");
+            test_op!(@coeff $op, lhs.clone(), &rhs, $coeff, unswapped_coeff_out);
+            print!("    rhs {str_op} (coeff, &lhs):  ");
+            test_op!(@coeff $op, rhs.clone(), &lhs, $coeff, swapped_coeff_out);
+
+            print!("    &lhs {str_op} (coeff, &rhs): ");
+            test_op!(@coeff $op, &lhs, &rhs, $coeff, unswapped_coeff_out);
+            print!("    &rhs {str_op} (coeff, &lhs): ");
+            test_op!(@coeff $op, &rhs, &lhs, $coeff, swapped_coeff_out);
+
+            println!();
+        )+
+    };
+    (@op $op:tt, $lhs:expr, $rhs:expr, $unswapped_out:expr) => {
+        let res = $lhs $op $rhs;
+        assert_eq!(res, $unswapped_out);
+        println!("ok!");
+    };
+    (@coeff $op:tt, $lhs:expr, $rhs:expr, $coeff:expr, $unswapped_out:expr) => {
+        // TODO flip argument order in coeff math to match everything else
+        let res = $lhs $op ($coeff, $rhs);
+        assert_eq!(res, $unswapped_out);
+        println!("ok!");
+    }
+}
 
 impl fmt::Display for LinearCombination<Fp> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -85,56 +169,7 @@ fn linear_combination_append_100() {
     assert_eq!(create.0.len(), 100);
 }
 
-macro_rules! test_op {
-    (
-        $op:tt,
-        $(
-            [
-                $name:expr,
-                $lhs:expr,
-                $rhs:expr,
-                $out:expr,
-                $flipped_out:expr
-            ]
-        ),+
-    ) => {
-        $(
-            println!("{}: ", $name);
-            let lhs = create_multi(&$lhs);
-            let rhs = create_multi::<u64>(&$rhs);
-            let out = create_multi(&$out);
-            let flipped_out = create_multi(&$flipped_out);
-            let str_op = stringify!($op);
-
-            print!("    lhs {str_op} rhs:   ");
-            test_op!(@test $op, lhs.clone(), rhs.clone(), out);
-            print!("    rhs {str_op} lhs:   ");
-            test_op!(@test $op, rhs.clone(), lhs.clone(), flipped_out);
-
-            print!("    &lhs {str_op} rhs:  ");
-            test_op!(@test $op, &lhs, rhs.clone(), out);
-            print!("    &rhs {str_op} lhs:  ");
-            test_op!(@test $op, &rhs, lhs.clone(), flipped_out);
-
-            print!("    lhs {str_op} &rhs:  ");
-            test_op!(@test $op, lhs.clone(), &rhs, out);
-            print!("    rhs {str_op} &lhs:  ");
-            test_op!(@test $op, rhs.clone(), &lhs, flipped_out);
-
-            print!("    &lhs {str_op} &rhs: ");
-            test_op!(@test $op, &lhs, &rhs, out);
-            print!("    &rhs {str_op} &lhs: ");
-            test_op!(@test $op, &rhs, &lhs, flipped_out);
-
-            println!();
-        )+
-    };
-    (@test $op:tt, $lhs:expr, $rhs:expr, $out:expr) => {
-        let res = $lhs $op $rhs;
-        assert_eq!(res, $out);
-        println!("ok!");
-    };
-}
+const FP_TWO: Fp = Fp(uint!(2_U384));
 
 #[test]
 fn add_combo() {
@@ -144,84 +179,120 @@ fn add_combo() {
             [(0, 1)],
             [(0, 1)],
             [(0, 2)],
-            [(0, 2)]
+            [(0, 2)],
+            FP_TWO,
+            [(0, 3)],
+            [(0, 3)]
         ],
         [
             "Add single, same index, different values",
             [(0, 1)],
             [(0, 2)],
             [(0, 3)],
-            [(0, 3)]
+            [(0, 3)],
+            FP_TWO,
+            [(0, 5)],
+            [(0, 4)]
         ],
         [
             "Add single, same index, empty value",
             [(0, 1)],
             [],
             [(0, 1)],
-            [(0, 1)]
+            [(0, 1)],
+            FP_TWO,
+            [(0, 1)],
+            [(0, 2)]
         ],
         [
             "Add single, different indexes, same values",
             [(0, 1)],
             [(1, 1)],
             [(0, 1), (1, 1)],
-            [(0, 1), (1, 1)]
+            [(0, 1), (1, 1)],
+            FP_TWO,
+            [(0, 1), (1, 2)],
+            [(0, 2), (1, 1)]
         ],
         [
             "Add single, different indexes, different values",
             [(0, 1)],
             [(1, 2)],
             [(0, 1), (1, 2)],
-            [(0, 1), (1, 2)]
+            [(0, 1), (1, 2)],
+            FP_TWO,
+            [(0, 1), (1, 4)],
+            [(0, 2), (1, 2)]
         ],
         [
             "Add single, different indexes, empty value",
             [(1, 1)],
             [],
             [(1, 1)],
-            [(1, 1)]
+            [(1, 1)],
+            FP_TWO,
+            [(1, 1)],
+            [(1, 2)]
         ],
         [
             "Add multi, same index, same values",
             [(0, 1), (1, 2)],
             [(0, 1), (1, 2)],
             [(0, 2), (1, 4)],
-            [(0, 2), (1, 4)]
+            [(0, 2), (1, 4)],
+            FP_TWO,
+            [(0, 3), (1, 6)],
+            [(0, 3), (1, 6)]
         ],
         [
             "Add multi, same index, different values",
             [(0, 1), (1, 2)],
             [(0, 2), (1, 1)],
             [(0, 3), (1, 3)],
-            [(0, 3), (1, 3)]
+            [(0, 3), (1, 3)],
+            FP_TWO,
+            [(0, 5), (1, 4)],
+            [(0, 4), (1, 5)]
         ],
         [
             "Add multi, same index, empty value",
             [(0, 1), (1, 2)],
             [],
             [(0, 1), (1, 2)],
-            [(0, 1), (1, 2)]
+            [(0, 1), (1, 2)],
+            FP_TWO,
+            [(0, 1), (1, 2)],
+            [(0, 2), (1, 4)]
         ],
         [
             "Add multi, different indexes, same values",
             [(0, 1), (1, 1)],
             [(1, 1), (2, 1)],
             [(0, 1), (1, 2), (2, 1)],
-            [(0, 1), (1, 2), (2, 1)]
+            [(0, 1), (1, 2), (2, 1)],
+            FP_TWO,
+            [(0, 1), (1, 3), (2, 2)],
+            [(0, 2), (1, 3), (2, 1)]
         ],
         [
             "Add multi, different indexes, different values",
             [(0, 1), (1, 3)],
             [(1, 2), (2, 4)],
             [(0, 1), (1, 5), (2, 4)],
-            [(0, 1), (1, 5), (2, 4)]
+            [(0, 1), (1, 5), (2, 4)],
+            FP_TWO,
+            [(0, 1), (1, 7), (2, 8)],
+            [(0, 2), (1, 8), (2, 4)]
         ],
         [
             "Add multi, different indexes, empty value",
             [(1, 1), (2, 3)],
             [],
             [(1, 1), (2, 3)],
-            [(1, 1), (2, 3)]
+            [(1, 1), (2, 3)],
+            FP_TWO,
+            [(1, 1), (2, 3)],
+            [(1, 2), (2, 6)]
         ]
     );
 }
@@ -230,6 +301,8 @@ fn add_combo() {
 fn sub_combo() {
     let underflowed_by_one = uint!(0x01ae3a4617c510eac63b05c06ca1493b1a22d9f300f5138f1ef3622fba094800170b5d44300000008508c00000000000_U384);
     let underflowed_by_two = uint!(0x01ae3a4617c510eac63b05c06ca1493b1a22d9f300f5138f1ef3622fba094800170b5d44300000008508bfffffffffff_U384);
+    let underflowed_by_three = uint!(0x01ae3a4617c510eac63b05c06ca1493b1a22d9f300f5138f1ef3622fba094800170b5d44300000008508bffffffffffe_U384);
+    let underflowed_by_four = uint!(0x01ae3a4617c510eac63b05c06ca1493b1a22d9f300f5138f1ef3622fba094800170b5d44300000008508bffffffffffd_U384);
     let zero = uint!(0_U384);
     let one = uint!(1_U384);
     let two = uint!(2_U384);
@@ -239,84 +312,120 @@ fn sub_combo() {
             [(0, 1)],
             [(0, 1)],
             [(0, 0)],
-            [(0, 0)]
+            [(0, 0)],
+            FP_TWO,
+            [(0, underflowed_by_one)],
+            [(0, underflowed_by_one)]
         ],
         [
             "Sub single, same index, different values",
             [(0, 2)],
             [(0, 1)],
             [(0, 1)],
-            [(0, underflowed_by_one)]
+            [(0, underflowed_by_one)],
+            FP_TWO,
+            [(0, 0)],
+            [(0, underflowed_by_three)]
         ],
         [
             "Sub single, same index, empty value",
             [(0, 1)],
             [],
             [(0, 1)],
-            [(0, underflowed_by_one)]
+            [(0, underflowed_by_one)],
+            FP_TWO,
+            [(0, 1)],
+            [(0, underflowed_by_two)]
         ],
         [
             "Sub single, different indexes, same values",
             [(0, 1)],
             [(1, 1)],
             [(0, one), (1, underflowed_by_one)],
-            [(0, underflowed_by_one), (1, one)]
+            [(0, underflowed_by_one), (1, one)],
+            FP_TWO,
+            [(0, one), (1, underflowed_by_two)],
+            [(0, underflowed_by_two), (1, one)]
         ],
         [
             "Sub single, different indexes, different values",
             [(0, 1)],
             [(1, 2)],
             [(0, one), (1, underflowed_by_two)],
-            [(0, underflowed_by_one), (1, two)]
+            [(0, underflowed_by_one), (1, two)],
+            FP_TWO,
+            [(0, one), (1, underflowed_by_four)],
+            [(0, underflowed_by_two), (1, two)]
         ],
         [
             "Sub single, different indexes, empty value",
             [(1, 1)],
             [],
             [(1, 1)],
-            [(1, underflowed_by_one)]
+            [(1, underflowed_by_one)],
+            FP_TWO,
+            [(1, 1)],
+            [(1, underflowed_by_two)]
         ],
         [
             "Sub multi, same index, same values",
             [(0, 1), (1, 2)],
             [(0, 1), (1, 2)],
             [(0, 0), (1, 0)],
-            [(0, 0), (1, 0)]
+            [(0, 0), (1, 0)],
+            FP_TWO,
+            [(0, underflowed_by_one), (1, underflowed_by_two)],
+            [(0, underflowed_by_one), (1, underflowed_by_two)]
         ],
         [
             "Sub multi, same index, different values",
             [(0, 2), (1, 2)],
             [(0, 1), (1, 1)],
             [(0, 1), (1, 1)],
-            [(0, underflowed_by_one), (1, underflowed_by_one)]
+            [(0, underflowed_by_one), (1, underflowed_by_one)],
+            FP_TWO,
+            [(0, 0), (1, 0)],
+            [(0, underflowed_by_three), (1, underflowed_by_three)]
         ],
         [
             "Sub multi, same index, empty value",
             [(0, 1), (1, 2)],
             [],
             [(0, 1), (1, 2)],
-            [(0, underflowed_by_one), (1, underflowed_by_two)]
+            [(0, underflowed_by_one), (1, underflowed_by_two)],
+            FP_TWO,
+            [(0, 1), (1, 2)],
+            [(0, underflowed_by_two), (1, underflowed_by_four)]
         ],
         [
             "Sub multi, different indexes, same values",
             [(0, 1), (1, 1)],
             [(1, 1), (2, 1)],
             [(0, one), (1, zero), (2, underflowed_by_one)],
-            [(0, underflowed_by_one), (1, zero), (2, one)]
+            [(0, underflowed_by_one), (1, zero), (2, one)],
+            FP_TWO,
+            [(0, one), (1, underflowed_by_one), (2, underflowed_by_two)],
+            [(0, underflowed_by_two), (1, underflowed_by_one), (2, one)]
         ],
         [
             "Sub multi, different indexes, different values",
             [(0, 1), (1, 3)],
             [(1, 2), (2, 2)],
             [(0, one), (1, one), (2, underflowed_by_two)],
-            [(0, underflowed_by_one), (1, underflowed_by_one), (2, two)]
+            [(0, underflowed_by_one), (1, underflowed_by_one), (2, two)],
+            FP_TWO,
+            [(0, one), (1, underflowed_by_one), (2, underflowed_by_four)],
+            [(0, underflowed_by_two), (1, underflowed_by_four), (2, two)]
         ],
         [
             "Sub multi, different indexes, empty value",
             [(1, 1), (2, 2)],
             [],
             [(1, 1), (2, 2)],
-            [(1, underflowed_by_one), (2, underflowed_by_two)]
+            [(1, underflowed_by_one), (2, underflowed_by_two)],
+            FP_TWO,
+            [(1, 1), (2, 2)],
+            [(1, underflowed_by_two), (2, underflowed_by_four)]
         ]
     );
 }

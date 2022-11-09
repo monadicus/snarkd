@@ -156,7 +156,6 @@ impl<F: Field> Mul<F> for LinearCombination<F> {
 
 impl<F: Field> MulAssign<F> for LinearCombination<F> {
     fn mul_assign(&mut self, scalar: F) {
-        panic!("unhit");
         self.0.iter_mut().for_each(|(_, coeff)| *coeff *= &scalar);
     }
 }
@@ -372,7 +371,6 @@ impl<F: Field> Add<(F, &LinearCombination<F>)> for &LinearCombination<F> {
 
     #[allow(clippy::suspicious_arithmetic_impl)]
     fn add(self, (mul_coeff, other): (F, &LinearCombination<F>)) -> LinearCombination<F> {
-        panic!("unhit");
         if other.0.is_empty() {
             return self.clone();
         } else if self.0.is_empty() {
@@ -394,7 +392,6 @@ impl<'a, F: Field> Add<(F, &'a LinearCombination<F>)> for LinearCombination<F> {
 
     #[allow(clippy::suspicious_arithmetic_impl)]
     fn add(self, (mul_coeff, other): (F, &'a LinearCombination<F>)) -> LinearCombination<F> {
-        panic!("unhit");
         if other.0.is_empty() {
             return self;
         } else if self.0.is_empty() {
@@ -416,7 +413,6 @@ impl<F: Field> Add<(F, LinearCombination<F>)> for &LinearCombination<F> {
 
     #[allow(clippy::suspicious_arithmetic_impl)]
     fn add(self, (mul_coeff, mut other): (F, LinearCombination<F>)) -> LinearCombination<F> {
-        panic!("unhit");
         if other.0.is_empty() {
             return self.clone();
         } else if self.0.is_empty() {
@@ -437,7 +433,6 @@ impl<F: Field> Add<(F, Self)> for LinearCombination<F> {
 
     #[allow(clippy::suspicious_arithmetic_impl)]
     fn add(self, (mul_coeff, other): (F, Self)) -> Self {
-        panic!("unhit");
         if other.0.is_empty() {
             return self;
         } else if self.0.is_empty() {
@@ -458,7 +453,6 @@ impl<F: Field> Sub<(F, &LinearCombination<F>)> for &LinearCombination<F> {
     type Output = LinearCombination<F>;
 
     fn sub(self, (coeff, other): (F, &LinearCombination<F>)) -> LinearCombination<F> {
-        panic!("unhit");
         self + (-coeff, other)
     }
 }
@@ -467,7 +461,6 @@ impl<'a, F: Field> Sub<(F, &'a LinearCombination<F>)> for LinearCombination<F> {
     type Output = LinearCombination<F>;
 
     fn sub(self, (coeff, other): (F, &'a LinearCombination<F>)) -> LinearCombination<F> {
-        panic!("unhit");
         self + (-coeff, other)
     }
 }
@@ -476,7 +469,6 @@ impl<F: Field> Sub<(F, LinearCombination<F>)> for &LinearCombination<F> {
     type Output = LinearCombination<F>;
 
     fn sub(self, (coeff, other): (F, LinearCombination<F>)) -> LinearCombination<F> {
-        panic!("unhit");
         self + (-coeff, other)
     }
 }
@@ -485,7 +477,6 @@ impl<F: Field> Sub<(F, LinearCombination<F>)> for LinearCombination<F> {
     type Output = LinearCombination<F>;
 
     fn sub(self, (coeff, other): (F, LinearCombination<F>)) -> LinearCombination<F> {
-        panic!("unhit");
         self + (-coeff, other)
     }
 }
