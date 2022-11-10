@@ -341,7 +341,7 @@ fn batched_window<A: Affine>(
             let mut scalar = scalar;
 
             // We right-shift by w_start, thus getting rid of the lower bits.
-            scalar >> w_start;
+            scalar = scalar >> w_start;
 
             // We mod the remaining bits by the window size.
             let scalar = (scalar.as_limbs()[0] % (1 << c)) as i32;
