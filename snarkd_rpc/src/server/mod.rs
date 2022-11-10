@@ -1,8 +1,6 @@
 use anyhow::Result;
-use jsonrpsee::{
-    ws_server::{self, WsServerHandle},
-    RpcModule,
-};
+use jsonrpsee::ws_server::{self, WsServerHandle};
+pub use jsonrpsee::RpcModule;
 use std::net::SocketAddr;
 
 /// Serves this RpcServer via websocket

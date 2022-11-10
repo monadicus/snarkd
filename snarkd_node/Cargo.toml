@@ -25,7 +25,8 @@ rand = { workspace = true }
 uuid = { workspace = true }
 always_cell = { workspace = true }
 
-snarkd_common = { path = "../snarkd_common" }
-snarkd_storage = { path = "../snarkd_storage" }
-snarkd_network = { path = "../snarkd_network" }
-snarkd_peer = { path = "../snarkd_peer" }
+snarkd_common = { workspace = true }
+snarkd_storage = { workspace = true }
+snarkd_network = { workspace = true }
+snarkd_peer = { workspace = true }
+snarkd_rpc = { workspace = true, features = ["server"] }

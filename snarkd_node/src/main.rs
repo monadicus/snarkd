@@ -10,6 +10,7 @@ use log::{debug, error, info, warn, LevelFilter};
 use peer_book::PeerBook;
 use snarkd_network::Connection;
 use snarkd_peer::announcer::AnnouncerConsumer;
+use snarkd_rpc::server::websocket_server;
 use snarkd_storage::{Database, PeerDirection};
 use tokio::{net::TcpListener, sync::oneshot, time::MissedTickBehavior};
 
@@ -19,6 +20,7 @@ mod config;
 mod inbound_handler;
 mod peer;
 mod peer_book;
+mod rpc;
 
 /// Snarkd Blockchain Node
 #[derive(Parser, Debug)]
@@ -271,9 +273,30 @@ async fn main() {
 
     //TODO: spawn peer syncer
 
-    //TODO: spawn RPC
+    let rpc_handle = if config.rpc_port != 0 {
+        let rpc_addr = SocketAddr::new(config.rpc_ip.into(), config.rpc_port);
+
+        match websocket_server(rpc::module(), rpc_addr).await {
+            Ok((addr, handle)) => {
+                info!("json rpc listening on ws://{}", addr);
+                Some(handle)
+            }
+            Err(e) => {
+                error!("failed to start json rpc on {rpc_addr}: {e:?}");
+                None
+            }
+        }
+    } else {
+        None
+    };
 
     //TODO: start miner
 
     std::future::pending::<()>().await;
+
+    if let Some(rpc_handle) = rpc_handle {
+        if let Err(e) = rpc_handle.stop() {
+            error!("failed stopping json rpc: {e:?}");
+        }
+    }
 }

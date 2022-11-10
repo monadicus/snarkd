@@ -1,8 +1,9 @@
 pub use crate::common::RpcClient;
 use anyhow::{Ok, Result};
+pub use jsonrpsee::core::client::Client;
 use jsonrpsee::{
     client_transport::ws::{Uri, WsTransportClientBuilder},
-    core::client::{Client, ClientBuilder, TransportReceiverT, TransportSenderT},
+    core::client::{ClientBuilder, TransportReceiverT, TransportSenderT},
 };
 
 /// Creates an RPC client given transport a sender and receiver.

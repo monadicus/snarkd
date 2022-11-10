@@ -57,7 +57,10 @@ tokio-rusqlite = "0.3.0"
 uuid = { version = "1.2", features = ["serde", "v4"] }
 url = { version = "2.3.1", features = ["serde"] }
 
-snarkd_rpc = { path = "./snarkd_rpc" }
+snarkd_client = { path = "./snarkd_client" }
 snarkd_common = { path = "./snarkd_common" }
 snarkd_errors = { path = "./snarkd_errors" }
-snarkd_client = { path = "./snarkd_client" }
+snarkd_network = { path = "./snarkd_network" }
+snarkd_peer = { path = "./snarkd_peer" }
+snarkd_rpc = { path = "./snarkd_rpc" }
+snarkd_storage = { path = "./snarkd_storage" }

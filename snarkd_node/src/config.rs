@@ -67,6 +67,12 @@ pub struct Config {
     pub listen_ip: Ipv4Addr,
     /// Port that we are receiving connections on. Generally the same as `listen_port` but a port rewrite firewall rule might change that.
     pub inbound_port: Option<u16>,
+    /// Address that we are listening to for RPC. Defaults to 0.0.0.0
+    #[serde(default = "default_listen_ip")]
+    pub rpc_ip: Ipv4Addr,
+    /// Port that we are receiving RPC connections on, 0 for disabled
+    #[serde(default = "default_u16::<5422>")]
+    pub rpc_port: u16,
 }
 
 const CONFIG_ENV_VAR: &str = "SNARKD_CONFIG";

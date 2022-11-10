@@ -1,4 +1,3 @@
-use anyhow::Result;
 pub use jsonrpsee::core::Error as RpcError;
 use jsonrpsee::proc_macros::rpc;
 

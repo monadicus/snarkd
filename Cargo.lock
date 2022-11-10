@@ -669,6 +669,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "fxhash"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c31b6d751ae2c7f11320402d34e41349dd1016f8d5d45e48c4312bc8625af50c"
+dependencies = [
+ "byteorder",
+]
+
+[[package]]
 name = "generic-array"
 version = "0.14.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -676,15 +685,6 @@ checksum = "bff49e947297f3312447abdca79f45f4738097cc82b06e72054d2223f601f1b9"
 dependencies = [
  "typenum",
  "version_check",
-]
-
-[[package]]
-name = "fxhash"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c31b6d751ae2c7f11320402d34e41349dd1016f8d5d45e48c4312bc8625af50c"
-dependencies = [
- "byteorder",
 ]
 
 [[package]]
@@ -2127,6 +2127,10 @@ version = "0.1.0"
 [[package]]
 name = "snarkd_client"
 version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "snarkd_rpc",
+]
 
 [[package]]
 name = "snarkd_common"
@@ -2215,6 +2219,7 @@ dependencies = [
  "snarkd_common",
  "snarkd_network",
  "snarkd_peer",
+ "snarkd_rpc",
  "snarkd_storage",
  "tokio",
  "uuid",
