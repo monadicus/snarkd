@@ -8,7 +8,9 @@ mod cuda;
 pub mod prefetch;
 
 use crate::bls12_377::{Affine, G1Affine};
+use bitvec::prelude::*;
 use core::any::TypeId;
+use core::ops::Deref;
 use ruint::Uint;
 
 #[cfg(all(feature = "cuda", target_arch = "x86_64"))]
@@ -20,7 +22,7 @@ static HAS_CUDA_FAILED: AtomicBool = AtomicBool::new(false);
 pub struct VariableBase;
 
 impl VariableBase {
-    pub fn msm<A: Affine>(bases: &[A], scalars: &[Uint<256, 4>]) -> A::Projective {
+    pub fn msm<A: Affine + 'static>(bases: &[A], scalars: &[Uint<256, 4>]) -> A::Projective {
         // For BLS12-377, we perform variable base MSM using a batched addition technique.
         if TypeId::of::<A>() == TypeId::of::<G1Affine>() {
             #[cfg(all(feature = "cuda", target_arch = "x86_64"))]
@@ -44,24 +46,42 @@ impl VariableBase {
     #[cfg(test)]
     fn msm_naive<A: Affine>(bases: &[A], scalars: &[Uint<256, 4>]) -> A::Projective {
         use itertools::Itertools;
-        use snarkvm_utilities::BitIteratorBE;
 
         bases
             .iter()
             .zip_eq(scalars)
-            .map(|(base, scalar)| base.mul_bits(BitIteratorBE::new(*scalar)))
+            .map(|(base, scalar)| {
+                base.mul_bits(
+                    scalar
+                        .as_limbs()
+                        .iter()
+                        .flat_map(|limb| limb.view_bits::<Lsb0>())
+                        .map(|bit| *bit.deref())
+                        .rev()
+                        .collect::<Vec<_>>(),
+                )
+            })
             .sum()
     }
 
     #[cfg(test)]
-    fn msm_naive_parallel<A: Affine>(bases: &[A], scalars: &[Uint<256, 4>]) -> G::Projective {
+    fn msm_naive_parallel<A: Affine>(bases: &[A], scalars: &[Uint<256, 4>]) -> A::Projective {
         use rayon::prelude::*;
-        use snarkvm_utilities::BitIteratorBE;
 
         bases
             .par_iter()
             .zip_eq(scalars)
-            .map(|(base, scalar)| base.mul_bits(BitIteratorBE::new(*scalar)))
+            .map(|(base, scalar)| {
+                base.mul_bits(
+                    scalar
+                        .as_limbs()
+                        .iter()
+                        .flat_map(|limb| limb.view_bits::<Lsb0>())
+                        .map(|bit| *bit.deref())
+                        .rev()
+                        .collect::<Vec<_>>(),
+                )
+            })
             .sum()
     }
 }
@@ -69,27 +89,18 @@ impl VariableBase {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use snarkvm_curves::bls12_377::{Fr, G1Affine};
-    use snarkvm_fields::PrimeField;
-    use snarkvm_utilities::rand::TestRng;
+    use crate::bls12_377::{Field, Projective, Scalar};
 
-    fn create_scalar_bases<G: AffineCurve<ScalarField = F>, F: PrimeField>(
-        rng: &mut TestRng,
-        size: usize,
-    ) -> (Vec<G>, Vec<F::BigInteger>) {
-        let bases = (0..size).map(|_| G::rand(rng)).collect::<Vec<_>>();
-        let scalars = (0..size)
-            .map(|_| F::rand(rng).to_repr())
-            .collect::<Vec<_>>();
+    fn create_scalar_bases(size: usize) -> (Vec<G1Affine>, Vec<Uint<256, 4>>) {
+        let bases = (0..size).map(|_| G1Affine::rand()).collect::<Vec<_>>();
+        let scalars = (0..size).map(|_| Scalar::rand().0).collect::<Vec<_>>();
         (bases, scalars)
     }
 
     #[test]
     fn test_msm() {
-        use snarkvm_curves::ProjectiveCurve;
         for msm_size in [1, 5, 10, 50, 100, 500, 1000] {
-            let mut rng = TestRng::default();
-            let (bases, scalars) = create_scalar_bases::<G1Affine, Fr>(&mut rng, msm_size);
+            let (bases, scalars) = create_scalar_bases(msm_size);
 
             let naive_a = VariableBase::msm_naive(bases.as_slice(), scalars.as_slice()).to_affine();
             let naive_b =
@@ -107,9 +118,8 @@ mod tests {
     #[cfg(all(feature = "cuda", target_arch = "x86_64"))]
     #[test]
     fn test_msm_cuda() {
-        let mut rng = TestRng::default();
         for _ in 0..100 {
-            let (bases, scalars) = create_scalar_bases::<G1Affine, Fr>(&mut rng, 1 << 10);
+            let (bases, scalars) = create_scalar_bases(1 << 10);
             let rust = standard::msm(bases.as_slice(), scalars.as_slice());
 
             let cuda = cuda::msm_cuda(bases.as_slice(), scalars.as_slice()).unwrap();

@@ -2,6 +2,8 @@ use crate::{
     bls12_377::{scalar, Affine, Field, Parameters, Projective},
     utils::*,
 };
+use bitvec::prelude::*;
+use core::ops::Deref;
 use rayon::prelude::*;
 use ruint::Uint;
 
@@ -61,7 +63,7 @@ const fn batch_size(msm_size: usize) -> usize {
 #[inline]
 fn batch_add_in_place_same_slice<A: Affine>(bases: &mut [A], index: &[(u32, u32)]) {
     let mut inversion_tmp = <A::Parameters as Parameters>::BaseField::ONE;
-    let half = A::BaseField::half();
+    let half = <A::Parameters as Parameters>::BaseField::half();
 
     #[cfg(target_arch = "x86_64")]
     let mut prefetch_iter = index.iter();
@@ -118,8 +120,8 @@ fn batch_add_write<A: Affine>(
     addition_result: &mut Vec<A>,
     scratch_space: &mut Vec<Option<A>>,
 ) {
-    let mut inversion_tmp = A::BaseField::ONE;
-    let half = A::BaseField::half();
+    let mut inversion_tmp = <A::Parameters as Parameters>::BaseField::ONE;
+    let half = <A::Parameters as Parameters>::BaseField::half();
 
     #[cfg(target_arch = "x86_64")]
     let mut prefetch_iter = index.iter();
@@ -339,7 +341,7 @@ fn batched_window<A: Affine>(
             let mut scalar = scalar;
 
             // We right-shift by w_start, thus getting rid of the lower bits.
-            scalar.divn(w_start as u32);
+            scalar >> w_start;
 
             // We mod the remaining bits by the window size.
             let scalar = (scalar.as_limbs()[0] % (1 << c)) as i32;
@@ -369,7 +371,14 @@ pub fn msm<A: Affine>(bases: &[A], scalars: &[Uint<256, 4>]) -> A::Projective {
         let bigint_size = 256;
         let mut bits = scalars
             .iter()
-            .map(|s| BitIteratorBE::new(s.as_ref()).skip(bigint_size - num_bits))
+            .map(|s| {
+                s.as_limbs()
+                    .iter()
+                    .flat_map(|limb| limb.view_bits::<Lsb0>())
+                    .map(|bit| *bit.deref())
+                    .rev()
+                    .skip((bigint_size - num_bits) as usize)
+            })
             .collect::<Vec<_>>();
         let mut sum = A::Projective::ZERO;
 
@@ -388,6 +397,36 @@ pub fn msm<A: Affine>(bases: &[A], scalars: &[Uint<256, 4>]) -> A::Projective {
         debug_assert!(bits.iter_mut().all(|b| b.next().is_none()));
         sum
     } else {
-        super::standard::msm(bases, scalars)
+        // Determine the bucket size `c` (chosen empirically).
+        let c = match scalars.len() < 32 {
+            true => 1,
+            false => crate::msm::ln_without_floats(scalars.len()) + 2,
+        };
+
+        let num_bits = scalar::MODULUS_BITS;
+
+        // Each window is of size `c`.
+        // We divide up the bits 0..num_bits into windows of size `c`, and
+        // in parallel process each such window.
+        let window_sums: Vec<_> = cfg_into_iter!(0..num_bits)
+            .step_by(c)
+            .map(|w_start| batched_window(bases, scalars, w_start as usize, c))
+            .collect();
+
+        // We store the sum for the lowest window.
+        let (lowest, window_sums) = window_sums.split_first().unwrap();
+
+        // We're traversing windows from high to low.
+        window_sums
+            .iter()
+            .rev()
+            .fold(A::Projective::ZERO, |mut total, (sum_i, window_size)| {
+                total += sum_i;
+                for _ in 0..*window_size {
+                    total.double_in_place();
+                }
+                total
+            })
+            + lowest.0
     }
 }

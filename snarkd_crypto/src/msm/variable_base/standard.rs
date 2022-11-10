@@ -10,7 +10,7 @@ fn update_buckets<A: Affine>(
     buckets: &mut [A::Projective],
 ) {
     // We right-shift by w_start, thus getting rid of the lower bits.
-    scalar.divn(w_start as u32);
+    scalar >> w_start;
 
     // We mod the remaining bits by the window size.
     let scalar = scalar.as_limbs()[0] % (1 << c);
@@ -80,7 +80,7 @@ pub fn msm<A: Affine>(bases: &[A], scalars: &[Uint<256, 4>]) -> A::Projective {
     // in parallel process each such window.
     let window_sums: Vec<_> = cfg_into_iter!(0..num_bits)
         .step_by(c)
-        .map(|w_start| standard_window(bases, scalars, w_start, c))
+        .map(|w_start| standard_window(bases, scalars, w_start as usize, c))
         .collect();
 
     // We store the sum for the lowest window.
