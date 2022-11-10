@@ -10,9 +10,13 @@ pub trait Affine:
     + Mul<Scalar, Output = Self::Projective>
     + Debug
     + Display
+    + Copy
+    + Clone
     + PartialEq
     + Eq
     + Sized
+    + Send
+    + Sync
 {
     type Projective: Projective<Affine = Self>;
     type Parameters: Parameters;

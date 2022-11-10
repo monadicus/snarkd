@@ -80,14 +80,14 @@ impl Default for G1Prepared {
 
 #[cfg(test)]
 mod tests {
-    use rand::Rng;
-
     use super::{super::G1Affine, *};
     use crate::bls12_377::field::Field;
+    use rand::Rng;
+    use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 
     #[test]
     fn test_subgroup_membership() {
-        for _ in 0..1000 {
+        (0..1000).into_par_iter().for_each(|_| {
             let p = G1Affine::rand();
             assert!(p.is_in_correct_subgroup_assuming_on_curve());
             let x = Fp::rand();
@@ -107,6 +107,6 @@ mod tests {
                     .is_zero(),
                 );
             }
-        }
+        })
     }
 }

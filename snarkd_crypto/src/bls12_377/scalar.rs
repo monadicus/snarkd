@@ -362,6 +362,10 @@ impl Field for Scalar {
         self.0 == Self::ONE.0
     }
 
+    fn half() -> Self {
+        Self((MODULUS + uint!(1_U256)) >> 1)
+    }
+
     fn rand() -> Self {
         let mut a = Self(rand::thread_rng().sample(Standard));
         a.reduce();

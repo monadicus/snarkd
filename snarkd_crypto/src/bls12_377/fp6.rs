@@ -148,6 +148,14 @@ impl Field for Fp6 {
         self.c0.is_one() && self.c1.is_zero() && self.c2.is_zero()
     }
 
+    fn half() -> Self {
+        Self {
+            c0: Fp2::half(),
+            c1: Fp2::ZERO,
+            c2: Fp2::ZERO,
+        }
+    }
+
     fn rand() -> Self {
         Self {
             c0: Fp2::rand(),

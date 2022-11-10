@@ -126,10 +126,6 @@ impl Fp {
         }
     }
 
-    pub fn half() -> Self {
-        Self((MODULUS + uint!(1_U384)) >> 1)
-    }
-
     pub fn is_valid(&self) -> bool {
         self.0 < MODULUS
     }
@@ -155,6 +151,10 @@ impl Field for Fp {
 
     fn is_one(&self) -> bool {
         self.0 == Self::ONE.0
+    }
+
+    fn half() -> Self {
+        Self((MODULUS + uint!(1_U384)) >> 1)
     }
 
     fn rand() -> Self {

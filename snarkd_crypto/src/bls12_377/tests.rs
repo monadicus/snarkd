@@ -3,6 +3,7 @@ use crate::bls12_377::{
     G2Projective, LegendreSymbol, Projective, Scalar,
 };
 use bitvec::prelude::*;
+use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 use ruint::uint;
 use std::{
     cmp::Ordering,
@@ -12,7 +13,7 @@ use std::{
 pub(crate) const ITERATIONS: usize = 10;
 
 fn random_addition_test<G: Projective>() {
-    for _ in 0..ITERATIONS {
+    (0..ITERATIONS).into_par_iter().for_each(|_| {
         let a = G::rand();
         let b = G::rand();
         let c = G::rand();
@@ -85,11 +86,11 @@ fn random_addition_test<G: Projective>() {
             assert!(b != tmp[i]);
             assert!(c != tmp[i]);
         }
-    }
+    })
 }
 
 fn random_multiplication_test<G: Projective>() {
-    for _ in 0..ITERATIONS {
+    (0..ITERATIONS).into_par_iter().for_each(|_| {
         let mut a = G::rand();
         let mut b = G::rand();
         let a_affine = a.to_affine();
@@ -115,11 +116,11 @@ fn random_multiplication_test<G: Projective>() {
 
         assert_eq!(tmp1, tmp2);
         assert_eq!(tmp1, tmp3);
-    }
+    })
 }
 
 fn random_doubling_test<G: Projective>() {
-    for _ in 0..ITERATIONS {
+    (0..ITERATIONS).into_par_iter().for_each(|_| {
         let mut a = G::rand();
         let mut b = G::rand();
 
@@ -140,11 +141,11 @@ fn random_doubling_test<G: Projective>() {
 
         assert_eq!(tmp1, tmp2);
         assert_eq!(tmp1, tmp3);
-    }
+    })
 }
 
 fn random_negation_test<G: Projective>() {
-    for _ in 0..ITERATIONS {
+    (0..ITERATIONS).into_par_iter().for_each(|_| {
         let r = G::rand();
 
         let s = Scalar::rand();
@@ -168,7 +169,7 @@ fn random_negation_test<G: Projective>() {
 
         t1 = -t1;
         assert_eq!(t1, t2);
-    }
+    })
 }
 
 fn random_transformation_test<G: Projective>() {
@@ -460,7 +461,7 @@ pub fn field_test<F: Field>(a: F, b: F) {
     // (a - b)^2 = (-(b - a))^2
     assert_eq!((a - b).square(), (-(b - a)).square());
 
-    let mut c = a.clone();
+    let mut c = a;
     c.inverse_in_place();
     assert_eq!(a * c, one);
 
@@ -789,7 +790,7 @@ fn test_fp_sub_assign() {
 
 #[test]
 fn test_fp_mul_assign() {
-    for _ in 0..1000000 {
+    (0..1000).into_par_iter().for_each(|_| {
         // Ensure that (a * b) * c = a * (b * c)
         let a = Fp::rand();
         let b = Fp::rand();
@@ -804,9 +805,9 @@ fn test_fp_mul_assign() {
         tmp2.mul_assign(&a);
 
         assert_eq!(tmp1, tmp2);
-    }
+    });
 
-    for _ in 0..1000000 {
+    (0..1000).into_par_iter().for_each(|_| {
         // Ensure that r * (a + b + c) = r*a + r*b + r*c
 
         let r = Fp::rand();
@@ -827,12 +828,12 @@ fn test_fp_mul_assign() {
         a.add_assign(c);
 
         assert_eq!(tmp1, a);
-    }
+    })
 }
 
 #[test]
 fn test_fp_squaring() {
-    for _ in 0..1000000 {
+    (0..1000).into_par_iter().for_each(|_| {
         // Ensure that (a * a) = a^2
         let a = Fp::rand();
 
@@ -843,7 +844,7 @@ fn test_fp_squaring() {
         tmp2.mul_assign(&a);
 
         assert_eq!(tmp, tmp2);
-    }
+    })
 }
 
 #[test]
@@ -917,7 +918,7 @@ fn test_fp_pow() {
 fn test_fp_sqrt() {
     assert_eq!(Fp::ZERO.sqrt().unwrap(), Fp::ZERO);
 
-    for _ in 0..1000 {
+    (0..1000).into_par_iter().for_each(|_| {
         // Ensure sqrt(a^2) = a or -a
         let a = Fp::rand();
         let nega = -a;
@@ -927,9 +928,7 @@ fn test_fp_sqrt() {
         let b = b.sqrt().unwrap();
 
         assert!(a == b || nega == b);
-    }
 
-    for _ in 0..1000 {
         // Ensure sqrt(a)^2 = a for random a
         let a = Fp::rand();
 
@@ -938,7 +937,7 @@ fn test_fp_sqrt() {
 
             assert_eq!(a, tmp);
         }
-    }
+    })
 }
 
 #[test]

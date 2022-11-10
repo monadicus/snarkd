@@ -57,11 +57,7 @@ fn execute_with_threads<T: Sync + Send>(f: impl FnOnce() -> T + Send, num_thread
 #[macro_export]
 macro_rules! cfg_iter {
     ($e: expr) => {{
-        #[cfg(feature = "parallel")]
         let result = $e.par_iter();
-
-        #[cfg(not(feature = "parallel"))]
-        let result = $e.iter();
 
         result
     }};
@@ -71,11 +67,7 @@ macro_rules! cfg_iter {
 #[macro_export]
 macro_rules! cfg_iter_mut {
     ($e: expr) => {{
-        #[cfg(feature = "parallel")]
         let result = $e.par_iter_mut();
-
-        #[cfg(not(feature = "parallel"))]
-        let result = $e.iter_mut();
 
         result
     }};
@@ -85,11 +77,7 @@ macro_rules! cfg_iter_mut {
 #[macro_export]
 macro_rules! cfg_into_iter {
     ($e: expr) => {{
-        #[cfg(feature = "parallel")]
         let result = $e.into_par_iter();
-
-        #[cfg(not(feature = "parallel"))]
-        let result = $e.into_iter();
 
         result
     }};
@@ -100,11 +88,7 @@ macro_rules! cfg_into_iter {
 #[macro_export]
 macro_rules! cfg_chunks {
     ($e: expr, $size: expr) => {{
-        #[cfg(feature = "parallel")]
         let result = $e.par_chunks($size);
-
-        #[cfg(not(feature = "parallel"))]
-        let result = $e.chunks($size);
 
         result
     }};
@@ -114,11 +98,7 @@ macro_rules! cfg_chunks {
 #[macro_export]
 macro_rules! cfg_chunks_mut {
     ($e: expr, $size: expr) => {{
-        #[cfg(feature = "parallel")]
         let result = $e.par_chunks_mut($size);
-
-        #[cfg(not(feature = "parallel"))]
-        let result = $e.chunks_mut($size);
 
         result
     }};
@@ -128,11 +108,7 @@ macro_rules! cfg_chunks_mut {
 #[macro_export]
 macro_rules! cfg_reduce {
     ($e: expr, $default: expr, $op: expr) => {{
-        #[cfg(feature = "parallel")]
         let result = $e.reduce($default, $op);
-
-        #[cfg(not(feature = "parallel"))]
-        let result = $e.fold($default(), $op);
 
         result
     }};
@@ -230,20 +206,19 @@ pub fn get_cpu() -> Cpu {
     let vendor_leaf = native_cpuid::cpuid_count(EAX_VENDOR_INFO, 0);
     let is_leaf_supported = EAX_VENDOR_INFO <= vendor_leaf.eax;
 
-    match is_leaf_supported {
-        true => {
-            let vendor = VendorInfo {
-                ebx: vendor_leaf.ebx,
-                ecx: vendor_leaf.ecx,
-                edx: vendor_leaf.edx,
-            };
+    if is_leaf_supported {
+        let vendor = VendorInfo {
+            ebx: vendor_leaf.ebx,
+            ecx: vendor_leaf.ecx,
+            edx: vendor_leaf.edx,
+        };
 
-            match vendor.as_str() {
-                "AuthenticAMD" => Cpu::AMD,
-                "GenuineIntel" => Cpu::Intel,
-                _ => Cpu::Unknown,
-            }
+        match vendor.as_str() {
+            "AuthenticAMD" => Cpu::AMD,
+            "GenuineIntel" => Cpu::Intel,
+            _ => Cpu::Unknown,
         }
-        false => Cpu::Unknown,
+    } else {
+        Cpu::Unknown
     }
 }
