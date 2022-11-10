@@ -1,6 +1,6 @@
 use super::PolynomialLabel;
 use crate::{
-    bls12_377::Fr,
+    bls12_377::Scalar,
     fft::{
         DensePolynomial, EvaluationDomain, Evaluations as EvaluationsOnDomain, Polynomial,
         SparsePolynomial,
@@ -63,7 +63,7 @@ impl PolynomialInfo {
 #[derive(Debug, Clone)]
 pub struct LabeledPolynomial {
     pub info: PolynomialInfo,
-    pub polynomial: Polynomial<'static, Fr>,
+    pub polynomial: Polynomial<'static>,
 }
 
 impl core::ops::Deref for LabeledPolynomial {
@@ -109,7 +109,7 @@ impl LabeledPolynomial {
     }
 
     /// Evaluate the polynomial in `self`.
-    pub fn evaluate(&self, point: Fr) -> Fr {
+    pub fn evaluate(&self, point: Scalar) -> Scalar {
         self.polynomial.evaluate(point)
     }
 
@@ -137,7 +137,7 @@ impl LabeledPolynomial {
 #[derive(Debug, Clone)]
 pub struct LabeledPolynomialWithBasis<'a> {
     pub info: PolynomialInfo,
-    pub polynomial: Vec<(Fr, PolynomialWithBasis<'a>)>,
+    pub polynomial: Vec<(Scalar, PolynomialWithBasis<'a>)>,
 }
 
 impl<'a> LabeledPolynomialWithBasis<'a> {
@@ -152,14 +152,14 @@ impl<'a> LabeledPolynomialWithBasis<'a> {
         let info = PolynomialInfo::new(label, degree_bound, hiding_bound);
         Self {
             info,
-            polynomial: vec![(Fr::one(), polynomial)],
+            polynomial: vec![(Scalar::one(), polynomial)],
         }
     }
 
     /// Construct a new labeled polynomial by consuming `polynomial`.
     pub fn new_linear_combination(
         label: PolynomialLabel,
-        polynomial: Vec<(Fr, PolynomialWithBasis<'a>)>,
+        polynomial: Vec<(Scalar, PolynomialWithBasis<'a>)>,
         hiding_bound: Option<usize>,
     ) -> Self {
         let info = PolynomialInfo::new(label, None, hiding_bound);
@@ -175,7 +175,7 @@ impl<'a> LabeledPolynomialWithBasis<'a> {
         let info = PolynomialInfo::new(label, None, hiding_bound);
         Self {
             info,
-            polynomial: vec![(Fr::one(), polynomial)],
+            polynomial: vec![(Scalar::one(), polynomial)],
         }
     }
 
@@ -188,7 +188,7 @@ impl<'a> LabeledPolynomialWithBasis<'a> {
         let info = PolynomialInfo::new(label, None, hiding_bound);
         Self {
             info,
-            polynomial: vec![(Fr::one(), polynomial)],
+            polynomial: vec![(Scalar::one(), polynomial)],
         }
     }
 
@@ -214,7 +214,7 @@ impl<'a> LabeledPolynomialWithBasis<'a> {
     }
 
     /// Evaluate the polynomial in `self`.
-    pub fn evaluate(&self, point: Fr) -> Fr {
+    pub fn evaluate(&self, point: Scalar) -> Scalar {
         self.polynomial
             .iter()
             .map(|(coeff, p)| p.evaluate(point) * coeff)
@@ -251,7 +251,7 @@ impl<'a> LabeledPolynomialWithBasis<'a> {
                                         .zip(&p.coeffs)
                                         .for_each(|(e, f)| *e += *c * f)
                                 } else {
-                                    let mut e: DensePolynomial<F> = p.clone().into_owned();
+                                    let mut e: DensePolynomial = p.clone().into_owned();
                                     cfg_iter_mut!(e).for_each(|e| *e *= c);
                                     dense_polys.insert(degree_bound, e);
                                 }
@@ -329,7 +329,7 @@ impl<'a> From<&'a LabeledPolynomial> for LabeledPolynomialWithBasis<'a> {
         };
         Self {
             info: other.info.clone(),
-            polynomial: vec![(Fr::one(), polynomial)],
+            polynomial: vec![(Scalar::one(), polynomial)],
         }
     }
 }
@@ -342,7 +342,7 @@ impl<'a> From<LabeledPolynomial> for LabeledPolynomialWithBasis<'a> {
         };
         Self {
             info: other.info.clone(),
-            polynomial: vec![(Fr::one(), polynomial)],
+            polynomial: vec![(Scalar::one(), polynomial)],
         }
     }
 }
@@ -467,21 +467,21 @@ impl<'a> PolynomialWithBasis<'a> {
         }
     }
 
-    pub fn evaluate(&self, point: Fr) -> Fr {
+    pub fn evaluate(&self, point: Scalar) -> Scalar {
         match self {
             Self::Monomial { polynomial, .. } => polynomial.evaluate(point),
             Self::Lagrange { evaluations } => {
                 let domain = evaluations.domain();
                 let degree = domain.size() as u64;
-                let multiplier = (point.pow([degree]) - Fr::one()) / Fr::from(degree);
+                let multiplier = (point.pow([degree]) - Scalar::one()) / Scalar::from(degree);
                 let powers: Vec<_> = domain.elements().collect();
                 let mut denominators = cfg_iter!(powers).map(|pow| point - pow).collect::<Vec<_>>();
-                snarkvm_fields::batch_inversion(&mut denominators);
+                Scalar::batch_inversion(&mut denominators);
                 cfg_iter_mut!(denominators)
                     .zip_eq(powers)
                     .zip_eq(&evaluations.evaluations)
                     .map(|((denom, power), coeff)| *denom * power * coeff)
-                    .sum::<Fr>()
+                    .sum::<Scalar>()
                     * multiplier
             }
         }

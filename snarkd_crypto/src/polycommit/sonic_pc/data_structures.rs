@@ -1,6 +1,6 @@
 use super::{LabeledPolynomial, PolynomialInfo};
 use crate::{
-    bls12_377::{Field, Fp, Fr, G1Affine, G1Projective, G2Affine},
+    bls12_377::{Field, Fp, G1Affine, G1Projective, G2Affine, G2Prepared, Scalar},
     crypto_hash::sha256::sha256,
     fft::EvaluationDomain,
     polycommit::kzg10,
@@ -123,7 +123,7 @@ impl CommitterKey {
 
     /// Obtain elements of the SRS in the lagrange basis powers, for use with the underlying
     /// KZG10 construction.
-    pub fn lagrange_basis(&self, domain: EvaluationDomain<Fr>) -> Option<kzg10::LagrangeBasis> {
+    pub fn lagrange_basis(&self, domain: EvaluationDomain) -> Option<kzg10::LagrangeBasis> {
         self.lagrange_bases_at_beta_g
             .get(&domain.size())
             .map(|basis| kzg10::LagrangeBasis {
@@ -145,7 +145,7 @@ impl CommitterKey {
 }
 
 /// `VerifierKey` is used to check evaluation proofs for a given commitment.
-#[derive(Clone, Debug, Default, PartialEq, Eq, CanonicalSerialize, CanonicalDeserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct VerifierKey {
     /// The verification key for the underlying KZG10 scheme.
     pub vk: kzg10::VerifierKey,
@@ -155,8 +155,7 @@ pub struct VerifierKey {
     pub degree_bounds_and_neg_powers_of_h: Option<Vec<(usize, G2Affine)>>,
 
     /// The prepared version of `degree_bounds_and_neg_powers_of_h`.
-    pub degree_bounds_and_prepared_neg_powers_of_h:
-        Option<Vec<(usize, <G2Affine as PairingCurve>::Prepared)>>,
+    pub degree_bounds_and_prepared_neg_powers_of_h: Option<Vec<(usize, G2Prepared)>>,
 
     /// The maximum degree supported by the trimmed parameters that `self` is
     /// a part of.
@@ -179,10 +178,7 @@ impl VerifierKey {
             })
     }
 
-    pub fn get_prepared_shift_power(
-        &self,
-        degree_bound: usize,
-    ) -> Option<<G2Affine as PairingCurve>::Prepared> {
+    pub fn get_prepared_shift_power(&self, degree_bound: usize) -> Option<G2Prepared> {
         self.degree_bounds_and_prepared_neg_powers_of_h
             .as_ref()
             .and_then(|v| {
@@ -203,23 +199,6 @@ impl VerifierKey {
     }
 }
 
-impl ToConstraintField<Fp> for VerifierKey {
-    fn to_field_elements(&self) -> Result<Vec<Fp>, ConstraintFieldError> {
-        let mut res = Vec::new();
-        res.extend_from_slice(&self.vk.to_field_elements()?);
-
-        if let Some(degree_bounds_and_neg_powers_of_h) = &self.degree_bounds_and_neg_powers_of_h {
-            for (d, neg_powers_of_h) in degree_bounds_and_neg_powers_of_h.iter() {
-                let d_elem: Fp = (*d as u64).into();
-                res.push(d_elem);
-                res.append(&mut neg_powers_of_h.to_field_elements()?);
-            }
-        }
-
-        Ok(res)
-    }
-}
-
 /// `PreparedVerifierKey` is used to check evaluation proofs for a given commitment.
 #[derive(Clone, Debug)]
 pub struct PreparedVerifierKey {
@@ -228,8 +207,7 @@ pub struct PreparedVerifierKey {
     /// Information required to enforce degree bounds. Each pair
     /// is of the form `(degree_bound, shifting_advice)`.
     /// This is `None` if `self` does not support enforcing any degree bounds.
-    pub degree_bounds_and_prepared_neg_powers_of_h:
-        Option<Vec<(usize, <G2Affine as PairingCurve>::Prepared)>>,
+    pub degree_bounds_and_prepared_neg_powers_of_h: Option<Vec<(usize, G2Prepared)>>,
     /// The maximum degree supported by the `UniversalParams` `self` was derived
     /// from.
     pub max_degree: usize,
@@ -240,10 +218,7 @@ pub struct PreparedVerifierKey {
 
 impl PreparedVerifierKey {
     /// Find the appropriate shift for the degree bound.
-    pub fn get_prepared_shift_power(
-        &self,
-        bound: usize,
-    ) -> Option<<G2Affine as PairingCurve>::Prepared> {
+    pub fn get_prepared_shift_power(&self, bound: usize) -> Option<G2Prepared> {
         self.degree_bounds_and_prepared_neg_powers_of_h
             .as_ref()
             .and_then(|v| {
@@ -402,15 +377,15 @@ impl<B: Borrow<String>> PartialEq<B> for LCTerm {
 
 /// A labeled linear combinations of polynomials.
 #[derive(Clone, Debug)]
-pub struct LinearCombination<F> {
+pub struct LinearCombination {
     /// The label.
     pub label: String,
     /// The linear combination of `(coeff, poly_label)` pairs.
-    pub terms: BTreeMap<LCTerm, F>,
+    pub terms: BTreeMap<LCTerm, Scalar>,
 }
 
 #[allow(clippy::or_fun_call)]
-impl<F: Field> LinearCombination<F> {
+impl LinearCombination {
     /// Construct an empty labeled linear combination.
     pub fn empty(label: impl Into<String>) -> Self {
         Self {
@@ -423,11 +398,11 @@ impl<F: Field> LinearCombination<F> {
     /// with the terms specified in `term`.
     pub fn new(
         label: impl Into<String>,
-        _terms: impl IntoIterator<Item = (F, impl Into<LCTerm>)>,
+        _terms: impl IntoIterator<Item = (Scalar, impl Into<LCTerm>)>,
     ) -> Self {
         let mut terms = BTreeMap::new();
         for (c, l) in _terms.into_iter().map(|(c, t)| (c, t.into())) {
-            *terms.entry(l).or_insert(F::zero()) += c;
+            *terms.entry(l).or_insert(Scalar::zero()) += c;
         }
 
         Self {
@@ -447,9 +422,9 @@ impl<F: Field> LinearCombination<F> {
     }
 
     /// Add a term to the linear combination.
-    pub fn add(&mut self, c: F, t: impl Into<LCTerm>) -> &mut Self {
+    pub fn add(&mut self, c: Scalar, t: impl Into<LCTerm>) -> &mut Self {
         let t = t.into();
-        *self.terms.entry(t.clone()).or_insert(F::zero()) += c;
+        *self.terms.entry(t.clone()).or_insert(Scalar::zero()) += c;
         if self.terms[&t].is_zero() {
             self.terms.remove(&t);
         }
@@ -460,59 +435,59 @@ impl<F: Field> LinearCombination<F> {
         self.terms.len()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (&F, &LCTerm)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&Scalar, &LCTerm)> {
         self.terms.iter().map(|(t, c)| (c, t))
     }
 }
 
-impl<'a, F: Field> AddAssign<(F, &'a LinearCombination<F>)> for LinearCombination<F> {
+impl<'a> AddAssign<(Scalar, &'a LinearCombination)> for LinearCombination {
     #[allow(clippy::suspicious_op_assign_impl)]
-    fn add_assign(&mut self, (coeff, other): (F, &'a LinearCombination<F>)) {
+    fn add_assign(&mut self, (coeff, other): (Scalar, &'a LinearCombination)) {
         for (t, c) in other.terms.iter() {
             self.add(coeff * c, t.clone());
         }
     }
 }
 
-impl<'a, F: Field> SubAssign<(F, &'a LinearCombination<F>)> for LinearCombination<F> {
+impl<'a> SubAssign<(Scalar, &'a LinearCombination)> for LinearCombination {
     #[allow(clippy::suspicious_op_assign_impl)]
-    fn sub_assign(&mut self, (coeff, other): (F, &'a LinearCombination<F>)) {
+    fn sub_assign(&mut self, (coeff, other): (Scalar, &'a LinearCombination)) {
         for (t, c) in other.terms.iter() {
             self.add(-coeff * c, t.clone());
         }
     }
 }
 
-impl<'a, F: Field> AddAssign<&'a LinearCombination<F>> for LinearCombination<F> {
-    fn add_assign(&mut self, other: &'a LinearCombination<F>) {
+impl<'a> AddAssign<&'a LinearCombination> for LinearCombination {
+    fn add_assign(&mut self, other: &'a LinearCombination) {
         for (t, c) in other.terms.iter() {
             self.add(*c, t.clone());
         }
     }
 }
 
-impl<'a, F: Field> SubAssign<&'a LinearCombination<F>> for LinearCombination<F> {
-    fn sub_assign(&mut self, other: &'a LinearCombination<F>) {
+impl<'a> SubAssign<&'a LinearCombination> for LinearCombination {
+    fn sub_assign(&mut self, other: &'a LinearCombination) {
         for (t, &c) in other.terms.iter() {
             self.add(-c, t.clone());
         }
     }
 }
 
-impl<F: Field> AddAssign<F> for LinearCombination<F> {
-    fn add_assign(&mut self, coeff: F) {
+impl AddAssign<Scalar> for LinearCombination {
+    fn add_assign(&mut self, coeff: Scalar) {
         self.add(coeff, LCTerm::One);
     }
 }
 
-impl<F: Field> SubAssign<F> for LinearCombination<F> {
-    fn sub_assign(&mut self, coeff: F) {
+impl SubAssign<Scalar> for LinearCombination {
+    fn sub_assign(&mut self, coeff: Scalar) {
         self.add(-coeff, LCTerm::One);
     }
 }
 
-impl<F: Field> MulAssign<F> for LinearCombination<F> {
-    fn mul_assign(&mut self, coeff: F) {
+impl MulAssign<Scalar> for LinearCombination {
+    fn mul_assign(&mut self, coeff: Scalar) {
         self.terms.values_mut().for_each(|c| *c *= &coeff);
     }
 }
@@ -523,19 +498,19 @@ impl<F: Field> MulAssign<F> for LinearCombination<F> {
 /// that `p[label]` is to be queried at.
 ///
 /// Added the third field: the point name.
-pub type QuerySet<'a, T> = BTreeSet<(String, (String, T))>;
+pub type QuerySet<'a> = BTreeSet<(String, (String, Scalar))>;
 
 /// `Evaluations` is the result of querying a set of labeled polynomials or equations
 /// `p` at a `QuerySet` `Q`. It maps each element of `Q` to the resulting evaluation.
 /// That is, if `(label, query)` is an element of `Q`, then `evaluation.get((label, query))`
 /// should equal `p[label].evaluate(query)`.
-pub type Evaluations<'a, F> = BTreeMap<(String, F), F>;
+pub type Evaluations<'a, Scalar> = BTreeMap<(String, Scalar), Scalar>;
 
 /// Evaluate the given polynomials at `query_set`.
-pub fn evaluate_query_set<'a, F: PrimeField>(
-    polys: impl IntoIterator<Item = &'a LabeledPolynomial<F>>,
-    query_set: &QuerySet<'a, F>,
-) -> Evaluations<'a, F> {
+pub fn evaluate_query_set<'a>(
+    polys: impl IntoIterator<Item = &'a LabeledPolynomial>,
+    query_set: &QuerySet<'a>,
+) -> Evaluations<'a> {
     let polys: HashMap<_, _> = polys.into_iter().map(|p| (p.label(), p)).collect();
     let mut evaluations = Evaluations::new();
     for (label, (_point_name, point)) in query_set {
@@ -554,7 +529,7 @@ pub struct BatchLCProof {
     /// Evaluation proof.
     pub proof: BatchProof,
     /// Evaluations required to verify the proof.
-    pub evaluations: Option<Vec<Fr>>,
+    pub evaluations: Option<Vec<Scalar>>,
 }
 
 impl BatchLCProof {

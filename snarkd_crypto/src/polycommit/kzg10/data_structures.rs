@@ -1,5 +1,5 @@
 use crate::{
-    bls12_377::{Fp, Fr, G1Affine, G1Projective, G2Affine, G2Prepared},
+    bls12_377::{Fp, G1Affine, G1Projective, G2Affine, G2Prepared, Scalar},
     fft::{DensePolynomial, EvaluationDomain},
     AlgebraicSponge,
 };
@@ -7,7 +7,7 @@ use anyhow::Result;
 use core::ops::{Add, AddAssign};
 use parking_lot::RwLock;
 use rand_core::RngCore;
-use std::{collections::BTreeMap, io, sync::Arc};
+use std::{borrow::Cow, collections::BTreeMap, io, sync::Arc};
 
 /// `UniversalParams` are the universal parameters for the KZG10 scheme.
 #[derive(Clone, Debug)]
@@ -16,7 +16,7 @@ pub struct UniversalParams {
     /// and group elements of the form `{ \beta^i \gamma G }`, where `i` ranges from 0 to `degree`.
     /// This struct provides an abstraction over the powers which are located on-disk
     /// to reduce memory usage.
-    pub powers: Arc<RwLock<PowersOfG<E>>>,
+    pub powers: Arc<RwLock<PowersOfG>>,
     /// The generator of G2.
     pub h: G2Affine,
     /// \beta times the above generator of G2.
@@ -32,20 +32,8 @@ pub struct UniversalParams {
     pub prepared_beta_h: G2Prepared,
 }
 
-impl snarkvm_utilities::Valid for UniversalParams {
-    fn check(&self) -> Result<(), SerializationError> {
-        self.powers.read().check()?;
-        self.h.check()?;
-        self.beta_h.check()?;
-        self.supported_degree_bounds.check()?;
-        self.inverse_neg_powers_of_beta_h.check()?;
-        self.prepared_h.check()?;
-        self.prepared_beta_h.check()
-    }
-}
-
 impl UniversalParams {
-    pub fn lagrange_basis(&self, domain: EvaluationDomain<Fr>) -> Result<Vec<G1Affine>> {
+    pub fn lagrange_basis(&self, domain: EvaluationDomain) -> Result<Vec<G1Affine>> {
         let basis = domain.ifft(
             &self
                 .powers_of_beta_g(0, domain.size())?
@@ -111,7 +99,7 @@ pub struct LagrangeBasis<'a> {
     pub powers_of_beta_times_gamma_g: Cow<'a, [G1Affine]>,
     /// Domain representing the multiplicative subgroup the powers
     /// in `self.lagrange_basis_at_beta_g` are defined over.
-    pub domain: EvaluationDomain<Fr>,
+    pub domain: EvaluationDomain,
 }
 
 impl LagrangeBasis<'_> {
@@ -138,19 +126,6 @@ pub struct VerifierKey {
     pub prepared_beta_h: G2Prepared,
 }
 
-impl ToConstraintField<Fp> for VerifierKey {
-    fn to_field_elements(&self) -> Result<Vec<Fp>, ConstraintFieldError> {
-        let mut res = Vec::new();
-
-        res.extend_from_slice(&self.g.to_field_elements().unwrap());
-        res.extend_from_slice(&self.gamma_g.to_field_elements().unwrap());
-        res.extend_from_slice(&self.h.to_field_elements().unwrap());
-        res.extend_from_slice(&self.beta_h.to_field_elements().unwrap());
-
-        Ok(res)
-    }
-}
-
 /// `PreparedVerifierKey` is the fully prepared version for checking evaluation proofs for a given commitment.
 /// We omit gamma here for simplicity.
 #[derive(Clone, Debug, Default)]
@@ -168,7 +143,7 @@ pub struct PreparedVerifierKey {
 impl PreparedVerifierKey {
     /// prepare `PreparedVerifierKey` from `VerifierKey`
     pub fn prepare(vk: &VerifierKey) -> Self {
-        let supported_bits = Fr::size_in_bits();
+        let supported_bits = Scalar::size_in_bits();
 
         let mut prepared_g = Vec::<G1Affine>::new();
         let mut g = G1Projective::from(vk.g);
@@ -200,12 +175,6 @@ pub struct Commitment(
     pub G1Affine,
 );
 
-impl ToMinimalBits for Commitment {
-    fn to_minimal_bits(&self) -> Vec<bool> {
-        self.0.to_minimal_bits()
-    }
-}
-
 impl Commitment {
     #[inline]
     pub fn empty() -> Self {
@@ -218,12 +187,6 @@ impl Commitment {
 
     pub fn is_in_correct_subgroup_assuming_on_curve(&self) -> bool {
         self.0.is_in_correct_subgroup_assuming_on_curve()
-    }
-}
-
-impl ToConstraintField<Fp> for Commitment {
-    fn to_field_elements(&self) -> Result<Vec<Fp>, ConstraintFieldError> {
-        self.0.to_field_elements()
     }
 }
 
@@ -240,7 +203,7 @@ impl PreparedCommitment {
         let mut prepared_comm = Vec::<G1Affine>::new();
         let mut cur = G1Projective::from(comm.0);
 
-        let supported_bits = Fr::size_in_bits();
+        let supported_bits = Scalar::size_in_bits();
 
         for _ in 0..supported_bits {
             prepared_comm.push(cur.into());
@@ -255,7 +218,7 @@ impl PreparedCommitment {
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 pub struct Randomness {
     /// For KZG10, the commitment randomness is a random polynomial.
-    pub blinding_polynomial: DensePolynomial<Fr>,
+    pub blinding_polynomial: DensePolynomial,
 }
 
 impl Randomness {
@@ -298,11 +261,11 @@ impl<'a> Add<&'a Randomness> for Randomness {
     }
 }
 
-impl<'a> Add<(Fr, &'a Randomness)> for Randomness {
+impl<'a> Add<(Scalar, &'a Randomness)> for Randomness {
     type Output = Self;
 
     #[inline]
-    fn add(mut self, other: (Fr, &'a Randomness)) -> Self {
+    fn add(mut self, other: (Scalar, &'a Randomness)) -> Self {
         self += other;
         self
     }
@@ -315,9 +278,9 @@ impl<'a> AddAssign<&'a Randomness> for Randomness {
     }
 }
 
-impl<'a> AddAssign<(Fr, &'a Randomness)> for Randomness {
+impl<'a> AddAssign<(Scalar, &'a Randomness)> for Randomness {
     #[inline]
-    fn add_assign(&mut self, (f, other): (Fr, &'a Randomness)) {
+    fn add_assign(&mut self, (f, other): (Scalar, &'a Randomness)) {
         self.blinding_polynomial += (f, &other.blinding_polynomial);
     }
 }
@@ -331,7 +294,7 @@ pub struct Proof {
     pub w: G1Affine,
     /// This is the evaluation of the random polynomial at the point for which
     /// the evaluation proof was produced.
-    pub random_v: Option<Fr>,
+    pub random_v: Option<Scalar>,
 }
 
 impl Proof {

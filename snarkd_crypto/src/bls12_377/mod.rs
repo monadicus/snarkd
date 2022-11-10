@@ -71,7 +71,7 @@ const HALF_R: [u64; 8] = [0, 0, 0, 0x8000000000000000, 0, 0, 0, 0];
 const X: u64 = 0x8508c00000000001;
 
 /// Performs multiple pairing operations
-fn pairing<G1: Into<G1Affine>, G2: Into<G2Affine>>(p: G1, q: G2) -> Fp12 {
+pub fn pairing<G1: Into<G1Affine>, G2: Into<G2Affine>>(p: G1, q: G2) -> Fp12 {
     final_exponentiation(&miller_loop(core::iter::once((
         &G1Prepared::from_affine(p.into()),
         &G2Prepared::from_affine(q.into()),
