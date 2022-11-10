@@ -230,6 +230,7 @@ pub fn get_cpu() -> Cpu {
     let vendor_leaf = native_cpuid::cpuid_count(EAX_VENDOR_INFO, 0);
     let is_leaf_supported = EAX_VENDOR_INFO <= vendor_leaf.eax;
 
+<<<<<<< HEAD
     match is_leaf_supported {
         true => {
             let vendor = VendorInfo {
@@ -245,5 +246,21 @@ pub fn get_cpu() -> Cpu {
             }
         }
         false => Cpu::Unknown,
+=======
+    if is_leaf_supported {
+        let vendor = VendorInfo {
+            ebx: vendor_leaf.ebx,
+            ecx: vendor_leaf.ecx,
+            edx: vendor_leaf.edx,
+        };
+
+        match vendor.as_str() {
+            "AuthenticAMD" => Cpu::AMD,
+            "GenuineIntel" => Cpu::Intel,
+            _ => Cpu::Unknown,
+        }
+    } else {
+        Cpu::Unknown
+>>>>>>> main
     }
 }
