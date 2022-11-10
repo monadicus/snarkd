@@ -1,6 +1,11 @@
-use crate::{bls12_377::Field, Index, LinearCombination, Namespace, Variable};
+use crate::{
+    bls12_377::Field,
+    r1cs::{LinearCombination, Namespace, Variable},
+};
 
 use anyhow::Result;
+
+use super::Index;
 
 /// Computations are expressed in terms of rank-1 constraint systems (R1CS).
 /// The `generate_constraints` method is called to generate constraints for
@@ -16,7 +21,6 @@ pub trait ConstraintSystem: Sized {
     /// Represents the type of the "root" of this constraint system
     /// so that nested namespaces can minimize indirection.
     type Root: ConstraintSystem;
-    type Field: Field;
 
     /// Return the "one" input variable
     fn one() -> Variable {
@@ -27,30 +31,33 @@ pub trait ConstraintSystem: Sized {
     /// function is used to determine the assignment of the variable. The
     /// given `annotation` function is invoked in testing contexts in order
     /// to derive a unique name for this variable in the current namespace.
-    fn alloc<FN, A, AR>(&mut self, annotation: A, f: FN) -> Result<Variable>
+    fn alloc<FN, A, F, AR>(&mut self, annotation: A, f: FN) -> Result<Variable>
     where
-        FN: FnOnce() -> Result<Self::Field>,
+        FN: FnOnce() -> Result<F>,
         A: FnOnce() -> AR,
+        F: Field,
         AR: AsRef<str>;
 
     /// Allocate a public variable in the constraint system. The provided
     /// function is used to determine the assignment of the variable.
-    fn alloc_input<FN, A, AR>(&mut self, annotation: A, f: FN) -> Result<Variable>
+    fn alloc_input<FN, A, F, AR>(&mut self, annotation: A, f: FN) -> Result<Variable>
     where
-        FN: FnOnce() -> Result<Self::Field>,
+        FN: FnOnce() -> Result<F>,
         A: FnOnce() -> AR,
+        F: Field,
         AR: AsRef<str>;
 
     /// Enforce that `A` * `B` = `C`. The `annotation` function is invoked in
     /// testing contexts in order to derive a unique name for the constraint
     /// in the current namespace.
-    fn enforce<A, AR, LA, LB, LC>(&mut self, annotation: A, a: LA, b: LB, c: LC)
+    fn enforce<A, F, AR, LA, LB, LC>(&mut self, annotation: A, a: LA, b: LB, c: LC)
     where
         A: FnOnce() -> AR,
+        F: Field,
         AR: AsRef<str>,
-        LA: FnOnce(LinearCombination<Self::Field>) -> LinearCombination<Self::Field>,
-        LB: FnOnce(LinearCombination<Self::Field>) -> LinearCombination<Self::Field>,
-        LC: FnOnce(LinearCombination<Self::Field>) -> LinearCombination<Self::Field>;
+        LA: FnOnce(LinearCombination<F>) -> LinearCombination<F>,
+        LB: FnOnce(LinearCombination<F>) -> LinearCombination<F>,
+        LC: FnOnce(LinearCombination<F>) -> LinearCombination<F>;
 
     /// Create a new (sub)namespace and enter into it. Not intended
     /// for downstream use; use `namespace` instead.

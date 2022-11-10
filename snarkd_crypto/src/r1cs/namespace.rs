@@ -1,4 +1,7 @@
-use crate::{ConstraintSystem, LinearCombination, Variable};
+use crate::{
+    bls12_377::Field,
+    r1cs::{ConstraintSystem, LinearCombination, Variable},
+};
 
 use anyhow::Result;
 
@@ -8,37 +11,39 @@ pub struct Namespace<'a, CS: ConstraintSystem>(pub(crate) &'a mut CS);
 
 impl<CS: ConstraintSystem> ConstraintSystem for Namespace<'_, CS> {
     type Root = CS::Root;
-    type Field = CS::Field;
 
     fn one() -> Variable {
         CS::one()
     }
 
-    fn alloc<FN, A, AR>(&mut self, annotation: A, f: FN) -> Result<Variable>
+    fn alloc<FN, A, F, AR>(&mut self, annotation: A, f: FN) -> Result<Variable>
     where
-        FN: FnOnce() -> Result<Self::Field>,
+        FN: FnOnce() -> Result<F>,
         A: FnOnce() -> AR,
+        F: Field,
         AR: AsRef<str>,
     {
         self.0.alloc(annotation, f)
     }
 
-    fn alloc_input<FN, A, AR>(&mut self, annotation: A, f: FN) -> Result<Variable>
+    fn alloc_input<FN, A, F, AR>(&mut self, annotation: A, f: FN) -> Result<Variable>
     where
-        FN: FnOnce() -> Result<Self::Field>,
+        FN: FnOnce() -> Result<F>,
         A: FnOnce() -> AR,
+        F: Field,
         AR: AsRef<str>,
     {
         self.0.alloc_input(annotation, f)
     }
 
-    fn enforce<A, AR, LA, LB, LC>(&mut self, annotation: A, a: LA, b: LB, c: LC)
+    fn enforce<A, F, AR, LA, LB, LC>(&mut self, annotation: A, a: LA, b: LB, c: LC)
     where
         A: FnOnce() -> AR,
         AR: AsRef<str>,
-        LA: FnOnce(LinearCombination<Self::Field>) -> LinearCombination<Self::Field>,
-        LB: FnOnce(LinearCombination<Self::Field>) -> LinearCombination<Self::Field>,
-        LC: FnOnce(LinearCombination<Self::Field>) -> LinearCombination<Self::Field>,
+        F: Field,
+        LA: FnOnce(LinearCombination<F>) -> LinearCombination<F>,
+        LB: FnOnce(LinearCombination<F>) -> LinearCombination<F>,
+        LC: FnOnce(LinearCombination<F>) -> LinearCombination<F>,
     {
         self.0.enforce(annotation, a, b, c)
     }

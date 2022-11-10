@@ -1,4 +1,7 @@
-use crate::{bls12_377::Field, LinearCombination, Variable};
+use crate::{
+    bls12_377::Field,
+    r1cs::{LinearCombination, Variable},
+};
 
 use std::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub};
 

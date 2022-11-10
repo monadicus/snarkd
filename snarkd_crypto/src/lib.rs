@@ -7,10 +7,10 @@ mod utils;
 pub use utils::*;
 
 pub mod bls12_377;
+pub mod circuit;
 pub mod fft;
 mod msm;
-mod objects;
+pub mod objects;
 pub mod polycommit;
 pub use polycommit::*;
-mod r1cs;
-pub use r1cs::*;
+pub mod r1cs;
