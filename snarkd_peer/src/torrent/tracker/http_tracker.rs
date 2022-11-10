@@ -1,10 +1,11 @@
 use super::Tracker;
 use crate::torrent::{
     bencode_bytes_to_json, uri_encode_hash, AnnounceEvent, AnnounceRequest, AnnounceResponse,
-    ScrapeResponse,
+    ScrapeResponse, TrackerResult,
 };
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use async_trait::async_trait;
+use log::debug;
 use url::Url;
 
 pub struct TrackerHTTP {
@@ -45,7 +46,11 @@ impl Tracker for TrackerHTTP {
 
         let bytes = reqwest::get(u.to_string()).await?.bytes().await?;
         let blob = bencode_bytes_to_json(&bytes)?;
-        Ok(serde_json::from_str(&blob)?)
+        debug!("received data from tracker scrape {blob}");
+        match serde_json::from_str(&blob)? {
+            TrackerResult::Ok(res) => Ok(res),
+            TrackerResult::Err(err) => Err(anyhow!(String::from_utf8(err.failure_reason)?)),
+        }
     }
 
     async fn announce(&self, req: AnnounceRequest) -> Result<AnnounceResponse> {
@@ -71,6 +76,10 @@ impl Tracker for TrackerHTTP {
 
         let bytes = reqwest::get(u.to_string()).await?.bytes().await?;
         let blob = bencode_bytes_to_json(&bytes)?;
-        Ok(serde_json::from_str(&blob)?)
+        debug!("received data from tracker announce {blob}");
+        match serde_json::from_str(&blob)? {
+            TrackerResult::Ok(res) => Ok(res),
+            TrackerResult::Err(err) => Err(anyhow!(String::from_utf8(err.failure_reason)?)),
+        }
     }
 }
