@@ -1,18 +1,19 @@
-#[cfg(feature = "parallel")]
+use crate::bls12_377::{scalar, Affine, Projective};
 use rayon::prelude::*;
+use ruint::Uint;
 
-fn update_buckets<G: AffineCurve>(
-    base: &G,
-    mut scalar: <G::ScalarField as PrimeField>::BigInteger,
+fn update_buckets<A: Affine>(
+    base: &A,
+    mut scalar: Uint<256, 4>,
     w_start: usize,
     c: usize,
-    buckets: &mut [G::Projective],
+    buckets: &mut [A::Projective],
 ) {
     // We right-shift by w_start, thus getting rid of the lower bits.
     scalar.divn(w_start as u32);
 
     // We mod the remaining bits by the window size.
-    let scalar = scalar.as_ref()[0] % (1 << c);
+    let scalar = scalar.as_limbs()[0] % (1 << c);
 
     // If the scalar is non-zero, we update the corresponding bucket.
     // (Recall that `buckets` doesn't have a zero bucket.)
@@ -21,14 +22,14 @@ fn update_buckets<G: AffineCurve>(
     }
 }
 
-fn standard_window<G: AffineCurve>(
-    bases: &[G],
-    scalars: &[<G::ScalarField as PrimeField>::BigInteger],
+fn standard_window<A: Affine>(
+    bases: &[A],
+    scalars: &[Uint<256, 4>],
     w_start: usize,
     c: usize,
-) -> (G::Projective, usize) {
-    let mut res = G::Projective::zero();
-    let fr_one = G::ScalarField::one().to_repr();
+) -> (A::Projective, usize) {
+    let mut res = A::Projective::ZERO;
+    let fr_one = Uint::<256, 4>::from(1);
 
     // We only process unit scalars once in the first window.
     if w_start == 0 {
@@ -43,7 +44,7 @@ fn standard_window<G: AffineCurve>(
 
     // We don't need the "zero" bucket, so we only have 2^c - 1 buckets
     let window_size = if (w_start % c) != 0 { w_start % c } else { c };
-    let mut buckets = vec![G::Projective::zero(); (1 << window_size) - 1];
+    let mut buckets = vec![A::Projective::ZERO; (1 << window_size) - 1];
     scalars
         .iter()
         .zip(bases)
@@ -54,7 +55,7 @@ fn standard_window<G: AffineCurve>(
     for running_sum in buckets
         .into_iter()
         .rev()
-        .scan(G::Projective::zero(), |sum, b| {
+        .scan(A::Projective::ZERO, |sum, b| {
             *sum += b;
             Some(*sum)
         })
@@ -65,17 +66,14 @@ fn standard_window<G: AffineCurve>(
     (res, window_size)
 }
 
-pub fn msm<G: AffineCurve>(
-    bases: &[G],
-    scalars: &[<G::ScalarField as PrimeField>::BigInteger],
-) -> G::Projective {
+pub fn msm<A: Affine>(bases: &[A], scalars: &[Uint<256, 4>]) -> A::Projective {
     // Determine the bucket size `c` (chosen empirically).
     let c = match scalars.len() < 32 {
         true => 1,
         false => crate::msm::ln_without_floats(scalars.len()) + 2,
     };
 
-    let num_bits = <G::ScalarField as PrimeField>::size_in_bits();
+    let num_bits = scalar::MODULUS_BITS;
 
     // Each window is of size `c`.
     // We divide up the bits 0..num_bits into windows of size `c`, and
@@ -92,7 +90,7 @@ pub fn msm<G: AffineCurve>(
     window_sums
         .iter()
         .rev()
-        .fold(G::Projective::zero(), |mut total, (sum_i, window_size)| {
+        .fold(A::Projective::ZERO, |mut total, (sum_i, window_size)| {
             total += sum_i;
             for _ in 0..*window_size {
                 total.double_in_place();

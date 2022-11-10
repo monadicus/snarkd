@@ -7,10 +7,9 @@ mod cuda;
 #[cfg(target_arch = "x86_64")]
 pub mod prefetch;
 
-use snarkvm_curves::{bls12_377::G1Affine, traits::AffineCurve};
-use snarkvm_fields::PrimeField;
-
+use crate::bls12_377::{Affine, G1Affine};
 use core::any::TypeId;
+use ruint::Uint;
 
 #[cfg(all(feature = "cuda", target_arch = "x86_64"))]
 use core::sync::atomic::{AtomicBool, Ordering};
@@ -21,12 +20,9 @@ static HAS_CUDA_FAILED: AtomicBool = AtomicBool::new(false);
 pub struct VariableBase;
 
 impl VariableBase {
-    pub fn msm<G: AffineCurve>(
-        bases: &[G],
-        scalars: &[<G::ScalarField as PrimeField>::BigInteger],
-    ) -> G::Projective {
+    pub fn msm<A: Affine>(bases: &[A], scalars: &[Uint<256, 4>]) -> A::Projective {
         // For BLS12-377, we perform variable base MSM using a batched addition technique.
-        if TypeId::of::<G>() == TypeId::of::<G1Affine>() {
+        if TypeId::of::<A>() == TypeId::of::<G1Affine>() {
             #[cfg(all(feature = "cuda", target_arch = "x86_64"))]
             if !HAS_CUDA_FAILED.load(Ordering::SeqCst) {
                 match cuda::msm_cuda(bases, scalars) {
@@ -46,10 +42,7 @@ impl VariableBase {
     }
 
     #[cfg(test)]
-    fn msm_naive<G: AffineCurve>(
-        bases: &[G],
-        scalars: &[<G::ScalarField as PrimeField>::BigInteger],
-    ) -> G::Projective {
+    fn msm_naive<A: Affine>(bases: &[A], scalars: &[Uint<256, 4>]) -> A::Projective {
         use itertools::Itertools;
         use snarkvm_utilities::BitIteratorBE;
 
@@ -61,10 +54,7 @@ impl VariableBase {
     }
 
     #[cfg(test)]
-    fn msm_naive_parallel<G: AffineCurve>(
-        bases: &[G],
-        scalars: &[<G::ScalarField as PrimeField>::BigInteger],
-    ) -> G::Projective {
+    fn msm_naive_parallel<A: Affine>(bases: &[A], scalars: &[Uint<256, 4>]) -> G::Projective {
         use rayon::prelude::*;
         use snarkvm_utilities::BitIteratorBE;
 

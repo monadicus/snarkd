@@ -1,4 +1,6 @@
-#[cfg(feature = "parallel")]
+use crate::bls12_377::{scalar, Projective, Scalar};
+use bitvec::prelude::*;
+use core::ops::Deref;
 use rayon::prelude::*;
 
 pub struct FixedBase;
@@ -11,16 +13,12 @@ impl FixedBase {
         }
     }
 
-    pub fn get_window_table<T: ProjectiveCurve>(
-        scalar_size: usize,
-        window: usize,
-        g: T,
-    ) -> Vec<Vec<T>> {
+    pub fn get_window_table<P: Projective>(scalar_size: usize, window: usize, g: P) -> Vec<Vec<P>> {
         let in_window = 1 << window;
         let outerc = (scalar_size + window - 1) / window;
         let last_in_window = 1 << (scalar_size - (outerc - 1) * window);
 
-        let mut multiples_of_g = vec![vec![T::zero(); in_window]; outerc];
+        let mut multiples_of_g = vec![vec![P::ZERO; in_window]; outerc];
 
         let mut g_outer = g;
         let mut g_outers = Vec::with_capacity(outerc);
@@ -42,7 +40,7 @@ impl FixedBase {
                     in_window
                 };
 
-                let mut g_inner = T::zero();
+                let mut g_inner = P::ZERO;
                 for inner in multiples_of_g.iter_mut().take(cur_in_window) {
                     *inner = g_inner;
                     g_inner += &g_outer;
@@ -51,20 +49,25 @@ impl FixedBase {
         multiples_of_g
     }
 
-    pub fn windowed_mul<T: ProjectiveCurve>(
+    pub fn windowed_mul<P: Projective>(
         outerc: usize,
         window: usize,
-        multiples_of_g: &[Vec<T>],
-        scalar: &T::ScalarField,
-    ) -> T {
-        let scalar_val = scalar.to_repr().to_bits_le();
+        multiples_of_g: &[Vec<P>],
+        scalar: &Scalar,
+    ) -> P {
+        let scalar_val = scalar
+            .0
+            .as_limbs()
+            .iter()
+            .flat_map(|limb| limb.view_bits::<Lsb0>())
+            .map(|bit| *bit.deref())
+            .collect::<Vec<_>>();
 
         cfg_into_iter!(0..outerc)
             .map(|outer| {
                 let mut inner = 0usize;
                 for i in 0..window {
-                    if outer * window + i
-                        < (<T::ScalarField as PrimeField>::Parameters::MODULUS_BITS as usize)
+                    if outer * window + i < (scalar::MODULUS_BITS as usize)
                         && scalar_val[outer * window + i]
                     {
                         inner |= 1 << i;
@@ -72,21 +75,21 @@ impl FixedBase {
                 }
                 multiples_of_g[outer][inner]
             })
-            .sum::<T>()
+            .sum::<P>()
             + multiples_of_g[0][0]
     }
 
-    pub fn msm<T: ProjectiveCurve>(
+    pub fn msm<P: Projective>(
         scalar_size: usize,
         window: usize,
-        table: &[Vec<T>],
-        v: &[T::ScalarField],
-    ) -> Vec<T> {
+        table: &[Vec<P>],
+        v: &[Scalar],
+    ) -> Vec<P> {
         let outerc = (scalar_size + window - 1) / window;
         assert!(outerc <= table.len());
 
         cfg_iter!(v)
-            .map(|e| Self::windowed_mul::<T>(outerc, window, table, e))
+            .map(|e| Self::windowed_mul::<P>(outerc, window, table, e))
             .collect::<Vec<_>>()
     }
 }

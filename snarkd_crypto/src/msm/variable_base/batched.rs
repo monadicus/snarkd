@@ -1,5 +1,9 @@
-#[cfg(feature = "parallel")]
+use crate::{
+    bls12_377::{scalar, Affine, Field, Parameters, Projective},
+    utils::*,
+};
 use rayon::prelude::*;
+use ruint::Uint;
 
 #[cfg(target_arch = "x86_64")]
 use crate::{prefetch_slice, prefetch_slice_write};
@@ -55,9 +59,9 @@ const fn batch_size(msm_size: usize) -> usize {
 /// If `(j, k)` is the `i`-th entry in `index`, then this method sets
 /// `bases[j] = bases[j] + bases[k]`. The state of `bases[k]` becomes unspecified.
 #[inline]
-fn batch_add_in_place_same_slice<G: AffineCurve>(bases: &mut [G], index: &[(u32, u32)]) {
-    let mut inversion_tmp = G::BaseField::one();
-    let half = G::BaseField::half();
+fn batch_add_in_place_same_slice<A: Affine>(bases: &mut [A], index: &[(u32, u32)]) {
+    let mut inversion_tmp = <A::Parameters as Parameters>::BaseField::ONE;
+    let half = A::BaseField::half();
 
     #[cfg(target_arch = "x86_64")]
     let mut prefetch_iter = index.iter();
@@ -67,7 +71,7 @@ fn batch_add_in_place_same_slice<G: AffineCurve>(bases: &mut [G], index: &[(u32,
     // We run two loops over the data separated by an inversion
     for (idx, idy) in index.iter() {
         #[cfg(target_arch = "x86_64")]
-        prefetch_slice!(G, bases, bases, prefetch_iter);
+        prefetch_slice!(A, bases, bases, prefetch_iter);
 
         let (a, b) = if idx < idy {
             let (x, y) = bases.split_at_mut(*idy as usize);
@@ -76,7 +80,7 @@ fn batch_add_in_place_same_slice<G: AffineCurve>(bases: &mut [G], index: &[(u32,
             let (x, y) = bases.split_at_mut(*idx as usize);
             (&mut y[0], &mut x[*idy as usize])
         };
-        G::batch_add_loop_1(a, b, &half, &mut inversion_tmp);
+        A::batch_add_loop_1(a, b, &half, &mut inversion_tmp);
     }
 
     inversion_tmp = inversion_tmp.inverse().unwrap(); // this is always in Fp*
@@ -88,7 +92,7 @@ fn batch_add_in_place_same_slice<G: AffineCurve>(bases: &mut [G], index: &[(u32,
 
     for (idx, idy) in index.iter().rev() {
         #[cfg(target_arch = "x86_64")]
-        prefetch_slice!(G, bases, bases, prefetch_iter);
+        prefetch_slice!(A, bases, bases, prefetch_iter);
 
         let (a, b) = if idx < idy {
             let (x, y) = bases.split_at_mut(*idy as usize);
@@ -97,7 +101,7 @@ fn batch_add_in_place_same_slice<G: AffineCurve>(bases: &mut [G], index: &[(u32,
             let (x, y) = bases.split_at_mut(*idx as usize);
             (&mut y[0], x[*idy as usize])
         };
-        G::batch_add_loop_2(a, b, &mut inversion_tmp);
+        A::batch_add_loop_2(a, b, &mut inversion_tmp);
     }
 }
 
@@ -108,14 +112,14 @@ fn batch_add_in_place_same_slice<G: AffineCurve>(bases: &mut [G], index: &[(u32,
 ///
 /// It uses `scratch_space` to store intermediate values, and clears it after use.
 #[inline]
-fn batch_add_write<G: AffineCurve>(
-    bases: &[G],
+fn batch_add_write<A: Affine>(
+    bases: &[A],
     index: &[(u32, u32)],
-    addition_result: &mut Vec<G>,
-    scratch_space: &mut Vec<Option<G>>,
+    addition_result: &mut Vec<A>,
+    scratch_space: &mut Vec<Option<A>>,
 ) {
-    let mut inversion_tmp = G::BaseField::one();
-    let half = G::BaseField::half();
+    let mut inversion_tmp = A::BaseField::ONE;
+    let half = A::BaseField::half();
 
     #[cfg(target_arch = "x86_64")]
     let mut prefetch_iter = index.iter();
@@ -125,14 +129,14 @@ fn batch_add_write<G: AffineCurve>(
     // We run two loops over the data separated by an inversion
     for (idx, idy) in index.iter() {
         #[cfg(target_arch = "x86_64")]
-        prefetch_slice_write!(G, bases, bases, prefetch_iter);
+        prefetch_slice_write!(A, bases, bases, prefetch_iter);
 
         if *idy == !0u32 {
             addition_result.push(bases[*idx as usize]);
             scratch_space.push(None);
         } else {
             let (mut a, mut b) = (bases[*idx as usize], bases[*idy as usize]);
-            G::batch_add_loop_1(&mut a, &mut b, &half, &mut inversion_tmp);
+            A::batch_add_loop_1(&mut a, &mut b, &half, &mut inversion_tmp);
             addition_result.push(a);
             scratch_space.push(Some(b));
         }
@@ -147,7 +151,7 @@ fn batch_add_write<G: AffineCurve>(
     {
         match op_b {
             Some(b) => {
-                G::batch_add_loop_2(a, *b, &mut inversion_tmp);
+                A::batch_add_loop_2(a, *b, &mut inversion_tmp);
             }
             None => (),
         };
@@ -156,11 +160,11 @@ fn batch_add_write<G: AffineCurve>(
 }
 
 #[inline]
-pub(super) fn batch_add<G: AffineCurve>(
+pub(super) fn batch_add<A: Affine>(
     num_buckets: usize,
-    bases: &[G],
+    bases: &[A],
     bucket_positions: &mut [BucketPosition],
-) -> Vec<G> {
+) -> Vec<A> {
     // assert_eq!(bases.len(), bucket_positions.len());
     assert!(!bases.is_empty());
 
@@ -310,7 +314,7 @@ pub(super) fn batch_add<G: AffineCurve>(
         new_scalar_length = 0;
     }
 
-    let mut res = vec![Zero::zero(); num_buckets];
+    let mut res = vec![A::ZERO; num_buckets];
     for bucket_position in bucket_positions.iter().take(num_scalars) {
         res[bucket_position.bucket_index as usize] =
             new_bases[bucket_position.scalar_index as usize];
@@ -318,13 +322,12 @@ pub(super) fn batch_add<G: AffineCurve>(
     res
 }
 
-#[inline]
-fn batched_window<G: AffineCurve>(
-    bases: &[G],
-    scalars: &[<G::ScalarField as PrimeField>::BigInteger],
+fn batched_window<A: Affine>(
+    bases: &[A],
+    scalars: &[Uint<256, 4>],
     w_start: usize,
     c: usize,
-) -> (G::Projective, usize) {
+) -> (A::Projective, usize) {
     // We don't need the "zero" bucket, so we only have 2^c - 1 buckets
     let window_size = if (w_start % c) != 0 { w_start % c } else { c };
     let num_buckets = (1 << window_size) - 1;
@@ -339,7 +342,7 @@ fn batched_window<G: AffineCurve>(
             scalar.divn(w_start as u32);
 
             // We mod the remaining bits by the window size.
-            let scalar = (scalar.as_ref()[0] % (1 << c)) as i32;
+            let scalar = (scalar.as_limbs()[0] % (1 << c)) as i32;
 
             BucketPosition {
                 bucket_index: (scalar - 1) as u32,
@@ -350,8 +353,8 @@ fn batched_window<G: AffineCurve>(
 
     let buckets = batch_add(num_buckets, bases, &mut bucket_positions);
 
-    let mut res = G::Projective::zero();
-    let mut running_sum = G::Projective::zero();
+    let mut res = A::Projective::ZERO;
+    let mut running_sum = A::Projective::ZERO;
     for b in buckets.into_iter().rev() {
         running_sum.add_assign_mixed(&b);
         res += &running_sum;
@@ -360,18 +363,15 @@ fn batched_window<G: AffineCurve>(
     (res, window_size)
 }
 
-pub fn msm<G: AffineCurve>(
-    bases: &[G],
-    scalars: &[<G::ScalarField as PrimeField>::BigInteger],
-) -> G::Projective {
+pub fn msm<A: Affine>(bases: &[A], scalars: &[Uint<256, 4>]) -> A::Projective {
     if bases.len() < 15 {
-        let num_bits = G::ScalarField::size_in_bits();
-        let bigint_size = <G::ScalarField as PrimeField>::BigInteger::NUM_LIMBS * 64;
+        let num_bits = scalar::MODULUS_BITS;
+        let bigint_size = 256;
         let mut bits = scalars
             .iter()
             .map(|s| BitIteratorBE::new(s.as_ref()).skip(bigint_size - num_bits))
             .collect::<Vec<_>>();
-        let mut sum = G::Projective::zero();
+        let mut sum = A::Projective::ZERO;
 
         let mut encountered_one = false;
         for _ in 0..num_bits {
@@ -388,36 +388,6 @@ pub fn msm<G: AffineCurve>(
         debug_assert!(bits.iter_mut().all(|b| b.next().is_none()));
         sum
     } else {
-        // Determine the bucket size `c` (chosen empirically).
-        let c = match scalars.len() < 32 {
-            true => 1,
-            false => crate::msm::ln_without_floats(scalars.len()) + 2,
-        };
-
-        let num_bits = <G::ScalarField as PrimeField>::size_in_bits();
-
-        // Each window is of size `c`.
-        // We divide up the bits 0..num_bits into windows of size `c`, and
-        // in parallel process each such window.
-        let window_sums: Vec<_> = cfg_into_iter!(0..num_bits)
-            .step_by(c)
-            .map(|w_start| batched_window(bases, scalars, w_start, c))
-            .collect();
-
-        // We store the sum for the lowest window.
-        let (lowest, window_sums) = window_sums.split_first().unwrap();
-
-        // We're traversing windows from high to low.
-        window_sums
-            .iter()
-            .rev()
-            .fold(G::Projective::zero(), |mut total, (sum_i, window_size)| {
-                total += sum_i;
-                for _ in 0..*window_size {
-                    total.double_in_place();
-                }
-                total
-            })
-            + lowest.0
+        super::standard::msm(bases, scalars)
     }
 }
