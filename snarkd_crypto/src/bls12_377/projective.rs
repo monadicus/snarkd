@@ -1,6 +1,7 @@
 use super::{Affine, Parameters, Scalar};
 use core::{
     fmt::{Debug, Display},
+    iter,
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 
@@ -16,6 +17,7 @@ pub trait Projective:
     + for<'a> SubAssign<&'a Self>
     + Mul<Scalar, Output = Self>
     + MulAssign<Scalar>
+    + iter::Sum
     + Copy
     + Clone
     + PartialEq

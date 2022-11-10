@@ -6,6 +6,7 @@ use bitvec::prelude::*;
 use core::{
     fmt::{Display, Formatter, Result as FmtResult},
     hash::{Hash, Hasher},
+    iter::Sum,
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 use rand::{
@@ -587,5 +588,11 @@ impl<P: Parameters> From<SWAffine<P>> for SWProjective<P> {
         } else {
             Self::new(p.x, p.y, P::BaseField::ONE)
         }
+    }
+}
+
+impl<P: Parameters> Sum<SWProjective<P>> for SWProjective<P> {
+    fn sum<I: Iterator<Item = SWProjective<P>>>(iter: I) -> Self {
+        iter.fold(Self::ZERO, |acc, p| acc + p)
     }
 }
