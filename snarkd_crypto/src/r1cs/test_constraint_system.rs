@@ -1,9 +1,14 @@
+use std::ops::{AddAssign, MulAssign};
+
 use anyhow::Result;
 use fxhash::{FxBuildHasher, FxHashMap};
 use indexmap::{map::Entry, IndexMap, IndexSet};
 use itertools::Itertools;
 
-use crate::{bls12_377::Field, r1cs::*};
+use crate::{
+    bls12_377::{Field, Fp},
+    r1cs::*,
+};
 
 #[derive(Debug, Clone)]
 enum NamedObject {
@@ -61,7 +66,7 @@ impl CurrentNamespace {
 }
 
 /// Constraint system for testing purposes.
-pub struct TestConstraintSystem<F: Field> {
+pub struct TestConstraintSystem<F> {
     // used to intern full paths in test scenarios, for get and set purposes
     interned_full_paths: FxHashMap<Vec<InternedPathSegment>, InternedPath>,
     // used to intern namespace segments
@@ -82,7 +87,7 @@ pub struct TestConstraintSystem<F: Field> {
     private_variables: OptionalVec<InternedField>,
 }
 
-impl<F: Field> Default for TestConstraintSystem<F> {
+impl<F> Default for TestConstraintSystem<F> {
     fn default() -> Self {
         let mut interned_path_segments = IndexSet::with_hasher(FxBuildHasher::default());
         let path_segment = "ONE".to_owned();
@@ -96,13 +101,10 @@ impl<F: Field> Default for TestConstraintSystem<F> {
         interned_full_paths.insert(vec![interned_path_segment], interned_path);
 
         let mut named_objects = IndexMap::with_hasher(FxBuildHasher::default());
-        named_objects.insert_full(
-            interned_path,
-            NamedObject::Var(TestConstraintSystem::<F>::one()),
-        );
+        named_objects.insert_full(interned_path, NamedObject::Var(TestConstraintSystem::one()));
 
         let mut interned_fields = IndexSet::with_hasher(FxBuildHasher::default());
-        let interned_field = interned_fields.insert_full(F::ONE).0;
+        let interned_field = interned_fields.insert_full(Fp::ONE).0;
 
         let mut inputs: OptionalVec<InternedField> = Default::default();
         inputs.insert(interned_field);
@@ -122,7 +124,7 @@ impl<F: Field> Default for TestConstraintSystem<F> {
     }
 }
 
-impl<F: Field> TestConstraintSystem<F> {
+impl<F> TestConstraintSystem<F> {
     pub fn new() -> Self {
         Self::default()
     }
@@ -201,8 +203,8 @@ impl<F: Field> TestConstraintSystem<F> {
         }
     }
 
-    fn eval_lc(&self, terms: &[(Variable, InternedField)]) -> F {
-        let mut acc = F::ZERO;
+    fn eval_lc(&self, terms: &[(Variable, InternedField)]) -> Fp {
+        let mut acc = Fp::ZERO;
 
         for &(var, interned_coeff) in terms {
             let interned_tmp = match var.get_unchecked() {
@@ -265,7 +267,7 @@ impl<F: Field> TestConstraintSystem<F> {
         self.unintern_path(self.constraints.iter().nth(i).unwrap().interned_path)
     }
 
-    pub fn set(&mut self, path: &str, to: F) {
+    pub fn set(&mut self, path: &str, to: Fp) {
         let interned_path = self.intern_path(path);
         let interned_field = self.interned_fields.insert_full(to).0;
 
@@ -282,7 +284,7 @@ impl<F: Field> TestConstraintSystem<F> {
         }
     }
 
-    pub fn get(&mut self, path: &str) -> F {
+    pub fn get(&mut self, path: &str) -> Fp {
         let interned_path = self.intern_path(path);
 
         let interned_field = match self.named_objects.get(&interned_path) {
@@ -356,14 +358,13 @@ impl<F: Field> TestConstraintSystem<F> {
     }
 }
 
-impl<F: Field> ConstraintSystem for TestConstraintSystem<F> {
+impl<F: Field> ConstraintSystem<F> for TestConstraintSystem<F> {
     type Root = Self;
 
-    fn alloc<Fn, A, F, AR>(&mut self, annotation: A, f: Fn) -> Result<Variable>
+    fn alloc<Fn, A, AR>(&mut self, annotation: A, f: Fn) -> Result<Variable>
     where
         Fn: FnOnce() -> Result<F>,
         A: FnOnce() -> AR,
-        F: Field,
         AR: AsRef<str>,
     {
         let interned_path = self.compute_path(annotation().as_ref());
@@ -377,11 +378,10 @@ impl<F: Field> ConstraintSystem for TestConstraintSystem<F> {
         Ok(var)
     }
 
-    fn alloc_input<Fn, A, F, AR>(&mut self, annotation: A, f: Fn) -> Result<Variable>
+    fn alloc_input<Fn, A, AR>(&mut self, annotation: A, f: Fn) -> Result<Variable>
     where
         Fn: FnOnce() -> Result<F>,
         A: FnOnce() -> AR,
-        F: Field,
         AR: AsRef<str>,
     {
         let interned_path = self.compute_path(annotation().as_ref());
@@ -395,10 +395,9 @@ impl<F: Field> ConstraintSystem for TestConstraintSystem<F> {
         Ok(var)
     }
 
-    fn enforce<A, F, AR, LA, LB, LC>(&mut self, annotation: A, a: LA, b: LB, c: LC)
+    fn enforce<A, AR, LA, LB, LC>(&mut self, annotation: A, a: LA, b: LB, c: LC)
     where
         A: FnOnce() -> AR,
-        F: Field,
         AR: AsRef<str>,
         LA: FnOnce(LinearCombination<F>) -> LinearCombination<F>,
         LB: FnOnce(LinearCombination<F>) -> LinearCombination<F>,

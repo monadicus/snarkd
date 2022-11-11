@@ -29,6 +29,6 @@ pub mod test {
 
     mod linear_combination_test;
     mod optional_vec_test;
-    // mod test_constraint_system;
-    // pub use test_constraint_system::*;
+    mod test_constraint_system;
+    pub use test_constraint_system::*;
 }

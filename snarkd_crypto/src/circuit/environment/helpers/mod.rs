@@ -20,7 +20,7 @@ pub use variable::*;
 #[cfg(test)]
 #[path = ""]
 mod test {
-    // mod assignment_tests;
+    mod assignment_tests;
     mod count_tests;
     mod linear_combination_tests;
     mod variable_tests;
