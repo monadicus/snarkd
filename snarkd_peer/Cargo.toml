@@ -3,7 +3,6 @@ name = "snarkd_peer"
 version = "0.1.0"
 edition = "2021"
 
-
 [dependencies]
 async-trait = { workspace = true }
 bip_bencode = "0.4.4"

@@ -292,9 +292,17 @@ async fn main() {
 
     //TODO: start miner
 
-    std::future::pending::<()>().await;
+    tokio::select! {
+        _ = std::future::pending::<()>() => {
+            info!("all pending tasks finished... somehow");
+        },
+        _ = tokio::signal::ctrl_c() => {
+            info!("detected interrupt");
+        },
+    };
 
     if let Some(rpc_handle) = rpc_handle {
+        info!("stopping rpc server...");
         if let Err(e) = rpc_handle.stop() {
             error!("failed stopping json rpc: {e:?}");
         }
