@@ -1,4 +1,7 @@
+pub mod circuit;
 pub mod helpers;
+mod macros;
+pub use macros::*;
 pub mod traits;
 
 use core::{fmt, hash};
@@ -10,6 +13,8 @@ use self::{
     traits::Inject,
 };
 
+// TODO trait can be removed once we are certain there is no
+// associated types necessary
 pub trait Environment:
     'static + Copy + Clone + fmt::Debug + fmt::Display + Eq + PartialEq + hash::Hash
 {
@@ -154,3 +159,6 @@ pub trait Environment:
     /// Clears and initializes an empty environment.
     fn reset();
 }
+
+#[cfg(test)]
+mod circuit_tests;

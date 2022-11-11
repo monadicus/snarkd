@@ -1689,6 +1689,7 @@ dependencies = [
  "itertools",
  "num-bigint",
  "num_cpus",
+ "once_cell",
  "parking_lot",
  "rand",
  "rand_core",

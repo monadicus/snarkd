@@ -1,8 +1,17 @@
 use std::rc::Rc;
 
+use crate::{
+    bls12_377::{Field, Fp},
+    circuit::{
+        circuit::Circuit,
+        helpers::{LinearCombination, Mode, Variable},
+        Environment,
+    },
+};
+
 #[test]
 fn test_zero() {
-    let zero = <Circuit as Environment>::BaseField::zero();
+    let zero = Fp::ZERO;
 
     let candidate = LinearCombination::zero();
     assert_eq!(zero, candidate.constant);
@@ -12,7 +21,7 @@ fn test_zero() {
 
 #[test]
 fn test_one() {
-    let one = <Circuit as Environment>::BaseField::one();
+    let one = Fp::ONE;
 
     let candidate = LinearCombination::one();
     assert_eq!(one, candidate.constant);
@@ -22,7 +31,7 @@ fn test_one() {
 
 #[test]
 fn test_two() {
-    let one = <Circuit as Environment>::BaseField::one();
+    let one = Fp::ONE;
     let two = one + one;
 
     let candidate = LinearCombination::one() + LinearCombination::one();
@@ -33,8 +42,8 @@ fn test_two() {
 
 #[test]
 fn test_is_constant() {
-    let zero = <Circuit as Environment>::BaseField::zero();
-    let one = <Circuit as Environment>::BaseField::one();
+    let zero = Fp::ZERO;
+    let one = Fp::ONE;
 
     let candidate = LinearCombination::zero();
     assert!(candidate.is_constant());
@@ -49,8 +58,8 @@ fn test_is_constant() {
 
 #[test]
 fn test_mul() {
-    let zero = <Circuit as Environment>::BaseField::zero();
-    let one = <Circuit as Environment>::BaseField::one();
+    let zero = Fp::ZERO;
+    let one = Fp::ONE;
     let two = one + one;
     let four = two + two;
 
@@ -72,10 +81,8 @@ fn test_mul() {
 
 #[test]
 fn test_debug() {
-    let one_public =
-        &Circuit::new_variable(Mode::Public, <Circuit as Environment>::BaseField::one());
-    let one_private =
-        &Circuit::new_variable(Mode::Private, <Circuit as Environment>::BaseField::one());
+    let one_public = &Circuit::new_variable(Mode::Public, Fp::ONE);
+    let one_private = &Circuit::new_variable(Mode::Private, Fp::ONE);
     {
         let expected = "Constant(1) + Public(1, 1) + Private(0, 1)";
 
@@ -138,114 +145,183 @@ fn test_debug() {
     }
 }
 
-#[rustfmt::skip]
-    #[test]
-    fn test_num_additions() {
-        let one_public = &Circuit::new_variable(Mode::Public, <Circuit as Environment>::BaseField::one());
-        let one_private = &Circuit::new_variable(Mode::Private, <Circuit as Environment>::BaseField::one());
-        let two_private = one_private + one_private;
+#[test]
+fn test_num_additions() {
+    let one_public = &Circuit::new_variable(Mode::Public, Fp::ONE);
+    let one_private = &Circuit::new_variable(Mode::Private, Fp::ONE);
+    let two_private = one_private + one_private;
 
-        let candidate = LinearCombination::<<Circuit as Environment>::BaseField>::zero();
-        assert_eq!(0, candidate.num_additions());
+    let candidate = LinearCombination::zero();
+    assert_eq!(0, candidate.num_additions());
 
-        let candidate = LinearCombination::<<Circuit as Environment>::BaseField>::one();
-        assert_eq!(0, candidate.num_additions());
+    let candidate = LinearCombination::one();
+    assert_eq!(0, candidate.num_additions());
 
-        let candidate = LinearCombination::zero() + one_public;
-        assert_eq!(0, candidate.num_additions());
+    let candidate = LinearCombination::zero() + one_public;
+    assert_eq!(0, candidate.num_additions());
 
-        let candidate = LinearCombination::one() + one_public;
-        assert_eq!(1, candidate.num_additions());
+    let candidate = LinearCombination::one() + one_public;
+    assert_eq!(1, candidate.num_additions());
 
-        let candidate = LinearCombination::zero() + one_public + one_public;
-        assert_eq!(0, candidate.num_additions());
+    let candidate = LinearCombination::zero() + one_public + one_public;
+    assert_eq!(0, candidate.num_additions());
 
-        let candidate = LinearCombination::one() + one_public + one_public;
-        assert_eq!(1, candidate.num_additions());
+    let candidate = LinearCombination::one() + one_public + one_public;
+    assert_eq!(1, candidate.num_additions());
 
-        let candidate = LinearCombination::zero() + one_public + one_private;
-        assert_eq!(1, candidate.num_additions());
+    let candidate = LinearCombination::zero() + one_public + one_private;
+    assert_eq!(1, candidate.num_additions());
 
-        let candidate = LinearCombination::one() + one_public + one_private;
-        assert_eq!(2, candidate.num_additions());
+    let candidate = LinearCombination::one() + one_public + one_private;
+    assert_eq!(2, candidate.num_additions());
 
-        let candidate = LinearCombination::zero() + one_public + one_private + one_public;
-        assert_eq!(1, candidate.num_additions());
+    let candidate = LinearCombination::zero() + one_public + one_private + one_public;
+    assert_eq!(1, candidate.num_additions());
 
-        let candidate = LinearCombination::one() + one_public + one_private + one_public;
-        assert_eq!(2, candidate.num_additions());
+    let candidate = LinearCombination::one() + one_public + one_private + one_public;
+    assert_eq!(2, candidate.num_additions());
 
-        let candidate = LinearCombination::zero() + one_public + one_private + one_public + one_private;
-        assert_eq!(1, candidate.num_additions());
+    let candidate = LinearCombination::zero() + one_public + one_private + one_public + one_private;
+    assert_eq!(1, candidate.num_additions());
 
-        let candidate = LinearCombination::one() + one_public + one_private + one_public + one_private;
-        assert_eq!(2, candidate.num_additions());
+    let candidate = LinearCombination::one() + one_public + one_private + one_public + one_private;
+    assert_eq!(2, candidate.num_additions());
 
-        let candidate = LinearCombination::zero() + LinearCombination::zero() + one_public + one_private + one_public + one_private;
-        assert_eq!(1, candidate.num_additions());
+    let candidate = LinearCombination::zero()
+        + LinearCombination::zero()
+        + one_public
+        + one_private
+        + one_public
+        + one_private;
+    assert_eq!(1, candidate.num_additions());
 
-        let candidate = LinearCombination::one() + LinearCombination::zero() + one_public + one_private + one_public + one_private;
-        assert_eq!(2, candidate.num_additions());
+    let candidate = LinearCombination::one()
+        + LinearCombination::zero()
+        + one_public
+        + one_private
+        + one_public
+        + one_private;
+    assert_eq!(2, candidate.num_additions());
 
-        let candidate = LinearCombination::one() + LinearCombination::zero() + LinearCombination::one() + one_public + one_private + one_public + one_private;
-        assert_eq!(2, candidate.num_additions());
+    let candidate = LinearCombination::one()
+        + LinearCombination::zero()
+        + LinearCombination::one()
+        + one_public
+        + one_private
+        + one_public
+        + one_private;
+    assert_eq!(2, candidate.num_additions());
 
-        let candidate = LinearCombination::zero() + LinearCombination::zero() + one_public + one_private + one_public + one_private + &two_private;
-        assert_eq!(1, candidate.num_additions());
+    let candidate = LinearCombination::zero()
+        + LinearCombination::zero()
+        + one_public
+        + one_private
+        + one_public
+        + one_private
+        + &two_private;
+    assert_eq!(1, candidate.num_additions());
 
-        let candidate = LinearCombination::one() + LinearCombination::zero() + one_public + one_private + one_public + one_private + &two_private;
-        assert_eq!(2, candidate.num_additions());
+    let candidate = LinearCombination::one()
+        + LinearCombination::zero()
+        + one_public
+        + one_private
+        + one_public
+        + one_private
+        + &two_private;
+    assert_eq!(2, candidate.num_additions());
 
-        let candidate = LinearCombination::one() + LinearCombination::zero() + LinearCombination::one() + one_public + one_private + one_public + one_private + &two_private;
-        assert_eq!(2, candidate.num_additions());
+    let candidate = LinearCombination::one()
+        + LinearCombination::zero()
+        + LinearCombination::one()
+        + one_public
+        + one_private
+        + one_public
+        + one_private
+        + &two_private;
+    assert_eq!(2, candidate.num_additions());
 
-        // Now check with subtractions.
+    // Now check with subtractions.
 
-        let candidate = LinearCombination::zero() - one_public;
-        assert_eq!(0, candidate.num_additions());
+    let candidate = LinearCombination::zero() - one_public;
+    assert_eq!(0, candidate.num_additions());
 
-        let candidate = LinearCombination::one() - one_public;
-        assert_eq!(1, candidate.num_additions());
+    let candidate = LinearCombination::one() - one_public;
+    assert_eq!(1, candidate.num_additions());
 
-        let candidate = LinearCombination::zero() + one_public - one_public;
-        assert_eq!(0, candidate.num_additions());
+    let candidate = LinearCombination::zero() + one_public - one_public;
+    assert_eq!(0, candidate.num_additions());
 
-        let candidate = LinearCombination::one() + one_public - one_public;
-        assert_eq!(0, candidate.num_additions());
+    let candidate = LinearCombination::one() + one_public - one_public;
+    assert_eq!(0, candidate.num_additions());
 
-        let candidate = LinearCombination::zero() + one_public - one_private;
-        assert_eq!(1, candidate.num_additions());
+    let candidate = LinearCombination::zero() + one_public - one_private;
+    assert_eq!(1, candidate.num_additions());
 
-        let candidate = LinearCombination::one() + one_public - one_private;
-        assert_eq!(2, candidate.num_additions());
+    let candidate = LinearCombination::one() + one_public - one_private;
+    assert_eq!(2, candidate.num_additions());
 
-        let candidate = LinearCombination::zero() + one_public + one_private - one_public;
-        assert_eq!(0, candidate.num_additions());
+    let candidate = LinearCombination::zero() + one_public + one_private - one_public;
+    assert_eq!(0, candidate.num_additions());
 
-        let candidate = LinearCombination::one() + one_public + one_private - one_public;
-        assert_eq!(1, candidate.num_additions());
+    let candidate = LinearCombination::one() + one_public + one_private - one_public;
+    assert_eq!(1, candidate.num_additions());
 
-        let candidate = LinearCombination::zero() + one_public + one_private + one_public - one_private;
-        assert_eq!(0, candidate.num_additions());
+    let candidate = LinearCombination::zero() + one_public + one_private + one_public - one_private;
+    assert_eq!(0, candidate.num_additions());
 
-        let candidate = LinearCombination::one() + one_public + one_private + one_public - one_private;
-        assert_eq!(1, candidate.num_additions());
+    let candidate = LinearCombination::one() + one_public + one_private + one_public - one_private;
+    assert_eq!(1, candidate.num_additions());
 
-        let candidate = LinearCombination::zero() + LinearCombination::zero() + one_public + one_private + one_public - one_private;
-        assert_eq!(0, candidate.num_additions());
+    let candidate = LinearCombination::zero()
+        + LinearCombination::zero()
+        + one_public
+        + one_private
+        + one_public
+        - one_private;
+    assert_eq!(0, candidate.num_additions());
 
-        let candidate = LinearCombination::one() + LinearCombination::zero() + one_public + one_private + one_public - one_private;
-        assert_eq!(1, candidate.num_additions());
+    let candidate = LinearCombination::one()
+        + LinearCombination::zero()
+        + one_public
+        + one_private
+        + one_public
+        - one_private;
+    assert_eq!(1, candidate.num_additions());
 
-        let candidate = LinearCombination::one() + LinearCombination::zero() + LinearCombination::one() + one_public + one_private + one_public - one_private;
-        assert_eq!(1, candidate.num_additions());
+    let candidate = LinearCombination::one()
+        + LinearCombination::zero()
+        + LinearCombination::one()
+        + one_public
+        + one_private
+        + one_public
+        - one_private;
+    assert_eq!(1, candidate.num_additions());
 
-        let candidate = LinearCombination::zero() + LinearCombination::zero() + one_public + one_private + one_public + one_private - &two_private;
-        assert_eq!(0, candidate.num_additions());
+    let candidate = LinearCombination::zero()
+        + LinearCombination::zero()
+        + one_public
+        + one_private
+        + one_public
+        + one_private
+        - &two_private;
+    assert_eq!(0, candidate.num_additions());
 
-        let candidate = LinearCombination::one() + LinearCombination::zero() + one_public + one_private + one_public + one_private - &two_private;
-        assert_eq!(1, candidate.num_additions());
+    let candidate = LinearCombination::one()
+        + LinearCombination::zero()
+        + one_public
+        + one_private
+        + one_public
+        + one_private
+        - &two_private;
+    assert_eq!(1, candidate.num_additions());
 
-        let candidate = LinearCombination::one() + LinearCombination::zero() + LinearCombination::one() + one_public + one_private + one_public + one_private - &two_private;
-        assert_eq!(1, candidate.num_additions());
-    }
+    let candidate = LinearCombination::one()
+        + LinearCombination::zero()
+        + LinearCombination::one()
+        + one_public
+        + one_private
+        + one_public
+        + one_private
+        - &two_private;
+    assert_eq!(1, candidate.num_additions());
+}

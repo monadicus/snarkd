@@ -1,7 +1,11 @@
 mod assignment;
 pub use assignment::*;
+mod circuit_type;
+pub use circuit_type::*;
 mod constraint;
 pub(crate) use constraint::*;
+mod count;
+pub(crate) use count::*;
 mod counter;
 pub(crate) use counter::*;
 mod linear_combination;
@@ -12,3 +16,12 @@ mod r1cs;
 pub use r1cs::*;
 mod variable;
 pub use variable::*;
+
+#[cfg(test)]
+#[path = ""]
+mod test {
+    // mod assignment_tests;
+    mod count_tests;
+    mod linear_combination_tests;
+    mod variable_tests;
+}

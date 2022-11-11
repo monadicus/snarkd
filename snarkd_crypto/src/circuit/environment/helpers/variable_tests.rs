@@ -1,7 +1,6 @@
+use crate::r1cs::Variable;
+
 #[test]
 fn test_size() {
-    assert_eq!(
-        24,
-        std::mem::size_of::<Variable<<Circuit as Environment>::BaseField>>()
-    );
+    assert_eq!(16, std::mem::size_of::<Variable>());
 }

@@ -10,8 +10,8 @@ use super::{Mode, Variable};
 
 #[derive(Clone)]
 pub struct LinearCombination {
-    constant: Fp,
-    terms: IndexMap<Variable, Fp>,
+    pub(crate) constant: Fp,
+    pub(crate) terms: IndexMap<Variable, Fp>,
     /// The value of this linear combination, defined as the sum of the `terms` and `constant`.
     value: Fp,
 }

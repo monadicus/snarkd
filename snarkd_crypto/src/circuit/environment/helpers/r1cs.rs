@@ -1,3 +1,4 @@
+use anyhow::Result;
 use std::{fmt, rc::Rc};
 
 use crate::bls12_377::{Field, Fp};
@@ -30,12 +31,12 @@ impl R1CS {
     }
 
     /// Appends the given scope to the current environment.
-    pub(crate) fn push_scope<S: Into<String>>(&mut self, name: S) -> Result<(), String> {
+    pub(crate) fn push_scope<S: Into<String>>(&mut self, name: S) -> Result<()> {
         self.counter.push(name)
     }
 
     /// Removes the given scope from the current environment.
-    pub(crate) fn pop_scope<S: Into<String>>(&mut self, name: S) -> Result<(), String> {
+    pub(crate) fn pop_scope<S: Into<String>>(&mut self, name: S) -> Result<()> {
         self.counter.pop(name)
     }
 

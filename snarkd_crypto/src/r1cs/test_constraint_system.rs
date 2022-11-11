@@ -3,10 +3,7 @@ use fxhash::{FxBuildHasher, FxHashMap};
 use indexmap::{map::Entry, IndexMap, IndexSet};
 use itertools::Itertools;
 
-use crate::{ConstraintSystem, Field, Index, LinearCombination, OptionalVec, Variable};
-
-/// This field is the scalar field (Fr) of BLS12-377.
-pub type Fp = crate::bls12_377::Fp;
+use crate::{bls12_377::Field, r1cs::*};
 
 #[derive(Debug, Clone)]
 enum NamedObject {
@@ -361,12 +358,12 @@ impl<F: Field> TestConstraintSystem<F> {
 
 impl<F: Field> ConstraintSystem for TestConstraintSystem<F> {
     type Root = Self;
-    type Field = F;
 
-    fn alloc<Fn, A, AR>(&mut self, annotation: A, f: Fn) -> Result<Variable>
+    fn alloc<Fn, A, F, AR>(&mut self, annotation: A, f: Fn) -> Result<Variable>
     where
-        Fn: FnOnce() -> Result<Self::Field>,
+        Fn: FnOnce() -> Result<F>,
         A: FnOnce() -> AR,
+        F: Field,
         AR: AsRef<str>,
     {
         let interned_path = self.compute_path(annotation().as_ref());
@@ -380,10 +377,11 @@ impl<F: Field> ConstraintSystem for TestConstraintSystem<F> {
         Ok(var)
     }
 
-    fn alloc_input<Fn, A, AR>(&mut self, annotation: A, f: Fn) -> Result<Variable>
+    fn alloc_input<Fn, A, F, AR>(&mut self, annotation: A, f: Fn) -> Result<Variable>
     where
-        Fn: FnOnce() -> Result<Self::Field>,
+        Fn: FnOnce() -> Result<F>,
         A: FnOnce() -> AR,
+        F: Field,
         AR: AsRef<str>,
     {
         let interned_path = self.compute_path(annotation().as_ref());
@@ -397,13 +395,14 @@ impl<F: Field> ConstraintSystem for TestConstraintSystem<F> {
         Ok(var)
     }
 
-    fn enforce<A, AR, LA, LB, LC>(&mut self, annotation: A, a: LA, b: LB, c: LC)
+    fn enforce<A, F, AR, LA, LB, LC>(&mut self, annotation: A, a: LA, b: LB, c: LC)
     where
         A: FnOnce() -> AR,
+        F: Field,
         AR: AsRef<str>,
-        LA: FnOnce(LinearCombination<Self::Field>) -> LinearCombination<Self::Field>,
-        LB: FnOnce(LinearCombination<Self::Field>) -> LinearCombination<Self::Field>,
-        LC: FnOnce(LinearCombination<Self::Field>) -> LinearCombination<Self::Field>,
+        LA: FnOnce(LinearCombination<F>) -> LinearCombination<F>,
+        LB: FnOnce(LinearCombination<F>) -> LinearCombination<F>,
+        LC: FnOnce(LinearCombination<F>) -> LinearCombination<F>,
     {
         let interned_path = self.compute_path(annotation().as_ref());
         let index = self.constraints.next_idx();
@@ -411,16 +410,15 @@ impl<F: Field> ConstraintSystem for TestConstraintSystem<F> {
         self.register_object_in_namespace(named_obj.clone());
         self.set_named_obj(interned_path, named_obj);
 
-        let mut intern_fields =
-            |uninterned: Vec<(Variable, Self::Field)>| -> Vec<(Variable, InternedField)> {
-                uninterned
-                    .into_iter()
-                    .map(|(var, field)| {
-                        let interned_field = self.interned_fields.insert_full(field).0;
-                        (var, interned_field)
-                    })
-                    .collect()
-            };
+        let mut intern_fields = |uninterned: Vec<(Variable, F)>| -> Vec<(Variable, InternedField)> {
+            uninterned
+                .into_iter()
+                .map(|(var, field)| {
+                    let interned_field = self.interned_fields.insert_full(field).0;
+                    (var, interned_field)
+                })
+                .collect()
+        };
 
         let a = intern_fields(a(LinearCombination::zero()).0);
         let b = intern_fields(b(LinearCombination::zero()).0);

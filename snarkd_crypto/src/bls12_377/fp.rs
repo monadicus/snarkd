@@ -11,6 +11,13 @@ use ruint::{uint, Uint};
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Fp(pub Uint<384, 6>);
 
+#[cfg(test)]
+impl crate::circuit::rng_test_struct::Uniform for Fp {
+    fn rand<R: Rng + ?Sized>(rng: &mut R) -> Self {
+        Self(rng.sample(Standard))
+    }
+}
+
 impl From<Uint<384, 6>> for Fp {
     fn from(v: Uint<384, 6>) -> Self {
         Self(v)

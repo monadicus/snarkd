@@ -72,6 +72,16 @@ impl Mode {
     }
 }
 
+impl From<bool> for Mode {
+    fn from(v: bool) -> Self {
+        if v {
+            Self::Constant
+        } else {
+            Self::Private
+        }
+    }
+}
+
 impl IntoIterator for Mode {
     type IntoIter = std::iter::Once<Self>;
     type Item = Mode;

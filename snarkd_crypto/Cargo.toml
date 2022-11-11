@@ -11,8 +11,9 @@ hashbrown = { workspace = true }
 indexmap = { workspace = true }
 itertools = { workspace = true }
 num-bigint = { workspace = true }
-num_cpus = "1.0"
-parking_lot = {workspace = true }
+num_cpus = { workspace = true }
+once_cell = { workspace = true }
+parking_lot = { workspace = true }
 rand = { workspace = true }
 rand_core = { workspace = true }
 rand_xorshift = { workspace = true }

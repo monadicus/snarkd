@@ -104,7 +104,7 @@ pub trait Field:
     /// Returns a field element if the set of bytes forms a valid field element,
     /// otherwise returns None. This function is primarily intended for sampling
     /// random field elements from a hash-function or RNG output.
-    fn from_random_bytes(bytes: &[u8]) -> Option<Self> {
+    fn from_random_bytes(_bytes: &[u8]) -> Option<Self> {
         // Self::from_random_bytes_with_flags::<EmptyFlags>(bytes).map(|f| f.0)
         todo!()
     }

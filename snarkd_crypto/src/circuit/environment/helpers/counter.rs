@@ -1,4 +1,5 @@
 use super::{Constraint, Scope};
+use anyhow::{bail, Result};
 
 #[derive(Debug, Default)]
 pub(crate) struct Counter {
@@ -13,10 +14,10 @@ pub(crate) struct Counter {
 
 impl Counter {
     /// Saves and switches from the current scope to a new scope.
-    pub(crate) fn push<S: Into<String>>(&mut self, name: S) -> Result<(), String> {
+    pub(crate) fn push<S: Into<String>>(&mut self, name: S) -> Result<()> {
         let name = name.into();
         match name.contains('.') {
-            true => Err("Scope names cannot contain periods (\".\")".to_string()),
+            true => bail!("Scope names cannot contain periods (\".\")".to_string()),
             false => {
                 // Construct the scope name.
                 let scope = match self.scope.is_empty() {
@@ -48,7 +49,7 @@ impl Counter {
     }
 
     /// Discards the current scope, reverting to the previous scope.
-    pub(crate) fn pop<S: Into<String>>(&mut self, name: S) -> Result<(), String> {
+    pub(crate) fn pop<S: Into<String>>(&mut self, name: S) -> Result<()> {
         // Pop the current scope from the full scope.
         let (_previous_scope, current_scope) = match self.scope.rsplit_once('.') {
             Some((previous_scope, current_scope)) => (previous_scope, current_scope),
@@ -70,10 +71,7 @@ impl Counter {
                 }
             }
             false => {
-                return Err(
-                    "Mismatching scope. Scopes must return in the reverse order they are created"
-                        .to_string(),
-                );
+                bail!("Mismatching scope. Scopes must return in the reverse order they are created")
             }
         }
 
