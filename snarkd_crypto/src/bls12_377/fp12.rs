@@ -295,6 +295,13 @@ impl Field for Fp12 {
         self.c0.is_one() && self.c1.is_zero()
     }
 
+    fn half() -> Self {
+        Self {
+            c0: Fp6::half(),
+            c1: Fp6::ZERO,
+        }
+    }
+
     fn rand() -> Self {
         Self {
             c0: Fp6::rand(),

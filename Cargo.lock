@@ -2161,6 +2161,7 @@ dependencies = [
  "indexmap",
  "itertools",
  "num-bigint",
+ "num_cpus",
  "rand",
  "rand_xorshift",
  "rayon",

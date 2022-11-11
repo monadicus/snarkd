@@ -44,6 +44,8 @@ pub trait Field:
     /// Returns whether or not the given element is one.
     fn is_one(&self) -> bool;
 
+    fn half() -> Self;
+
     /// Returns a random field element.
     fn rand() -> Self;
 

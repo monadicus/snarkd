@@ -10,6 +10,7 @@ fxhash = { workspace = true }
 indexmap = { workspace = true }
 itertools = { workspace = true }
 num-bigint = { workspace = true }
+num_cpus = "1.0"
 rand = { workspace = true }
 rand_xorshift = { workspace = true }
 rayon = { workspace = true }

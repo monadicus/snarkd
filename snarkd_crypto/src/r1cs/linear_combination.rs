@@ -1,4 +1,4 @@
-use crate::{Field, Variable};
+use crate::{bls12_377::Field, Variable};
 use anyhow::{bail, Result};
 
 use std::{
