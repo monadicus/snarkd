@@ -631,7 +631,7 @@ mod tests {
             while degree <= 1 {
                 degree = rng.gen::<usize>() % 20;
             }
-            let pp = KZG10::setup(degree + 1, &KZG10DegreeBoundsConfig::NONE, false, rng)?;
+            let pp = KZG10::setup(degree, &KZG10DegreeBoundsConfig::NONE, false, rng)?;
             let (ck, vk) = KZG10::trim(&pp, degree);
             let p = DensePolynomial::rand(degree, rng);
             let hiding_bound = Some(1);
@@ -660,7 +660,7 @@ mod tests {
         let rng = &mut rand::thread_rng();
         for _ in 0..100 {
             let degree = 50;
-            let pp = KZG10::setup(degree + 1, &KZG10DegreeBoundsConfig::NONE, false, rng)?;
+            let pp = KZG10::setup(degree, &KZG10DegreeBoundsConfig::NONE, false, rng)?;
             let (ck, vk) = KZG10::trim(&pp, 2);
             let p = DensePolynomial::rand(1, rng);
             let hiding_bound = Some(1);
@@ -692,7 +692,7 @@ mod tests {
             while degree <= 1 {
                 degree = rng.gen::<usize>() % 20;
             }
-            let pp = KZG10::setup(degree + 1, &KZG10DegreeBoundsConfig::NONE, false, rng)?;
+            let pp = KZG10::setup(degree, &KZG10DegreeBoundsConfig::NONE, false, rng)?;
             let (ck, vk) = KZG10::trim(&pp, degree);
 
             let mut comms = Vec::new();

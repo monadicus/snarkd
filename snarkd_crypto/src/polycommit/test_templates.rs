@@ -611,7 +611,7 @@ fn equation_test_template(info: TestInfo) -> Result<Vec<TestComponents>, PCError
 
 pub fn single_poly_test() -> Result<Vec<TestComponents>, PCError> {
     let info = TestInfo {
-        num_iters: 100,
+        num_iters: 10,
         max_degree: None,
         supported_degree: None,
         num_polynomials: 1,
@@ -624,7 +624,7 @@ pub fn single_poly_test() -> Result<Vec<TestComponents>, PCError> {
 
 pub fn linear_poly_degree_bound_test() -> Result<Vec<TestComponents>, PCError> {
     let info = TestInfo {
-        num_iters: 100,
+        num_iters: 10,
         max_degree: Some(2),
         supported_degree: Some(1),
         num_polynomials: 1,
@@ -637,7 +637,7 @@ pub fn linear_poly_degree_bound_test() -> Result<Vec<TestComponents>, PCError> {
 
 pub fn single_poly_degree_bound_test() -> Result<Vec<TestComponents>, PCError> {
     let info = TestInfo {
-        num_iters: 100,
+        num_iters: 10,
         max_degree: None,
         supported_degree: None,
         num_polynomials: 1,
@@ -650,7 +650,7 @@ pub fn single_poly_degree_bound_test() -> Result<Vec<TestComponents>, PCError> {
 
 pub fn quadratic_poly_degree_bound_multiple_queries_test() -> Result<Vec<TestComponents>, PCError> {
     let info = TestInfo {
-        num_iters: 100,
+        num_iters: 10,
         max_degree: Some(3),
         supported_degree: Some(2),
         num_polynomials: 1,
@@ -663,7 +663,7 @@ pub fn quadratic_poly_degree_bound_multiple_queries_test() -> Result<Vec<TestCom
 
 pub fn single_poly_degree_bound_multiple_queries_test() -> Result<Vec<TestComponents>, PCError> {
     let info = TestInfo {
-        num_iters: 100,
+        num_iters: 10,
         max_degree: None,
         supported_degree: None,
         num_polynomials: 1,
@@ -676,7 +676,7 @@ pub fn single_poly_degree_bound_multiple_queries_test() -> Result<Vec<TestCompon
 
 pub fn two_polys_degree_bound_single_query_test() -> Result<Vec<TestComponents>, PCError> {
     let info = TestInfo {
-        num_iters: 100,
+        num_iters: 10,
         max_degree: None,
         supported_degree: None,
         num_polynomials: 2,
@@ -689,7 +689,7 @@ pub fn two_polys_degree_bound_single_query_test() -> Result<Vec<TestComponents>,
 
 pub fn full_end_to_end_test() -> Result<Vec<TestComponents>, PCError> {
     let info = TestInfo {
-        num_iters: 100,
+        num_iters: 10,
         max_degree: None,
         supported_degree: None,
         num_polynomials: 10,
@@ -702,7 +702,7 @@ pub fn full_end_to_end_test() -> Result<Vec<TestComponents>, PCError> {
 
 pub fn full_end_to_end_equation_test() -> Result<Vec<TestComponents>, PCError> {
     let info = TestInfo {
-        num_iters: 100,
+        num_iters: 10,
         max_degree: None,
         supported_degree: None,
         num_polynomials: 10,
@@ -715,7 +715,7 @@ pub fn full_end_to_end_equation_test() -> Result<Vec<TestComponents>, PCError> {
 
 pub fn single_equation_test() -> Result<Vec<TestComponents>, PCError> {
     let info = TestInfo {
-        num_iters: 100,
+        num_iters: 10,
         max_degree: None,
         supported_degree: None,
         num_polynomials: 1,
@@ -728,7 +728,7 @@ pub fn single_equation_test() -> Result<Vec<TestComponents>, PCError> {
 
 pub fn two_equation_test() -> Result<Vec<TestComponents>, PCError> {
     let info = TestInfo {
-        num_iters: 100,
+        num_iters: 10,
         max_degree: None,
         supported_degree: None,
         num_polynomials: 2,
@@ -741,7 +741,7 @@ pub fn two_equation_test() -> Result<Vec<TestComponents>, PCError> {
 
 pub fn two_equation_degree_bound_test() -> Result<Vec<TestComponents>, PCError> {
     let info = TestInfo {
-        num_iters: 100,
+        num_iters: 10,
         max_degree: None,
         supported_degree: None,
         num_polynomials: 2,
