@@ -89,7 +89,7 @@ pub fn bad_degree_bound_test<E: PairingEngine, S: AlgebraicSponge<E::Fq, 2>>() -
 
         let mut query_set = QuerySet::new();
         let mut values = Evaluations::new();
-        let point = E::Fr::rand(rng);
+        let point = E::Fr::rand();
         for (i, label) in labels.iter().enumerate() {
             query_set.insert((label.clone(), ("rand".into(), point)));
             let value = polynomials[i].evaluate(point);
@@ -156,7 +156,7 @@ pub fn lagrange_test_template<E: PairingEngine, S: AlgebraicSponge<E::Fq, 2>>(
                 .next_power_of_two();
             let mut evals = vec![E::Fr::zero(); eval_size];
             for e in &mut evals {
-                *e = E::Fr::rand(rng);
+                *e = E::Fr::rand();
             }
             let domain = crate::fft::EvaluationDomain::new(evals.len()).unwrap();
             let evals = crate::fft::Evaluations::from_vec_and_domain(evals, domain);
@@ -204,7 +204,7 @@ pub fn lagrange_test_template<E: PairingEngine, S: AlgebraicSponge<E::Fq, 2>>(
         let mut values = Evaluations::new();
         // let mut point = E::Fr::one();
         for point_id in 0..num_points_in_query_set {
-            let point = E::Fr::rand(rng);
+            let point = E::Fr::rand();
             for (polynomial, label) in polynomials.iter().zip_eq(labels.iter()) {
                 query_set.insert((label.clone(), (format!("rand_{}", point_id), point)));
                 let value = polynomial.evaluate(point);
@@ -530,7 +530,7 @@ fn equation_test_template<E: PairingEngine, S: AlgebraicSponge<E::Fq, 2>>(
         let mut query_set = QuerySet::new();
         let mut values = Evaluations::new();
         for i in 0..num_points_in_query_set {
-            let point = E::Fr::rand(rng);
+            let point = E::Fr::rand();
             for j in 0..num_equations.unwrap() {
                 let label = format!("query {} eqn {}", i, j);
                 let mut lc = LinearCombination::empty(label.clone());
@@ -548,7 +548,7 @@ fn equation_test_template<E: PairingEngine, S: AlgebraicSponge<E::Fq, 2>>(
                             continue;
                         } else {
                             assert!(poly.degree_bound().is_none());
-                            let coeff = E::Fr::rand(rng);
+                            let coeff = E::Fr::rand();
                             value += &(coeff * poly.evaluate(point));
                             lc.add(coeff, label.clone());
                         }

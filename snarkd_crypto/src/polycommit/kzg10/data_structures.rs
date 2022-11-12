@@ -1,7 +1,9 @@
 use crate::{
-    bls12_377::{Fp, G1Affine, G1Projective, G2Affine, G2Prepared, Scalar},
+    bls12_377::{
+        scalar, Affine, Fp, G1Affine, G1Projective, G2Affine, G2Prepared, Projective, Scalar,
+    },
     fft::{DensePolynomial, EvaluationDomain},
-    AlgebraicSponge,
+    utils::PoseidonSponge,
 };
 use anyhow::Result;
 use core::ops::{Add, AddAssign};
@@ -143,7 +145,7 @@ pub struct PreparedVerifierKey {
 impl PreparedVerifierKey {
     /// prepare `PreparedVerifierKey` from `VerifierKey`
     pub fn prepare(vk: &VerifierKey) -> Self {
-        let supported_bits = Scalar::size_in_bits();
+        let supported_bits = scalar::MODULUS_BITS;
 
         let mut prepared_g = Vec::<G1Affine>::new();
         let mut g = G1Projective::from(vk.g);
@@ -178,7 +180,7 @@ pub struct Commitment(
 impl Commitment {
     #[inline]
     pub fn empty() -> Self {
-        Commitment(G1Affine::zero())
+        Commitment(G1Affine::ZERO)
     }
 
     pub fn has_degree_bound(&self) -> bool {
@@ -203,7 +205,7 @@ impl PreparedCommitment {
         let mut prepared_comm = Vec::<G1Affine>::new();
         let mut cur = G1Projective::from(comm.0);
 
-        let supported_bits = Scalar::size_in_bits();
+        let supported_bits = scalar::MODULUS_BITS;
 
         for _ in 0..supported_bits {
             prepared_comm.push(cur.into());
@@ -298,7 +300,7 @@ pub struct Proof {
 }
 
 impl Proof {
-    pub fn absorb_into_sponge(&self, sponge: &mut impl AlgebraicSponge<Fp, 2>) {
+    pub fn absorb_into_sponge(&self, sponge: &mut PoseidonSponge) {
         sponge.absorb_native_field_elements(&self.w.to_field_elements().unwrap());
         if let Some(random_v) = self.random_v {
             sponge.absorb_nonnative_field_elements([random_v]);

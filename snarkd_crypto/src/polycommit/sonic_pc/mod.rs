@@ -1,10 +1,12 @@
 use crate::{
-    bls12_377::{Fp, G1Projective, G2Affine, G2Prepared, Scalar},
+    bls12_377::{
+        product_of_pairings, Affine, Field, Fp, G1Prepared, G1Projective, G2Affine, G2Prepared,
+        Projective, Scalar,
+    },
     fft::DensePolynomial,
     msm::variable_base::VariableBase,
     polycommit::{kzg10, optional_rng::OptionalRng, PCError},
     utils::*,
-    AlgebraicSponge,
 };
 use core::{
     convert::TryInto,
@@ -34,11 +36,9 @@ pub use polynomial::*;
 /// [al]: https://eprint.iacr.org/2019/601
 /// [marlin]: https://eprint.iacr.org/2019/1047
 #[derive(Clone, Debug)]
-pub struct SonicKZG10<S: AlgebraicSponge<Fp, 2>> {
-    _engine: PhantomData<S>,
-}
+pub struct SonicKZG10;
 
-impl<S: AlgebraicSponge<Fp, 2>> SonicKZG10<S> {
+impl SonicKZG10 {
     pub fn setup<R: RngCore>(max_degree: usize, rng: &mut R) -> Result<UniversalParams, PCError> {
         kzg10::KZG10::setup(
             max_degree,
@@ -166,7 +166,7 @@ impl<S: AlgebraicSponge<Fp, 2>> SonicKZG10<S> {
             .map(|degree_bounds_and_neg_powers_of_h| {
                 degree_bounds_and_neg_powers_of_h
                     .iter()
-                    .map(|(d, affine)| (*d, affine.prepare()))
+                    .map(|(d, affine)| (*d, G2Prepared::from_affine(*affine)))
                     .collect::<Vec<(usize, G2Prepared)>>()
             });
 
@@ -204,7 +204,7 @@ impl<S: AlgebraicSponge<Fp, 2>> SonicKZG10<S> {
         ck: &CommitterKey,
         polynomials: impl IntoIterator<Item = LabeledPolynomialWithBasis<'b>>,
         rng: Option<&mut dyn RngCore>,
-    ) -> Result<(Vec<LabeledCommitment<Commitment>>, Vec<Randomness>), PCError> {
+    ) -> Result<(Vec<LabeledCommitment>, Vec<Randomness>), PCError> {
         Self::commit_with_terminator(ck, polynomials, &AtomicBool::new(false), rng)
     }
 
@@ -216,9 +216,9 @@ impl<S: AlgebraicSponge<Fp, 2>> SonicKZG10<S> {
         polynomials: impl IntoIterator<Item = LabeledPolynomialWithBasis<'a>>,
         terminator: &AtomicBool,
         rng: Option<&mut dyn RngCore>,
-    ) -> Result<(Vec<LabeledCommitment<Commitment>>, Vec<Randomness>), PCError> {
+    ) -> Result<(Vec<LabeledCommitment>, Vec<Randomness>), PCError> {
         let rng = &mut OptionalRng(rng);
-        let mut labeled_comms: Vec<LabeledCommitment<Commitment>> = Vec::new();
+        let mut labeled_comms: Vec<LabeledCommitment> = Vec::new();
         let mut randomness: Vec<Randomness> = Vec::new();
 
         let mut pool = ExecutionPool::<Result<_, _>>::new();
@@ -244,13 +244,6 @@ impl<S: AlgebraicSponge<Fp, 2>> SonicKZG10<S> {
 
             pool.add_job(move || {
                 let mut rng = seed.map(rand::rngs::StdRng::from_seed);
-                add_to_trace!(|| "PC::Commit", || format!(
-                    "Polynomial {} of degree {}, degree bound {:?}, and hiding bound {:?}",
-                    label,
-                    p.degree(),
-                    degree_bound,
-                    hiding_bound,
-                ));
 
                 #[allow(clippy::or_fun_call)]
                 let (comm, rand) = p
@@ -298,7 +291,7 @@ impl<S: AlgebraicSponge<Fp, 2>> SonicKZG10<S> {
                     })
                     .collect::<Result<Vec<_>, _>>()?
                     .into_iter()
-                    .fold((G1Projective::zero(), Randomness::empty()), |mut a, b| {
+                    .fold((G1Projective::ZERO, Randomness::empty()), |mut a, b| {
                         a.0.add_assign_mixed(&b.0 .0);
                         a.1 += (Scalar::ONE, &b.1);
                         a
@@ -325,7 +318,7 @@ impl<S: AlgebraicSponge<Fp, 2>> SonicKZG10<S> {
         ck: &CommitterKey,
         labeled_polynomials: impl IntoIterator<Item = &'a LabeledPolynomial>,
         rands: impl IntoIterator<Item = &'a Randomness>,
-        fs_rng: &mut S,
+        fs_rng: &mut PoseidonSponge,
     ) -> Result<(DensePolynomial, Randomness), PCError>
     where
         Randomness: 'a,
@@ -353,10 +346,10 @@ impl<S: AlgebraicSponge<Fp, 2>> SonicKZG10<S> {
     pub fn batch_open<'a>(
         ck: &CommitterKey,
         labeled_polynomials: impl IntoIterator<Item = &'a LabeledPolynomial>,
-        commitments: impl IntoIterator<Item = &'a LabeledCommitment<Commitment>>,
+        commitments: impl IntoIterator<Item = &'a LabeledCommitment>,
         query_set: &QuerySet,
         rands: impl IntoIterator<Item = &'a Randomness>,
-        fs_rng: &mut S,
+        fs_rng: &mut PoseidonSponge,
     ) -> Result<BatchProof, PCError>
     where
         Randomness: 'a,
@@ -415,11 +408,11 @@ impl<S: AlgebraicSponge<Fp, 2>> SonicKZG10<S> {
 
     pub fn batch_check<'a>(
         vk: &VerifierKey,
-        commitments: impl IntoIterator<Item = &'a LabeledCommitment<Commitment>>,
+        commitments: impl IntoIterator<Item = &'a LabeledCommitment>,
         query_set: &QuerySet,
         values: &Evaluations,
         proof: &BatchProof,
-        fs_rng: &mut S,
+        fs_rng: &mut PoseidonSponge,
     ) -> Result<bool, PCError>
     where
         Commitment: 'a,
@@ -442,12 +435,12 @@ impl<S: AlgebraicSponge<Fp, 2>> SonicKZG10<S> {
         let mut randomizer = Scalar::ONE;
 
         let mut combined_comms = BTreeMap::new();
-        let mut combined_witness = G1Projective::zero();
-        let mut combined_adjusted_witness = G1Projective::zero();
+        let mut combined_witness = G1Projective::ZERO;
+        let mut combined_adjusted_witness = G1Projective::ZERO;
 
         for ((_query_name, (query, labels)), p) in query_to_labels_map.into_iter().zip_eq(&proof.0)
         {
-            let mut comms_to_combine: Vec<&'_ LabeledCommitment<_>> = Vec::new();
+            let mut comms_to_combine: Vec<&'_ LabeledCommitment> = Vec::new();
             let mut values_to_combine = Vec::new();
             for label in labels.into_iter() {
                 let commitment = commitments.get(label).ok_or(PCError::MissingPolynomial {
@@ -494,10 +487,10 @@ impl<S: AlgebraicSponge<Fp, 2>> SonicKZG10<S> {
         ck: &CommitterKey,
         linear_combinations: impl IntoIterator<Item = &'a LinearCombination>,
         polynomials: impl IntoIterator<Item = &'a LabeledPolynomial>,
-        commitments: impl IntoIterator<Item = &'a LabeledCommitment<Commitment>>,
+        commitments: impl IntoIterator<Item = &'a LabeledCommitment>,
         query_set: &QuerySet,
         rands: impl IntoIterator<Item = &'a Randomness>,
-        fs_rng: &mut S,
+        fs_rng: &mut PoseidonSponge,
     ) -> Result<BatchLCProof, PCError>
     where
         Randomness: 'a,
@@ -584,11 +577,11 @@ impl<S: AlgebraicSponge<Fp, 2>> SonicKZG10<S> {
     pub fn check_combinations<'a>(
         vk: &VerifierKey,
         linear_combinations: impl IntoIterator<Item = &'a LinearCombination>,
-        commitments: impl IntoIterator<Item = &'a LabeledCommitment<Commitment>>,
+        commitments: impl IntoIterator<Item = &'a LabeledCommitment>,
         query_set: &QuerySet,
         evaluations: &Evaluations,
         proof: &BatchLCProof,
-        fs_rng: &mut S,
+        fs_rng: &mut PoseidonSponge,
     ) -> Result<bool, PCError>
     where
         Commitment: 'a,
@@ -652,7 +645,7 @@ impl<S: AlgebraicSponge<Fp, 2>> SonicKZG10<S> {
     }
 }
 
-impl<S: AlgebraicSponge<Fp, 2>> SonicKZG10<S> {
+impl SonicKZG10 {
     fn combine_polynomials<'a>(
         coeffs_polys_rands: impl IntoIterator<Item = (Scalar, &'a DensePolynomial, &'a Randomness)>,
     ) -> (DensePolynomial, Randomness) {
@@ -676,30 +669,32 @@ impl<S: AlgebraicSponge<Fp, 2>> SonicKZG10<S> {
     ) -> G1Projective {
         let (scalars, bases): (Vec<_>, Vec<_>) = coeffs_and_comms
             .into_iter()
-            .map(|(f, c)| (f.into(), c.0))
+            .map(|(f, c)| (f.0, c.0))
             .unzip();
         VariableBase::msm(&bases, &scalars)
     }
 
     fn normalize_commitments(commitments: Vec<G1Projective>) -> impl Iterator<Item = Commitment> {
-        let comms = G1Projective::batch_normalization_into_affine(commitments);
+        let mut comms = commitments;
+        G1Projective::batch_normalization(&mut comms);
+        let comms = comms.iter().map(|c| (*c).into()).collect::<Vec<_>>();
         comms.into_iter().map(|c| kzg10::Commitment(c))
     }
 }
 
-impl<S: AlgebraicSponge<Fp, 2>> SonicKZG10<S> {
+impl SonicKZG10 {
     #[allow(clippy::too_many_arguments)]
     fn accumulate_elems<'a>(
         combined_comms: &mut BTreeMap<Option<usize>, G1Projective>,
         combined_witness: &mut G1Projective,
         combined_adjusted_witness: &mut G1Projective,
         vk: &VerifierKey,
-        commitments: impl IntoIterator<Item = &'a LabeledCommitment<Commitment>>,
+        commitments: impl IntoIterator<Item = &'a LabeledCommitment>,
         point: Scalar,
         values: impl IntoIterator<Item = Scalar>,
         proof: &kzg10::Proof,
         randomizer: Option<Scalar>,
-        fs_rng: &mut S,
+        fs_rng: &mut PoseidonSponge,
     ) {
         // Keeps track of running combination of values
         let mut combined_values = Scalar::ZERO;
@@ -720,7 +715,7 @@ impl<S: AlgebraicSponge<Fp, 2>> SonicKZG10<S> {
             // Accumulate values in the BTreeMap
             *combined_comms
                 .entry(degree_bound)
-                .or_insert_with(G1Projective::zero) += &comm_with_challenge;
+                .or_insert_with(|| G1Projective::ZERO) += &comm_with_challenge;
         }
 
         // Push expected results into list of elems. Power will be the negative of the expected power
@@ -736,7 +731,7 @@ impl<S: AlgebraicSponge<Fp, 2>> SonicKZG10<S> {
         } else {
             proof.w.to_projective()
         };
-        let coeffs = coeffs.into_iter().map(|c| c.into()).collect::<Vec<_>>();
+        let coeffs = coeffs.into_iter().map(|c| c.0).collect::<Vec<_>>();
         *combined_adjusted_witness += VariableBase::msm(&bases, &coeffs);
     }
 
@@ -768,15 +763,13 @@ impl<S: AlgebraicSponge<Fp, 2>> SonicKZG10<S> {
         g1_projective_elems.push(-combined_witness);
         g2_prepared_elems.push(vk.vk.prepared_beta_h.clone());
 
-        let g1_prepared_elems_iter =
-            G1Projective::batch_normalization_into_affine(g1_projective_elems)
-                .into_iter()
-                .map(|a| a.prepare())
-                .collect::<Vec<_>>();
+        G1Projective::batch_normalization(&mut g1_projective_elems);
+        let g1_prepared_elems = g1_projective_elems
+            .into_iter()
+            .map(|a| G1Prepared::from_affine(a.into()))
+            .collect::<Vec<_>>();
 
-        let g1_g2_prepared = g1_prepared_elems_iter
-            .iter()
-            .zip_eq(g2_prepared_elems.iter());
+        let g1_g2_prepared = g1_prepared_elems.iter().zip_eq(g2_prepared_elems.iter());
         let is_one: bool = product_of_pairings(g1_g2_prepared).is_one();
         Ok(is_one)
     }

@@ -1,18 +1,16 @@
 use super::PolynomialLabel;
 use crate::{
-    bls12_377::Scalar,
+    bls12_377::{Field, Scalar},
     fft::{
         DensePolynomial, EvaluationDomain, Evaluations as EvaluationsOnDomain, Polynomial,
         SparsePolynomial,
     },
-    Field,
 };
 use hashbrown::HashMap;
 use std::borrow::Cow;
 
 #[cfg(not(feature = "parallel"))]
 use itertools::Itertools;
-#[cfg(feature = "parallel")]
 use rayon::prelude::*;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -152,7 +150,7 @@ impl<'a> LabeledPolynomialWithBasis<'a> {
         let info = PolynomialInfo::new(label, degree_bound, hiding_bound);
         Self {
             info,
-            polynomial: vec![(Scalar::one(), polynomial)],
+            polynomial: vec![(Scalar::ONE, polynomial)],
         }
     }
 
@@ -175,7 +173,7 @@ impl<'a> LabeledPolynomialWithBasis<'a> {
         let info = PolynomialInfo::new(label, None, hiding_bound);
         Self {
             info,
-            polynomial: vec![(Scalar::one(), polynomial)],
+            polynomial: vec![(Scalar::ONE, polynomial)],
         }
     }
 
@@ -188,7 +186,7 @@ impl<'a> LabeledPolynomialWithBasis<'a> {
         let info = PolynomialInfo::new(label, None, hiding_bound);
         Self {
             info,
-            polynomial: vec![(Scalar::one(), polynomial)],
+            polynomial: vec![(Scalar::ONE, polynomial)],
         }
     }
 
@@ -329,7 +327,7 @@ impl<'a> From<&'a LabeledPolynomial> for LabeledPolynomialWithBasis<'a> {
         };
         Self {
             info: other.info.clone(),
-            polynomial: vec![(Scalar::one(), polynomial)],
+            polynomial: vec![(Scalar::ONE, polynomial)],
         }
     }
 }
@@ -342,7 +340,7 @@ impl<'a> From<LabeledPolynomial> for LabeledPolynomialWithBasis<'a> {
         };
         Self {
             info: other.info.clone(),
-            polynomial: vec![(Scalar::one(), polynomial)],
+            polynomial: vec![(Scalar::ONE, polynomial)],
         }
     }
 }
@@ -473,7 +471,7 @@ impl<'a> PolynomialWithBasis<'a> {
             Self::Lagrange { evaluations } => {
                 let domain = evaluations.domain();
                 let degree = domain.size() as u64;
-                let multiplier = (point.pow([degree]) - Scalar::one()) / Scalar::from(degree);
+                let multiplier = (point.pow(&[degree]) - Scalar::ONE) / Scalar::from(degree);
                 let powers: Vec<_> = domain.elements().collect();
                 let mut denominators = cfg_iter!(powers).map(|pow| point - pow).collect::<Vec<_>>();
                 Scalar::batch_inversion(&mut denominators);

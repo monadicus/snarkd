@@ -6,25 +6,27 @@
 //! This construction achieves extractability in the algebraic group model (AGM).
 
 use crate::{
-    bls12_377::{pairing, scalar, G1Projective, G2Affine, G2Projective, Scalar},
+    bls12_377::{
+        pairing, product_of_pairings, scalar, Affine, Field, G1Affine, G1Prepared, G1Projective,
+        G2Affine, G2Prepared, G2Projective, Projective, Scalar,
+    },
     fft::{DensePolynomial, Polynomial},
     msm::{FixedBase, VariableBase},
     polycommit::PCError,
     utils::*,
 };
+use bitvec::prelude::*;
 use core::{
     marker::PhantomData,
-    ops::Mul,
+    ops::{Deref, Mul},
     sync::atomic::{AtomicBool, Ordering},
 };
 use itertools::Itertools;
 use parking_lot::RwLock;
 use rand_core::RngCore;
+use rayon::prelude::*;
 use ruint::Uint;
 use std::{collections::BTreeMap, sync::Arc};
-
-#[cfg(feature = "parallel")]
-use rayon::prelude::*;
 
 mod data_structures;
 pub use data_structures::*;
@@ -108,9 +110,9 @@ impl KZG10 {
 
         // Compute the `toxic waste`.
         let beta = Scalar::rand();
-        let g = G1Projective::rand(rng);
-        let gamma_g = G1Projective::rand(rng);
-        let h = G2Projective::rand(rng);
+        let g = G1Projective::rand();
+        let gamma_g = G1Projective::rand();
+        let h = G2Projective::rand();
 
         // Compute `beta^i G`.
         let powers_of_beta = {
@@ -123,14 +125,18 @@ impl KZG10 {
             powers_of_beta
         };
         let window_size = FixedBase::get_mul_window_size(max_degree + 1);
-        let g_table = FixedBase::get_window_table(scalar_bits, window_size, g);
-        let powers_of_beta_g =
-            FixedBase::msm::<G1Projective>(scalar_bits, window_size, &g_table, &powers_of_beta);
+        let g_table = FixedBase::get_window_table(scalar_bits as usize, window_size, g);
+        let mut powers_of_beta_g = FixedBase::msm::<G1Projective>(
+            scalar_bits as usize,
+            window_size,
+            &g_table,
+            &powers_of_beta,
+        );
 
         // Compute `gamma beta^i G`.
-        let gamma_g_table = FixedBase::get_window_table(scalar_bits, window_size, gamma_g);
+        let gamma_g_table = FixedBase::get_window_table(scalar_bits as usize, window_size, gamma_g);
         let mut powers_of_beta_times_gamma_g = FixedBase::msm::<G1Projective>(
-            scalar_bits,
+            scalar_bits as usize,
             window_size,
             &gamma_g_table,
             &powers_of_beta,
@@ -140,12 +146,21 @@ impl KZG10 {
         powers_of_beta_times_gamma_g.push(powers_of_beta_times_gamma_g.last().unwrap().mul(beta));
 
         // Reduce `beta^i G` and `gamma beta^i G` to affine representations.
-        let powers_of_beta_g = G1Projective::batch_normalization_into_affine(powers_of_beta_g);
-        let powers_of_beta_times_gamma_g =
-            G1Projective::batch_normalization_into_affine(powers_of_beta_times_gamma_g)
-                .into_iter()
-                .enumerate()
-                .collect();
+        G1Projective::batch_normalization(&mut powers_of_beta_g);
+        let powers_of_beta_g = powers_of_beta_g
+            .into_iter()
+            .map(|g| g.into())
+            .collect::<Vec<_>>();
+
+        G1Projective::batch_normalization(&mut powers_of_beta_times_gamma_g);
+        let powers_of_beta_times_gamma_g = powers_of_beta_times_gamma_g
+            .into_iter()
+            .map(|g| g.into())
+            .collect::<Vec<_>>();
+        let powers_of_beta_times_gamma_g = powers_of_beta_times_gamma_g
+            .into_iter()
+            .enumerate()
+            .collect();
 
         // This part is used to derive the universal verification parameters.
         let list = supported_degree_bounds_config.get_list(max_degree);
@@ -165,19 +180,19 @@ impl KZG10 {
 
             let mut neg_powers_of_beta = vec![];
             for i in list.iter() {
-                neg_powers_of_beta.push(beta.pow([(max_degree - *i) as u64]).inverse().unwrap());
+                neg_powers_of_beta.push(beta.pow(&[(max_degree - *i) as u64]).inverse().unwrap());
             }
 
             let window_size = FixedBase::get_mul_window_size(neg_powers_of_beta.len());
-            let neg_h_table = FixedBase::get_window_table(scalar_bits, window_size, h);
+            let neg_h_table = FixedBase::get_window_table(scalar_bits as usize, window_size, h);
             let neg_powers_of_h = FixedBase::msm::<G2Projective>(
-                scalar_bits,
+                scalar_bits as usize,
                 window_size,
                 &neg_h_table,
                 &neg_powers_of_beta,
             );
-
-            let affines = G2Projective::batch_normalization_into_affine(neg_powers_of_h);
+            G2Projective::batch_normalization(&mut neg_powers_of_h);
+            let affines: Vec<G2Affine> = neg_powers_of_h.into_iter().map(|p| p.into()).collect();
 
             for (i, affine) in list.iter().zip_eq(affines.iter()) {
                 map.insert(*i, *affine);
@@ -190,8 +205,8 @@ impl KZG10 {
 
         let beta_h = h.mul(beta).to_affine();
         let h = h.to_affine();
-        let prepared_h = h.prepare();
-        let prepared_beta_h = beta_h.prepare();
+        let prepared_h = G2Prepared::from_affine(h);
+        let prepared_beta_h = G2Prepared::from_affine(beta_h);
 
         let powers = PowersOfG::setup(powers_of_beta_g, powers_of_beta_times_gamma_g)?;
         let pp = UniversalParams {
@@ -232,8 +247,16 @@ impl KZG10 {
             Polynomial::Sparse(polynomial) => polynomial
                 .coeffs()
                 .map(|(i, coeff)| {
-                    powers.powers_of_beta_g[*i]
-                        .mul_bits(BitIteratorBE::new_without_leading_zeros(coeff.to_repr()))
+                    powers.powers_of_beta_g[*i].mul_bits(
+                        coeff
+                            .0
+                            .as_limbs()
+                            .iter()
+                            .flat_map(|limb| limb.view_bits::<Lsb0>())
+                            .map(|bit| *bit.deref())
+                            .rev()
+                            .collect::<Vec<_>>(),
+                    )
                 })
                 .sum(),
         };
@@ -280,7 +303,7 @@ impl KZG10 {
             lagrange_basis.size()
         );
 
-        let evaluations = evaluations.iter().map(|e| e.to_repr()).collect::<Vec<_>>();
+        let evaluations = evaluations.iter().map(|e| e.0).collect::<Vec<_>>();
         let mut commitment =
             VariableBase::msm(&lagrange_basis.lagrange_basis_at_beta_g, &evaluations);
 
@@ -461,13 +484,15 @@ impl KZG10 {
         total_c -= &g.mul(g_multiplier);
         total_c -= &gamma_g.mul(gamma_g_multiplier);
 
-        let affine_points = G1Projective::batch_normalization_into_affine(vec![-total_w, total_c]);
+        let mut points = vec![-total_w, total_c];
+        G1Projective::batch_normalization(&mut points);
+        let affine_points: Vec<G1Affine> = points.into_iter().map(|p| p.into()).collect::<Vec<_>>();
         let (total_w, total_c) = (affine_points[0], affine_points[1]);
 
         let result = product_of_pairings(
             [
-                (&total_w.prepare(), &vk.prepared_beta_h),
-                (&total_c.prepare(), &vk.prepared_h),
+                (&G1Prepared::from_affine(total_w), &vk.prepared_beta_h),
+                (&G1Prepared::from_affine(total_c), &vk.prepared_h),
             ]
             .iter()
             .copied(),
@@ -552,7 +577,7 @@ fn skip_leading_zeros_and_convert_to_bigints(p: &DensePolynomial) -> (usize, Vec
 }
 
 fn convert_to_bigints(p: &[Scalar]) -> Vec<Uint<256, 4>> {
-    let coeffs = cfg_iter!(p).map(|s| s.to_repr()).collect::<Vec<_>>();
+    let coeffs = cfg_iter!(p).map(|s| s.0).collect::<Vec<_>>();
     coeffs
 }
 

@@ -1,3 +1,5 @@
+pub mod sha256;
+
 pub struct ExecutionPool<'a, T> {
     jobs: Vec<Box<dyn 'a + FnOnce() -> T + Send>>,
 }

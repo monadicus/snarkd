@@ -1,10 +1,9 @@
 use super::{LabeledPolynomial, PolynomialInfo};
 use crate::{
-    bls12_377::{Field, Fp, G1Affine, G1Projective, G2Affine, G2Prepared, Scalar},
-    crypto_hash::sha256::sha256,
+    bls12_377::{Field, Fp, G1Affine, G1Projective, G2Affine, G2Prepared, Projective, Scalar},
     fft::EvaluationDomain,
     polycommit::kzg10,
-    Prepare,
+    utils::sha256::sha256,
 };
 use hashbrown::HashMap;
 use std::{
@@ -26,9 +25,7 @@ pub type Commitment = kzg10::Commitment;
 /// `PreparedCommitment` is the prepared commitment for the KZG10 scheme.
 pub type PreparedCommitment = kzg10::PreparedCommitment;
 
-impl Prepare for Commitment {
-    type Prepared = PreparedCommitment;
-
+impl Commitment {
     /// prepare `PreparedCommitment` from `Commitment`
     fn prepare(&self) -> PreparedCommitment {
         let mut prepared_comm = Vec::<G1Affine>::new();
@@ -229,9 +226,7 @@ impl PreparedVerifierKey {
     }
 }
 
-impl Prepare for VerifierKey {
-    type Prepared = PreparedVerifierKey;
-
+impl VerifierKey {
     /// prepare `PreparedVerifierKey` from `VerifierKey`
     fn prepare(&self) -> PreparedVerifierKey {
         let prepared_vk = kzg10::PreparedVerifierKey::prepare(&self.vk);
@@ -402,7 +397,7 @@ impl LinearCombination {
     ) -> Self {
         let mut terms = BTreeMap::new();
         for (c, l) in _terms.into_iter().map(|(c, t)| (c, t.into())) {
-            *terms.entry(l).or_insert(Scalar::zero()) += c;
+            *terms.entry(l).or_insert(Scalar::ZERO) += c;
         }
 
         Self {
@@ -424,7 +419,7 @@ impl LinearCombination {
     /// Add a term to the linear combination.
     pub fn add(&mut self, c: Scalar, t: impl Into<LCTerm>) -> &mut Self {
         let t = t.into();
-        *self.terms.entry(t.clone()).or_insert(Scalar::zero()) += c;
+        *self.terms.entry(t.clone()).or_insert(Scalar::ZERO) += c;
         if self.terms[&t].is_zero() {
             self.terms.remove(&t);
         }
@@ -504,7 +499,7 @@ pub type QuerySet<'a> = BTreeSet<(String, (String, Scalar))>;
 /// `p` at a `QuerySet` `Q`. It maps each element of `Q` to the resulting evaluation.
 /// That is, if `(label, query)` is an element of `Q`, then `evaluation.get((label, query))`
 /// should equal `p[label].evaluate(query)`.
-pub type Evaluations<'a, Scalar> = BTreeMap<(String, Scalar), Scalar>;
+pub type Evaluations<'a> = BTreeMap<(String, Scalar), Scalar>;
 
 /// Evaluate the given polynomials at `query_set`.
 pub fn evaluate_query_set<'a>(
