@@ -1,19 +1,3 @@
-// Copyright (C) 2019-2022 Aleo Systems Inc.
-// This file is part of the snarkVM library.
-
-// The snarkVM library is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// The snarkVM library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with the snarkVM library. If not, see <https://www.gnu.org/licenses/>.
-
 use anyhow::{anyhow, bail, ensure, Result};
 use itertools::Itertools;
 use std::{collections::BTreeMap, io::BufReader};
@@ -39,14 +23,9 @@ const MAXIMUM_DEGREE: usize = DEGREE_28;
 /// Number of powers contained in `UNIVERSAL_SRS_GAMMA`.
 const NUM_UNIVERSAL_SRS_GAMMA: usize = 84;
 
-lazy_static::lazy_static! {
-    static ref UNIVERSAL_SRS_15: Vec<u8> = Degree15::load_bytes().expect("Failed to load universal SRS of degree 15");
-    static ref UNIVERSAL_SRS_GAMMA: Vec<u8> = Gamma::load_bytes().expect("Failed to load universal SRS gamma powers");
-}
-
 /// A vector of powers of beta G.
 #[derive(Debug)]
-pub struct PowersOfG<E: PairingEngine> {
+pub struct PowersOfG {
     /// A boolean indicator if the powers were from a setup.
     is_setup: bool,
     /// The number of group elements in `powers_of_beta_g`.
@@ -57,7 +36,7 @@ pub struct PowersOfG<E: PairingEngine> {
     powers_of_beta_times_gamma_g: BTreeMap<usize, G1Affine>,
 }
 
-impl<E: PairingEngine> PowersOfG<E> {
+impl PowersOfG {
     /// Initializes a new instance of the powers.
     pub fn setup(
         powers_of_beta_g: Vec<G1Affine>,
@@ -76,28 +55,7 @@ impl<E: PairingEngine> PowersOfG<E> {
 
     /// Initializes an existing instance of the powers.
     pub fn load() -> Result<Self> {
-        // Initialize a `BufReader`.
-        let mut reader = BufReader::new(&UNIVERSAL_SRS_15[..]);
-        // Deserialize the group elements.
-        let powers_of_beta_g = (0..DEGREE_15)
-            .map(|_| G1Affine::read_le(&mut reader))
-            // .map(|_| G1Affine::deserialize_with_mode(&mut reader, Compress::No, Validate::No))
-            .collect::<Result<Vec<_>, _>>()?;
-        // Ensure the number of elements is correct.
-        assert!(
-            powers_of_beta_g.len() == DEGREE_15,
-            "Incorrect number of powers in the recovered SRS"
-        );
-
-        // Initialize the powers.
-        let powers = Self {
-            is_setup: false,
-            current_degree: DEGREE_15,
-            powers_of_beta_g,
-            powers_of_beta_times_gamma_g: Self::regenerate_powers_of_beta_times_gamma_g(DEGREE_15)?,
-        };
-        // Return the powers.
-        Ok(powers)
+        unimplemented!()
     }
 
     /// Returns the power of beta times G specified by `target_power`.
@@ -143,34 +101,10 @@ impl<E: PairingEngine> PowersOfG<E> {
     }
 }
 
-impl<E: PairingEngine> PowersOfG<E> {
+impl PowersOfG {
     fn regenerate_powers_of_beta_times_gamma_g(
         current_degree: usize,
     ) -> Result<BTreeMap<usize, G1Affine>> {
-        let mut alpha_powers_g1 = vec![];
-        let mut reader = BufReader::new(UNIVERSAL_SRS_GAMMA.as_slice());
-        for _ in 0..NUM_UNIVERSAL_SRS_GAMMA {
-            alpha_powers_g1.push(G1Affine::read_le(&mut reader)?);
-        }
-
-        let mut alpha_tau_powers_g1 = BTreeMap::new();
-        for (i, power) in alpha_powers_g1.iter().enumerate().take(3) {
-            alpha_tau_powers_g1.insert(i, *power);
-        }
-        alpha_powers_g1[3..]
-            .iter()
-            .chunks(3)
-            .into_iter()
-            .enumerate()
-            .for_each(|(i, powers)| {
-                // Avoid underflows and just stop populating the map if we're going to.
-                if current_degree - 1 > (1 << i) {
-                    let powers = powers.into_iter().collect::<Vec<_>>();
-                    alpha_tau_powers_g1.insert(current_degree - 1 - (1 << i) + 2, *powers[0]);
-                    alpha_tau_powers_g1.insert(current_degree - 1 - (1 << i) + 3, *powers[1]);
-                    alpha_tau_powers_g1.insert(current_degree - 1 - (1 << i) + 4, *powers[2]);
-                }
-            });
-        Ok(alpha_tau_powers_g1)
+        unimplemented!()
     }
 }

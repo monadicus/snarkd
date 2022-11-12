@@ -1079,7 +1079,8 @@ impl PoseidonSponge {
         // Push the lower limbs first
         let mut limbs: SmallVec<[Fp; 10]> = SmallVec::new();
         let mut cur = *elem;
-        let cmp = Uint::<256, 4>::from(1u64) << bits_per_limb;
+        // NOTE: check for correctness
+        let cmp = Uint::<256, 4>::from(1u64) << (bits_per_limb - 1);
         for _ in 0..num_limbs {
             let cur_mod_r = cur & cmp;
             limbs.push(Fp(Uint::<384, 6>::from(cur_mod_r)));
