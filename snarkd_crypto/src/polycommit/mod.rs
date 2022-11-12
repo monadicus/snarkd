@@ -31,3 +31,5 @@ pub mod optional_rng;
 
 #[cfg(test)]
 pub mod test_templates;
+
+pub mod powers;

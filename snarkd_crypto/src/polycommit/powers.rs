@@ -1,3 +1,4 @@
+use crate::bls12_377::G1Affine;
 use anyhow::{anyhow, bail, ensure, Result};
 use itertools::Itertools;
 use std::{collections::BTreeMap, io::BufReader};

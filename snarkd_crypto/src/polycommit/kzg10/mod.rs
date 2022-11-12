@@ -12,7 +12,7 @@ use crate::{
     },
     fft::{DensePolynomial, Polynomial},
     msm::{FixedBase, VariableBase},
-    polycommit::PCError,
+    polycommit::{powers::PowersOfG, PCError},
     utils::*,
 };
 use bitvec::prelude::*;
@@ -186,7 +186,7 @@ impl KZG10 {
 
             let window_size = FixedBase::get_mul_window_size(neg_powers_of_beta.len());
             let neg_h_table = FixedBase::get_window_table(scalar_bits as usize, window_size, h);
-            let neg_powers_of_h = FixedBase::msm::<G2Projective>(
+            let mut neg_powers_of_h = FixedBase::msm::<G2Projective>(
                 scalar_bits as usize,
                 window_size,
                 &neg_h_table,

@@ -225,7 +225,7 @@ impl EvaluationDomain {
 
     /// Multiply the `i`-th element of `coeffs` with `c*g^i`.
     fn distribute_powers_and_mul_by_const<
-        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Send + Sync,
+        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Copy + Send + Sync,
     >(
         coeffs: &mut [T],
         g: Scalar,
@@ -380,7 +380,7 @@ impl EvaluationDomain {
     }
 
     pub(crate) fn in_order_fft_in_place<
-        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Send + Sync,
+        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Copy + Send + Sync,
     >(
         &self,
         x_s: &mut [Scalar],
@@ -390,7 +390,7 @@ impl EvaluationDomain {
     }
 
     pub(crate) fn in_order_ifft_in_place<
-        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Send + Sync,
+        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Copy + Send + Sync,
     >(
         &self,
         x_s: &mut [T],
@@ -401,7 +401,7 @@ impl EvaluationDomain {
     }
 
     pub(crate) fn in_order_coset_ifft_in_place<
-        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Send + Sync,
+        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Copy + Send + Sync,
     >(
         &self,
         x_s: &mut [T],
@@ -414,7 +414,7 @@ impl EvaluationDomain {
 
     #[allow(unused)]
     pub(crate) fn in_order_fft_in_place_with_pc<
-        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Send + Sync,
+        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Copy + Send + Sync,
     >(
         &self,
         x_s: &mut [T],
@@ -424,7 +424,7 @@ impl EvaluationDomain {
     }
 
     pub(crate) fn out_order_fft_in_place_with_pc<
-        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Send + Sync,
+        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Copy + Send + Sync,
     >(
         &self,
         x_s: &mut [T],
@@ -434,7 +434,7 @@ impl EvaluationDomain {
     }
 
     pub(crate) fn in_order_ifft_in_place_with_pc<
-        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Send + Sync,
+        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Copy + Send + Sync,
     >(
         &self,
         x_s: &mut [T],
@@ -445,7 +445,7 @@ impl EvaluationDomain {
     }
 
     pub(crate) fn out_order_ifft_in_place_with_pc<
-        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Send + Sync,
+        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Copy + Send + Sync,
     >(
         &self,
         x_s: &mut [T],
@@ -457,7 +457,7 @@ impl EvaluationDomain {
 
     #[allow(unused)]
     pub(crate) fn in_order_coset_ifft_in_place_with_pc<
-        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Send + Sync,
+        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Copy + Send + Sync,
     >(
         &self,
         x_s: &mut [T],
@@ -469,7 +469,7 @@ impl EvaluationDomain {
     }
 
     fn fft_helper_in_place_with_pc<
-        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Send + Sync,
+        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Copy + Send + Sync,
     >(
         &self,
         x_s: &mut [T],
@@ -496,7 +496,7 @@ impl EvaluationDomain {
     // The results here must all be divided by |x_s|,
     // which is left up to the caller to do.
     fn ifft_helper_in_place_with_pc<
-        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Send + Sync,
+        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Copy + Send + Sync,
     >(
         &self,
         x_s: &mut [T],
@@ -588,7 +588,7 @@ impl EvaluationDomain {
     }
 
     #[inline(always)]
-    fn butterfly_fn_io<T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T>>(
+    fn butterfly_fn_io<T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Copy>(
         ((lo, hi), root): ((&mut T, &mut T), &Scalar),
     ) {
         let neg = *lo - *hi;
@@ -598,7 +598,7 @@ impl EvaluationDomain {
     }
 
     #[inline(always)]
-    fn butterfly_fn_oi<T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T>>(
+    fn butterfly_fn_oi<T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Copy>(
         ((lo, hi), root): ((&mut T, &mut T), &Scalar),
     ) {
         *hi *= *root;
@@ -609,7 +609,7 @@ impl EvaluationDomain {
 
     #[allow(clippy::too_many_arguments)]
     fn apply_butterfly<
-        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Send + Sync,
+        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Copy + Send + Sync,
         G: Fn(((&mut T, &mut T), &Scalar)) + Copy + Sync + Send,
     >(
         g: G,
@@ -641,7 +641,7 @@ impl EvaluationDomain {
     }
 
     fn io_helper_with_roots<
-        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Send + Sync,
+        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Copy + Send + Sync,
     >(
         &self,
         xi: &mut [T],
@@ -697,7 +697,7 @@ impl EvaluationDomain {
     }
 
     fn oi_helper_with_roots<
-        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Send + Sync,
+        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Copy + Send + Sync,
     >(
         &self,
         xi: &mut [T],

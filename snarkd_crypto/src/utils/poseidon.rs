@@ -139,6 +139,7 @@ pub const fn find_parameters(
     (min_cost_num_of_limbs, min_cost_limb_size)
 }
 
+#[derive(Copy, Clone)]
 pub enum OptimizationType {
     Weight,
     Constraints,
@@ -742,7 +743,7 @@ impl Poseidon {
     /// Evaluate the cryptographic hash function over a list of field elements as input,
     /// and returns the specified number of field elements as output.
     pub fn evaluate_many(&self, input: &[Fp], num_outputs: usize) -> Vec<Fp> {
-        let mut sponge = PoseidonSponge::new(self.parameters);
+        let mut sponge = PoseidonSponge::new(self.parameters.clone());
         sponge.absorb_native_field_elements(input);
         sponge.squeeze_native_field_elements(num_outputs).to_vec()
     }
@@ -889,7 +890,8 @@ impl PoseidonSponge {
             .iter_mut()
             .zip(&self.parameters.mds)
             .for_each(|(new_elem, mds_row)| {
-                *new_elem = Fp::sum_of_products(self.state.into_iter(), (*mds_row).into_iter());
+                *new_elem =
+                    Fp::sum_of_products(self.state.into_iter(), (*mds_row).clone().into_iter());
             });
         self.state = new_state;
     }

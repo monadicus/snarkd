@@ -3,6 +3,7 @@ use crate::{
         scalar, Affine, Fp, G1Affine, G1Projective, G2Affine, G2Prepared, Projective, Scalar,
     },
     fft::{DensePolynomial, EvaluationDomain},
+    polycommit::powers::PowersOfG,
     utils::PoseidonSponge,
 };
 use anyhow::Result;
