@@ -33,7 +33,7 @@ impl Default for TestRng {
 impl TestRng {
     pub fn fixed(seed: u64) -> Self {
         // Print the seed, so it's displayed if any of the tests using `test_rng` fails.
-        println!("\nInitializing 'TestRng' with seed '{seed}'\n");
+        // println!("\nInitializing 'TestRng' with seed '{seed}'\n");
 
         // Use the seed to initialize a fast, non-cryptographic Rng.
         Self(XorShiftRng::seed_from_u64(seed))

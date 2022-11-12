@@ -1,5 +1,7 @@
 use std::ops::Sub;
 
+use rayon::prelude::*;
+
 use crate::{
     assert_count, assert_output_mode,
     bls12_377::Field as FieldTrait,
@@ -45,9 +47,8 @@ fn check_sub_assign(name: &str, expected: &Fp, a: &Field, b: &Field) {
 }
 
 fn run_test(mode_a: Mode, mode_b: Mode) {
-    let mut rng = TestRng::default();
-
-    for i in 0..ITERATIONS {
+    (0..ITERATIONS).into_par_iter().for_each(|i| {
+        let mut rng = TestRng::default();
         let first = Uniform::rand(&mut rng);
         let second = Uniform::rand(&mut rng);
 
@@ -73,7 +74,7 @@ fn run_test(mode_a: Mode, mode_b: Mode) {
         check_sub(&name, &(-second), &zero, &b);
         let name = format!("SubAssign: 0 - b {}", i);
         check_sub_assign(&name, &(-second), &zero, &b);
-    }
+    });
 }
 
 #[test]
