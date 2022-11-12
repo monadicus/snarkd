@@ -5,12 +5,13 @@ use super::sonic_pc::{
     SonicKZG10, VerifierKey,
 };
 use crate::{
+    bls12_377::{Field, Scalar},
     fft::DensePolynomial,
     polycommit::{
         sonic_pc::{LabeledPolynomial, LabeledPolynomialWithBasis, LinearCombination},
         PCError,
     },
-    AlgebraicSponge,
+    utils::PoseidonSponge,
 };
 use itertools::Itertools;
 use rand::{
@@ -29,22 +30,20 @@ struct TestInfo {
     num_equations: Option<usize>,
 }
 
-pub struct TestComponents<E: PairingEngine, S: AlgebraicSponge<E::Fq, 2>> {
-    pub verification_key: VerifierKey<E>,
-    pub commitments: Vec<LabeledCommitment<Commitment<E>>>,
-    pub query_set: QuerySet<'static, E::Fr>,
-    pub evaluations: Evaluations<'static, E::Fr>,
-    pub batch_lc_proof: Option<BatchLCProof<E>>,
-    pub batch_proof: Option<BatchProof<E>>,
-    pub randomness: Vec<Randomness<E>>,
-    _sponge: PhantomData<S>,
+pub struct TestComponents {
+    pub verification_key: VerifierKey,
+    pub commitments: Vec<LabeledCommitment>,
+    pub query_set: QuerySet<'static>,
+    pub evaluations: Evaluations<'static>,
+    pub batch_lc_proof: Option<BatchLCProof>,
+    pub batch_proof: Option<BatchProof>,
+    pub randomness: Vec<Randomness>,
 }
 
-pub fn bad_degree_bound_test<E: PairingEngine, S: AlgebraicSponge<E::Fq, 2>>() -> Result<(), PCError>
-{
-    let rng = &mut TestRng::default();
+pub fn bad_degree_bound_test() -> Result<(), PCError> {
+    let rng = &mut rand::thread_rng();
     let max_degree = 100;
-    let pp = SonicKZG10::<E, S>::setup(max_degree, rng)?;
+    let pp = SonicKZG10::setup(max_degree, rng)?;
 
     for _ in 0..10 {
         let supported_degree = distributions::Uniform::from(1..=max_degree).sample(rng);
@@ -75,7 +74,7 @@ pub fn bad_degree_bound_test<E: PairingEngine, S: AlgebraicSponge<E::Fq, 2>>() -
         }
 
         println!("supported degree: {:?}", supported_degree);
-        let (ck, vk) = SonicKZG10::<E, S>::trim(
+        let (ck, vk) = SonicKZG10::trim(
             &pp,
             supported_degree,
             None,
@@ -85,11 +84,11 @@ pub fn bad_degree_bound_test<E: PairingEngine, S: AlgebraicSponge<E::Fq, 2>>() -
         println!("Trimmed");
 
         let (comms, rands) =
-            SonicKZG10::<E, S>::commit(&ck, polynomials.iter().map(Into::into), Some(rng))?;
+            SonicKZG10::commit(&ck, polynomials.iter().map(Into::into), Some(rng))?;
 
         let mut query_set = QuerySet::new();
         let mut values = Evaluations::new();
-        let point = E::Fr::rand();
+        let point = Scalar::rand();
         for (i, label) in labels.iter().enumerate() {
             query_set.insert((label.clone(), ("rand".into(), point)));
             let value = polynomials[i].evaluate(point);
@@ -97,7 +96,7 @@ pub fn bad_degree_bound_test<E: PairingEngine, S: AlgebraicSponge<E::Fq, 2>>() -
         }
         println!("Generated query set");
 
-        let mut sponge_for_open = S::new();
+        let mut sponge_for_open = PoseidonSponge::default();
         let proof = SonicKZG10::batch_open(
             &ck,
             &polynomials,
@@ -106,7 +105,7 @@ pub fn bad_degree_bound_test<E: PairingEngine, S: AlgebraicSponge<E::Fq, 2>>() -
             &rands,
             &mut sponge_for_open,
         )?;
-        let mut sponge_for_check = S::new();
+        let mut sponge_for_check = PoseidonSponge::default();
         let result = SonicKZG10::batch_check(
             &vk,
             &comms,
@@ -120,8 +119,7 @@ pub fn bad_degree_bound_test<E: PairingEngine, S: AlgebraicSponge<E::Fq, 2>>() -
     Ok(())
 }
 
-pub fn lagrange_test_template<E: PairingEngine, S: AlgebraicSponge<E::Fq, 2>>(
-) -> Result<Vec<TestComponents<E, S>>, PCError> {
+pub fn lagrange_test_template() -> Result<Vec<TestComponents>, PCError> {
     let num_iters = 10usize;
     let max_degree = 256usize;
     let supported_degree = 127usize;
@@ -130,8 +128,8 @@ pub fn lagrange_test_template<E: PairingEngine, S: AlgebraicSponge<E::Fq, 2>>(
     let max_num_queries = 2usize;
     let mut test_components = Vec::new();
 
-    let rng = &mut TestRng::default();
-    let pp = SonicKZG10::<E, S>::setup(max_degree, rng)?;
+    let rng = &mut rand::thread_rng();
+    let pp = SonicKZG10::setup(max_degree, rng)?;
 
     for _ in 0..num_iters {
         assert!(
@@ -154,9 +152,9 @@ pub fn lagrange_test_template<E: PairingEngine, S: AlgebraicSponge<E::Fq, 2>>(
             let eval_size: usize = distributions::Uniform::from(1..eval_size)
                 .sample(rng)
                 .next_power_of_two();
-            let mut evals = vec![E::Fr::zero(); eval_size];
+            let mut evals = vec![Scalar::ZERO; eval_size];
             for e in &mut evals {
-                *e = E::Fr::rand();
+                *e = Scalar::rand();
             }
             let domain = crate::fft::EvaluationDomain::new(evals.len()).unwrap();
             let evals = crate::fft::Evaluations::from_vec_and_domain(evals, domain);
@@ -187,7 +185,7 @@ pub fn lagrange_test_template<E: PairingEngine, S: AlgebraicSponge<E::Fq, 2>>(
         println!("supported degree: {:?}", supported_degree);
         println!("supported hiding bound: {:?}", supported_hiding_bound);
         println!("num_points_in_query_set: {:?}", num_points_in_query_set);
-        let (ck, vk) = SonicKZG10::<E, S>::trim(
+        let (ck, vk) = SonicKZG10::trim(
             &pp,
             supported_degree,
             supported_lagrange_sizes,
@@ -196,15 +194,14 @@ pub fn lagrange_test_template<E: PairingEngine, S: AlgebraicSponge<E::Fq, 2>>(
         )?;
         println!("Trimmed");
 
-        let (comms, rands) =
-            SonicKZG10::<E, S>::commit(&ck, lagrange_polynomials, Some(rng)).unwrap();
+        let (comms, rands) = SonicKZG10::commit(&ck, lagrange_polynomials, Some(rng)).unwrap();
 
         // Construct query set
         let mut query_set = QuerySet::new();
         let mut values = Evaluations::new();
         // let mut point = E::Fr::one();
         for point_id in 0..num_points_in_query_set {
-            let point = E::Fr::rand();
+            let point = Scalar::rand();
             for (polynomial, label) in polynomials.iter().zip_eq(labels.iter()) {
                 query_set.insert((label.clone(), (format!("rand_{}", point_id), point)));
                 let value = polynomial.evaluate(point);
@@ -213,7 +210,7 @@ pub fn lagrange_test_template<E: PairingEngine, S: AlgebraicSponge<E::Fq, 2>>(
         }
         println!("Generated query set");
 
-        let mut sponge_for_open = S::new();
+        let mut sponge_for_open = PoseidonSponge::default();
         let proof = SonicKZG10::batch_open(
             &ck,
             &polynomials,
@@ -222,7 +219,7 @@ pub fn lagrange_test_template<E: PairingEngine, S: AlgebraicSponge<E::Fq, 2>>(
             &rands,
             &mut sponge_for_open,
         )?;
-        let mut sponge_for_check = S::new();
+        let mut sponge_for_check = PoseidonSponge::default();
         let result = SonicKZG10::batch_check(
             &vk,
             &comms,
@@ -251,16 +248,13 @@ pub fn lagrange_test_template<E: PairingEngine, S: AlgebraicSponge<E::Fq, 2>>(
             batch_lc_proof: None,
             batch_proof: Some(proof),
             randomness: rands,
-            _sponge: PhantomData,
         });
     }
     Ok(test_components)
 }
 
-fn test_template<E, S>(info: TestInfo) -> Result<Vec<TestComponents<E, S>>, PCError>
+fn test_template(info: TestInfo) -> Result<Vec<TestComponents>, PCError>
 where
-    E: PairingEngine,
-    S: AlgebraicSponge<E::Fq, 2>,
 {
     let TestInfo {
         num_iters,
@@ -274,9 +268,9 @@ where
 
     let mut test_components = Vec::new();
 
-    let rng = &mut TestRng::default();
+    let rng = &mut rand::thread_rng();
     let max_degree = max_degree.unwrap_or_else(|| distributions::Uniform::from(8..=64).sample(rng));
-    let pp = SonicKZG10::<E, S>::setup(max_degree, rng)?;
+    let pp = SonicKZG10::setup(max_degree, rng)?;
     let supported_degree_bounds = pp.supported_degree_bounds();
 
     for _ in 0..num_iters {
@@ -349,7 +343,7 @@ where
         println!("supported degree: {:?}", supported_degree);
         println!("supported hiding bound: {:?}", supported_hiding_bound);
         println!("num_points_in_query_set: {:?}", num_points_in_query_set);
-        let (ck, vk) = SonicKZG10::<E, S>::trim(
+        let (ck, vk) = SonicKZG10::trim(
             &pp,
             supported_degree,
             None,
@@ -359,14 +353,14 @@ where
         println!("Trimmed");
 
         let (comms, rands) =
-            SonicKZG10::<E, S>::commit(&ck, polynomials.iter().map(Into::into), Some(rng))?;
+            SonicKZG10::commit(&ck, polynomials.iter().map(Into::into), Some(rng))?;
 
         // Construct query set
         let mut query_set = QuerySet::new();
         let mut values = Evaluations::new();
         // let mut point = E::Fr::one();
         for point_id in 0..num_points_in_query_set {
-            let point = E::Fr::rand(rng);
+            let point = Scalar::rand();
             for (polynomial, label) in polynomials.iter().zip_eq(labels.iter()) {
                 query_set.insert((label.clone(), (format!("rand_{}", point_id), point)));
                 let value = polynomial.evaluate(point);
@@ -375,7 +369,7 @@ where
         }
         println!("Generated query set");
 
-        let mut sponge_for_open = S::new();
+        let mut sponge_for_open = PoseidonSponge::default();
         let proof = SonicKZG10::batch_open(
             &ck,
             &polynomials,
@@ -384,7 +378,7 @@ where
             &rands,
             &mut sponge_for_open,
         )?;
-        let mut sponge_for_check = S::new();
+        let mut sponge_for_check = PoseidonSponge::default();
         let result = SonicKZG10::batch_check(
             &vk,
             &comms,
@@ -413,15 +407,12 @@ where
             batch_lc_proof: None,
             batch_proof: Some(proof),
             randomness: rands,
-            _sponge: PhantomData,
         });
     }
     Ok(test_components)
 }
 
-fn equation_test_template<E: PairingEngine, S: AlgebraicSponge<E::Fq, 2>>(
-    info: TestInfo,
-) -> Result<Vec<TestComponents<E, S>>, PCError> {
+fn equation_test_template(info: TestInfo) -> Result<Vec<TestComponents>, PCError> {
     let TestInfo {
         num_iters,
         max_degree,
@@ -434,9 +425,9 @@ fn equation_test_template<E: PairingEngine, S: AlgebraicSponge<E::Fq, 2>>(
 
     let mut test_components = Vec::new();
 
-    let rng = &mut TestRng::default();
+    let rng = &mut rand::thread_rng();
     let max_degree = max_degree.unwrap_or_else(|| distributions::Uniform::from(8..=64).sample(rng));
-    let pp = SonicKZG10::<E, S>::setup(max_degree, rng)?;
+    let pp = SonicKZG10::setup(max_degree, rng)?;
     let supported_degree_bounds = pp.supported_degree_bounds();
 
     for _ in 0..num_iters {
@@ -513,7 +504,7 @@ fn equation_test_template<E: PairingEngine, S: AlgebraicSponge<E::Fq, 2>>(
         println!("{}", num_polynomials);
         println!("{}", enforce_degree_bounds);
 
-        let (ck, vk) = SonicKZG10::<E, S>::trim(
+        let (ck, vk) = SonicKZG10::trim(
             &pp,
             supported_degree,
             None,
@@ -523,24 +514,24 @@ fn equation_test_template<E: PairingEngine, S: AlgebraicSponge<E::Fq, 2>>(
         println!("Trimmed");
 
         let (comms, rands) =
-            SonicKZG10::<E, S>::commit(&ck, polynomials.iter().map(Into::into), Some(rng))?;
+            SonicKZG10::commit(&ck, polynomials.iter().map(Into::into), Some(rng))?;
 
         // Let's construct our equations
         let mut linear_combinations = Vec::new();
         let mut query_set = QuerySet::new();
         let mut values = Evaluations::new();
         for i in 0..num_points_in_query_set {
-            let point = E::Fr::rand();
+            let point = Scalar::rand();
             for j in 0..num_equations.unwrap() {
                 let label = format!("query {} eqn {}", i, j);
                 let mut lc = LinearCombination::empty(label.clone());
 
-                let mut value = E::Fr::zero();
+                let mut value = Scalar::ZERO;
                 let should_have_degree_bounds: bool = rng.gen();
                 for (k, label) in labels.iter().enumerate() {
                     if should_have_degree_bounds {
                         value += &polynomials[k].evaluate(point);
-                        lc.add(E::Fr::one(), label.clone());
+                        lc.add(Scalar::ONE, label.clone());
                         break;
                     } else {
                         let poly = &polynomials[k];
@@ -548,7 +539,7 @@ fn equation_test_template<E: PairingEngine, S: AlgebraicSponge<E::Fq, 2>>(
                             continue;
                         } else {
                             assert!(poly.degree_bound().is_none());
-                            let coeff = E::Fr::rand();
+                            let coeff = Scalar::rand();
                             value += &(coeff * poly.evaluate(point));
                             lc.add(coeff, label.clone());
                         }
@@ -568,7 +559,7 @@ fn equation_test_template<E: PairingEngine, S: AlgebraicSponge<E::Fq, 2>>(
         println!("Generated query set");
         println!("Linear combinations: {:?}", linear_combinations);
 
-        let mut sponge_for_open = S::new();
+        let mut sponge_for_open = PoseidonSponge::default();
         let proof = SonicKZG10::open_combinations(
             &ck,
             &linear_combinations,
@@ -579,7 +570,7 @@ fn equation_test_template<E: PairingEngine, S: AlgebraicSponge<E::Fq, 2>>(
             &mut sponge_for_open,
         )?;
         println!("Generated proof");
-        let mut sponge_for_check = S::new();
+        let mut sponge_for_check = PoseidonSponge::default();
         let result = SonicKZG10::check_combinations(
             &vk,
             &linear_combinations,
@@ -613,17 +604,12 @@ fn equation_test_template<E: PairingEngine, S: AlgebraicSponge<E::Fq, 2>>(
             batch_lc_proof: Some(proof),
             batch_proof: None,
             randomness: rands,
-            _sponge: PhantomData,
         });
     }
     Ok(test_components)
 }
 
-pub fn single_poly_test<E, S>() -> Result<Vec<TestComponents<E, S>>, PCError>
-where
-    E: PairingEngine,
-    S: AlgebraicSponge<E::Fq, 2>,
-{
+pub fn single_poly_test() -> Result<Vec<TestComponents>, PCError> {
     let info = TestInfo {
         num_iters: 100,
         max_degree: None,
@@ -633,14 +619,10 @@ where
         max_num_queries: 1,
         ..Default::default()
     };
-    test_template::<E, S>(info)
+    test_template(info)
 }
 
-pub fn linear_poly_degree_bound_test<E, S>() -> Result<Vec<TestComponents<E, S>>, PCError>
-where
-    E: PairingEngine,
-    S: AlgebraicSponge<E::Fq, 2>,
-{
+pub fn linear_poly_degree_bound_test() -> Result<Vec<TestComponents>, PCError> {
     let info = TestInfo {
         num_iters: 100,
         max_degree: Some(2),
@@ -650,14 +632,10 @@ where
         max_num_queries: 1,
         ..Default::default()
     };
-    test_template::<E, S>(info)
+    test_template(info)
 }
 
-pub fn single_poly_degree_bound_test<E, S>() -> Result<Vec<TestComponents<E, S>>, PCError>
-where
-    E: PairingEngine,
-    S: AlgebraicSponge<E::Fq, 2>,
-{
+pub fn single_poly_degree_bound_test() -> Result<Vec<TestComponents>, PCError> {
     let info = TestInfo {
         num_iters: 100,
         max_degree: None,
@@ -667,15 +645,10 @@ where
         max_num_queries: 1,
         ..Default::default()
     };
-    test_template::<E, S>(info)
+    test_template(info)
 }
 
-pub fn quadratic_poly_degree_bound_multiple_queries_test<E, S>(
-) -> Result<Vec<TestComponents<E, S>>, PCError>
-where
-    E: PairingEngine,
-    S: AlgebraicSponge<E::Fq, 2>,
-{
+pub fn quadratic_poly_degree_bound_multiple_queries_test() -> Result<Vec<TestComponents>, PCError> {
     let info = TestInfo {
         num_iters: 100,
         max_degree: Some(3),
@@ -685,15 +658,10 @@ where
         max_num_queries: 2,
         ..Default::default()
     };
-    test_template::<E, S>(info)
+    test_template(info)
 }
 
-pub fn single_poly_degree_bound_multiple_queries_test<E, S>(
-) -> Result<Vec<TestComponents<E, S>>, PCError>
-where
-    E: PairingEngine,
-    S: AlgebraicSponge<E::Fq, 2>,
-{
+pub fn single_poly_degree_bound_multiple_queries_test() -> Result<Vec<TestComponents>, PCError> {
     let info = TestInfo {
         num_iters: 100,
         max_degree: None,
@@ -703,14 +671,10 @@ where
         max_num_queries: 2,
         ..Default::default()
     };
-    test_template::<E, S>(info)
+    test_template(info)
 }
 
-pub fn two_polys_degree_bound_single_query_test<E, S>() -> Result<Vec<TestComponents<E, S>>, PCError>
-where
-    E: PairingEngine,
-    S: AlgebraicSponge<E::Fq, 2>,
-{
+pub fn two_polys_degree_bound_single_query_test() -> Result<Vec<TestComponents>, PCError> {
     let info = TestInfo {
         num_iters: 100,
         max_degree: None,
@@ -720,14 +684,10 @@ where
         max_num_queries: 1,
         ..Default::default()
     };
-    test_template::<E, S>(info)
+    test_template(info)
 }
 
-pub fn full_end_to_end_test<E, S>() -> Result<Vec<TestComponents<E, S>>, PCError>
-where
-    E: PairingEngine,
-    S: AlgebraicSponge<E::Fq, 2>,
-{
+pub fn full_end_to_end_test() -> Result<Vec<TestComponents>, PCError> {
     let info = TestInfo {
         num_iters: 100,
         max_degree: None,
@@ -737,14 +697,10 @@ where
         max_num_queries: 5,
         ..Default::default()
     };
-    test_template::<E, S>(info)
+    test_template(info)
 }
 
-pub fn full_end_to_end_equation_test<E, S>() -> Result<Vec<TestComponents<E, S>>, PCError>
-where
-    E: PairingEngine,
-    S: AlgebraicSponge<E::Fq, 2>,
-{
+pub fn full_end_to_end_equation_test() -> Result<Vec<TestComponents>, PCError> {
     let info = TestInfo {
         num_iters: 100,
         max_degree: None,
@@ -754,14 +710,10 @@ where
         max_num_queries: 5,
         num_equations: Some(10),
     };
-    equation_test_template::<E, S>(info)
+    equation_test_template(info)
 }
 
-pub fn single_equation_test<E, S>() -> Result<Vec<TestComponents<E, S>>, PCError>
-where
-    E: PairingEngine,
-    S: AlgebraicSponge<E::Fq, 2>,
-{
+pub fn single_equation_test() -> Result<Vec<TestComponents>, PCError> {
     let info = TestInfo {
         num_iters: 100,
         max_degree: None,
@@ -771,14 +723,10 @@ where
         max_num_queries: 1,
         num_equations: Some(1),
     };
-    equation_test_template::<E, S>(info)
+    equation_test_template(info)
 }
 
-pub fn two_equation_test<E, S>() -> Result<Vec<TestComponents<E, S>>, PCError>
-where
-    E: PairingEngine,
-    S: AlgebraicSponge<E::Fq, 2>,
-{
+pub fn two_equation_test() -> Result<Vec<TestComponents>, PCError> {
     let info = TestInfo {
         num_iters: 100,
         max_degree: None,
@@ -788,14 +736,10 @@ where
         max_num_queries: 1,
         num_equations: Some(2),
     };
-    equation_test_template::<E, S>(info)
+    equation_test_template(info)
 }
 
-pub fn two_equation_degree_bound_test<E, S>() -> Result<Vec<TestComponents<E, S>>, PCError>
-where
-    E: PairingEngine,
-    S: AlgebraicSponge<E::Fq, 2>,
-{
+pub fn two_equation_degree_bound_test() -> Result<Vec<TestComponents>, PCError> {
     let info = TestInfo {
         num_iters: 100,
         max_degree: None,
@@ -805,5 +749,5 @@ where
         max_num_queries: 1,
         num_equations: Some(2),
     };
-    equation_test_template::<E, S>(info)
+    equation_test_template(info)
 }

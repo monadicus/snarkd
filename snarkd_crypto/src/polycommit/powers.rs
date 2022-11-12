@@ -3,6 +3,7 @@ use anyhow::{anyhow, bail, ensure, Result};
 use itertools::Itertools;
 use std::{collections::BTreeMap, io::BufReader};
 
+/*
 const DEGREE_15: usize = 1 << 15;
 const DEGREE_16: usize = 1 << 16;
 const DEGREE_17: usize = 1 << 17;
@@ -17,12 +18,13 @@ const DEGREE_25: usize = 1 << 25;
 const DEGREE_26: usize = 1 << 26;
 const DEGREE_27: usize = 1 << 27;
 const DEGREE_28: usize = 1 << 28;
+*/
 
 /// The maximum degree supported by the SRS.
-const MAXIMUM_DEGREE: usize = DEGREE_28;
+// const MAXIMUM_DEGREE: usize = DEGREE_28;
 
 /// Number of powers contained in `UNIVERSAL_SRS_GAMMA`.
-const NUM_UNIVERSAL_SRS_GAMMA: usize = 84;
+// const NUM_UNIVERSAL_SRS_GAMMA: usize = 84;
 
 /// A vector of powers of beta G.
 #[derive(Debug)]

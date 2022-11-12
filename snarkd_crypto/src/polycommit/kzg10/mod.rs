@@ -587,8 +587,6 @@ mod tests {
     #![allow(non_camel_case_types)]
     #![allow(clippy::needless_borrow)]
     use super::*;
-    use snarkvm_curves::bls12_377::{Bls12_377, Fr};
-    use snarkvm_utilities::{rand::TestRng, FromBytes, ToBytes};
 
     use std::borrow::Cow;
 
@@ -626,26 +624,12 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_kzg10_universal_params_serialization() {
-        let rng = &mut TestRng::default();
-
-        let degree = 4;
-        let pp = KZG10::setup(degree, &KZG10DegreeBoundsConfig::NONE, false, rng).unwrap();
-
-        let pp_bytes = pp.to_bytes_le().unwrap();
-        let pp_recovered: UniversalParams<Bls12_377> = FromBytes::read_le(&pp_bytes[..]).unwrap();
-        let pp_recovered_bytes = pp_recovered.to_bytes_le().unwrap();
-
-        assert_eq!(&pp_bytes, &pp_recovered_bytes);
-    }
-
-    fn end_to_end_test_template<E: PairingEngine>() -> Result<(), PCError> {
-        let rng = &mut TestRng::default();
+    fn end_to_end_test_template() -> Result<(), PCError> {
+        let rng = &mut rand::thread_rng();
         for _ in 0..100 {
             let mut degree = 0;
             while degree <= 1 {
-                degree = usize::rand(rng) % 20;
+                degree = rng.gen::<usize>() % 20;
             }
             let pp = KZG10::setup(degree, &KZG10DegreeBoundsConfig::NONE, false, rng)?;
             let (ck, vk) = KZG10::trim(&pp, degree);
@@ -673,7 +657,7 @@ mod tests {
     }
 
     fn linear_polynomial_test_template() -> Result<(), PCError> {
-        let rng = &mut TestRng::default();
+        let rng = &mut rand::thread_rng();
         for _ in 0..100 {
             let degree = 50;
             let pp = KZG10::setup(degree, &KZG10DegreeBoundsConfig::NONE, false, rng)?;
@@ -702,11 +686,11 @@ mod tests {
     }
 
     fn batch_check_test_template() -> Result<(), PCError> {
-        let rng = &mut TestRng::default();
+        let rng = &mut rand::thread_rng();
         for _ in 0..10 {
             let mut degree = 0;
             while degree <= 1 {
-                degree = usize::rand(rng) % 20;
+                degree = rng.gen::<usize>() % 20;
             }
             let pp = KZG10::setup(degree, &KZG10DegreeBoundsConfig::NONE, false, rng)?;
             let (ck, vk) = KZG10::trim(&pp, degree);
@@ -726,7 +710,7 @@ mod tests {
                     &AtomicBool::new(false),
                     Some(rng),
                 )?;
-                let point = Fr::rand(rng);
+                let point = Scalar::rand();
                 let value = p.evaluate(point);
                 let proof = KZG10::open(&ck, &p, point, &rand)?;
 
@@ -745,30 +729,29 @@ mod tests {
 
     #[test]
     fn test_end_to_end() {
-        end_to_end_test_template::<Bls12_377>().expect("test failed for bls12-377");
+        end_to_end_test_template().expect("test failed for bls12-377");
     }
 
     #[test]
     fn test_linear_polynomial() {
-        linear_polynomial_test_template::<Bls12_377>().expect("test failed for bls12-377");
+        linear_polynomial_test_template().expect("test failed for bls12-377");
     }
 
     #[test]
     fn test_batch_check() {
-        batch_check_test_template::<Bls12_377>().expect("test failed for bls12-377");
+        batch_check_test_template().expect("test failed for bls12-377");
     }
 
     #[test]
     fn test_degree_is_too_large() {
-        let rng = &mut TestRng::default();
+        let rng = &mut rand::thread_rng();
 
         let max_degree = 123;
-        let pp =
-            KZG_Bls12_377::setup(max_degree, &KZG10DegreeBoundsConfig::NONE, false, rng).unwrap();
-        let (powers, _) = KZG_Bls12_377::trim(&pp, max_degree);
+        let pp = KZG10::setup(max_degree, &KZG10DegreeBoundsConfig::NONE, false, rng).unwrap();
+        let (powers, _) = KZG10::trim(&pp, max_degree);
 
-        let p = DensePolynomial::<Fr>::rand(max_degree + 1, rng);
+        let p = DensePolynomial::rand(max_degree + 1, rng);
         assert!(p.degree() > max_degree);
-        assert!(KZG_Bls12_377::check_degree_is_too_large(p.degree(), powers.size()).is_err());
+        assert!(KZG10::check_degree_is_too_large(p.degree(), powers.size()).is_err());
     }
 }

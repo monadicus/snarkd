@@ -780,120 +780,80 @@ mod tests {
     #![allow(non_camel_case_types)]
 
     use super::{CommitterKey, SonicKZG10};
-    use crate::{crypto_hash::PoseidonSponge, polycommit::test_templates::*};
-    use snarkvm_curves::bls12_377::{Bls12_377, Fp};
-    use snarkvm_utilities::{rand::TestRng, FromBytes, ToBytes};
+    use crate::{bls12_377::Field, polycommit::test_templates::*, utils::PoseidonSponge};
 
     use rand::distributions::Distribution;
 
-    type Sponge = PoseidonSponge<Fp, 2, 1>;
-    type PC_Bls12_377 = SonicKZG10<Bls12_377, Sponge>;
-
-    #[test]
-    fn test_committer_key_serialization() {
-        let rng = &mut TestRng::default();
-        let max_degree = rand::distributions::Uniform::from(8..=64).sample(rng);
-        let supported_degree = rand::distributions::Uniform::from(1..=max_degree).sample(rng);
-
-        let lagrange_size = |d: usize| {
-            if d.is_power_of_two() {
-                d
-            } else {
-                d.next_power_of_two() >> 1
-            }
-        };
-
-        let pp = PC_Bls12_377::setup(max_degree, rng).unwrap();
-
-        let (ck, _vk) = PC_Bls12_377::trim(
-            &pp,
-            supported_degree,
-            [lagrange_size(supported_degree)],
-            0,
-            None,
-        )
-        .unwrap();
-
-        let ck_bytes = ck.to_bytes_le().unwrap();
-        let ck_recovered: CommitterKey<Bls12_377> = FromBytes::read_le(&ck_bytes[..]).unwrap();
-        let ck_recovered_bytes = ck_recovered.to_bytes_le().unwrap();
-
-        assert_eq!(&ck_bytes, &ck_recovered_bytes);
-    }
-
     #[test]
     fn test_single_poly() {
-        single_poly_test::<Bls12_377, Sponge>().expect("test failed for bls12-377");
+        single_poly_test().expect("test failed for bls12-377");
     }
 
     #[test]
     fn test_quadratic_poly_degree_bound_multiple_queries() {
-        quadratic_poly_degree_bound_multiple_queries_test::<Bls12_377, Sponge>()
-            .expect("test failed for bls12-377");
+        quadratic_poly_degree_bound_multiple_queries_test().expect("test failed for bls12-377");
     }
 
     #[test]
     fn test_linear_poly_degree_bound() {
-        linear_poly_degree_bound_test::<Bls12_377, Sponge>().expect("test failed for bls12-377");
+        linear_poly_degree_bound_test().expect("test failed for bls12-377");
     }
 
     #[test]
     fn test_single_poly_degree_bound() {
-        single_poly_degree_bound_test::<Bls12_377, Sponge>().expect("test failed for bls12-377");
+        single_poly_degree_bound_test().expect("test failed for bls12-377");
     }
 
     #[test]
     fn test_single_poly_degree_bound_multiple_queries() {
-        single_poly_degree_bound_multiple_queries_test::<Bls12_377, Sponge>()
-            .expect("test failed for bls12-377");
+        single_poly_degree_bound_multiple_queries_test().expect("test failed for bls12-377");
     }
 
     #[test]
     fn test_two_polys_degree_bound_single_query() {
-        two_polys_degree_bound_single_query_test::<Bls12_377, Sponge>()
-            .expect("test failed for bls12-377");
+        two_polys_degree_bound_single_query_test().expect("test failed for bls12-377");
     }
 
     #[test]
     fn test_full_end_to_end() {
-        full_end_to_end_test::<Bls12_377, Sponge>().expect("test failed for bls12-377");
+        full_end_to_end_test().expect("test failed for bls12-377");
         println!("Finished bls12-377");
     }
 
     #[test]
     fn test_single_equation() {
-        single_equation_test::<Bls12_377, Sponge>().expect("test failed for bls12-377");
+        single_equation_test().expect("test failed for bls12-377");
         println!("Finished bls12-377");
     }
 
     #[test]
     fn test_two_equation() {
-        two_equation_test::<Bls12_377, Sponge>().expect("test failed for bls12-377");
+        two_equation_test().expect("test failed for bls12-377");
         println!("Finished bls12-377");
     }
 
     #[test]
     fn test_two_equation_degree_bound() {
-        two_equation_degree_bound_test::<Bls12_377, Sponge>().expect("test failed for bls12-377");
+        two_equation_degree_bound_test().expect("test failed for bls12-377");
         println!("Finished bls12-377");
     }
 
     #[test]
     fn test_full_end_to_end_equation() {
-        full_end_to_end_equation_test::<Bls12_377, Sponge>().expect("test failed for bls12-377");
+        full_end_to_end_equation_test().expect("test failed for bls12-377");
         println!("Finished bls12-377");
     }
 
     #[test]
     #[should_panic]
     fn test_bad_degree_bound() {
-        bad_degree_bound_test::<Bls12_377, Sponge>().expect("test failed for bls12-377");
+        bad_degree_bound_test().expect("test failed for bls12-377");
         println!("Finished bls12-377");
     }
 
     #[test]
     fn test_lagrange_commitment() {
-        crate::polycommit::test_templates::lagrange_test_template::<Bls12_377, Sponge>()
+        crate::polycommit::test_templates::lagrange_test_template()
             .expect("test failed for bls12-377");
         println!("Finished bls12-377");
     }

@@ -775,6 +775,12 @@ pub struct PoseidonSponge {
     pub mode: DuplexSpongeMode,
 }
 
+impl Default for PoseidonSponge {
+    fn default() -> Self {
+        Self::new(Arc::new(PoseidonParameters::default()))
+    }
+}
+
 impl PoseidonSponge {
     pub fn new(parameters: Arc<PoseidonParameters>) -> Self {
         Self {
