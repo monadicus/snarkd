@@ -99,7 +99,7 @@ lazy_static::lazy_static! {
             },
             Ok(x) => x,
         };
-        match serde_yaml::from_str(&*config_raw) {
+        match serde_yaml::from_str(&config_raw) {
             Ok(x) => ArcSwap::new(Arc::new(x)),
             Err(e) => {
                 eprintln!("cannot parse config @ {}: {e:?}", CONFIG_PATH.display());

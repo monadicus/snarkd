@@ -1,5 +1,5 @@
 use crate::{
-    bls12_377::Field,
+    bls12_377::Fp,
     r1cs::{ConstraintSystem, LinearCombination, Variable},
 };
 use anyhow::Result;
@@ -14,12 +14,12 @@ pub struct ConstraintCounter {
     pub num_constraints: usize,
 }
 
-impl<F: Field> ConstraintSystem<F> for ConstraintCounter {
+impl ConstraintSystem for ConstraintCounter {
     type Root = Self;
 
     fn alloc<FN, A, AR>(&mut self, _: A, _: FN) -> Result<Variable>
     where
-        FN: FnOnce() -> Result<F>,
+        FN: FnOnce() -> Result<Fp>,
         A: FnOnce() -> AR,
         AR: AsRef<str>,
     {
@@ -30,7 +30,7 @@ impl<F: Field> ConstraintSystem<F> for ConstraintCounter {
 
     fn alloc_input<FN, A, AR>(&mut self, _: A, _: FN) -> Result<Variable>
     where
-        FN: FnOnce() -> Result<F>,
+        FN: FnOnce() -> Result<Fp>,
         A: FnOnce() -> AR,
         AR: AsRef<str>,
     {
@@ -44,9 +44,9 @@ impl<F: Field> ConstraintSystem<F> for ConstraintCounter {
     where
         A: FnOnce() -> AR,
         AR: AsRef<str>,
-        LA: FnOnce(LinearCombination<F>) -> LinearCombination<F>,
-        LB: FnOnce(LinearCombination<F>) -> LinearCombination<F>,
-        LC: FnOnce(LinearCombination<F>) -> LinearCombination<F>,
+        LA: FnOnce(LinearCombination<Fp>) -> LinearCombination<Fp>,
+        LB: FnOnce(LinearCombination<Fp>) -> LinearCombination<Fp>,
+        LC: FnOnce(LinearCombination<Fp>) -> LinearCombination<Fp>,
     {
         self.num_constraints += 1;
     }

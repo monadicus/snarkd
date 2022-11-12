@@ -2,7 +2,7 @@ use anyhow::Result;
 use indexmap::IndexMap;
 
 use crate::{
-    bls12_377::{Field, Fp},
+    bls12_377::Fp,
     r1cs::{
         ConstraintSynthesizer, ConstraintSystem, Index as R1csIndex,
         LinearCombination as R1csLinearCombination, Variable as R1csVariable,
@@ -103,7 +103,7 @@ impl Assignment {
 
 impl ConstraintSynthesizer for Assignment {
     /// Synthesizes the constraints from the environment into a `snarkvm_r1cs`-compliant constraint system.
-    fn generate_constraints<F: Field, CS: ConstraintSystem<F>>(&self, cs: &mut CS) -> Result<()> {
+    fn generate_constraints<CS: ConstraintSystem>(&self, cs: &mut CS) -> Result<()> {
         /// A struct for tracking the mapping of variables from the virtual machine (first) to the gadget constraint system (second).
         struct Converter {
             public: IndexMap<u64, R1csVariable>,

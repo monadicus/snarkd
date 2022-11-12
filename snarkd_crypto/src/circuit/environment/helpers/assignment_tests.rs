@@ -46,7 +46,7 @@ fn test_constraint_converter() {
     assert_eq!(0, Circuit::num_private());
     assert_eq!(0, Circuit::num_constraints());
 
-    let mut cs = TestConstraintSystem::<Fp>::new();
+    let mut cs = TestConstraintSystem::new();
     assignment.generate_constraints(&mut cs).unwrap();
     {
         assert_eq!(
@@ -59,6 +59,7 @@ fn test_constraint_converter() {
     }
 }
 
+// TODO test when marlin is implemented
 // #[test]
 // fn test_marlin() {
 //     let _candidate_output = create_example_circuit();

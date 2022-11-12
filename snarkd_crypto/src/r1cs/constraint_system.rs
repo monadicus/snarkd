@@ -1,5 +1,5 @@
 use crate::{
-    bls12_377::Field,
+    bls12_377::Fp,
     r1cs::{LinearCombination, Namespace, Variable},
 };
 
@@ -12,15 +12,15 @@ use super::Index;
 /// both CRS generation and for proving.
 pub trait ConstraintSynthesizer: Sync {
     /// Drives generation of new constraints inside `CS`.
-    fn generate_constraints<F: Field, CS: ConstraintSystem<F>>(&self, cs: &mut CS) -> Result<()>;
+    fn generate_constraints<CS: ConstraintSystem>(&self, cs: &mut CS) -> Result<()>;
 }
 
 /// Represents a constraint system which can have new variables
 /// allocated and constrains between them formed.
-pub trait ConstraintSystem<F: Field>: Sized {
+pub trait ConstraintSystem: Sized {
     /// Represents the type of the "root" of this constraint system
     /// so that nested namespaces can minimize indirection.
-    type Root: ConstraintSystem<F>;
+    type Root: ConstraintSystem;
 
     /// Return the "one" input variable
     fn one() -> Variable {
@@ -33,7 +33,7 @@ pub trait ConstraintSystem<F: Field>: Sized {
     /// to derive a unique name for this variable in the current namespace.
     fn alloc<FN, A, AR>(&mut self, annotation: A, f: FN) -> Result<Variable>
     where
-        FN: FnOnce() -> Result<F>,
+        FN: FnOnce() -> Result<Fp>,
         A: FnOnce() -> AR,
         AR: AsRef<str>;
 
@@ -41,7 +41,7 @@ pub trait ConstraintSystem<F: Field>: Sized {
     /// function is used to determine the assignment of the variable.
     fn alloc_input<FN, A, AR>(&mut self, annotation: A, f: FN) -> Result<Variable>
     where
-        FN: FnOnce() -> Result<F>,
+        FN: FnOnce() -> Result<Fp>,
         A: FnOnce() -> AR,
         AR: AsRef<str>;
 
@@ -52,9 +52,9 @@ pub trait ConstraintSystem<F: Field>: Sized {
     where
         A: FnOnce() -> AR,
         AR: AsRef<str>,
-        LA: FnOnce(LinearCombination<F>) -> LinearCombination<F>,
-        LB: FnOnce(LinearCombination<F>) -> LinearCombination<F>,
-        LC: FnOnce(LinearCombination<F>) -> LinearCombination<F>;
+        LA: FnOnce(LinearCombination<Fp>) -> LinearCombination<Fp>,
+        LB: FnOnce(LinearCombination<Fp>) -> LinearCombination<Fp>,
+        LC: FnOnce(LinearCombination<Fp>) -> LinearCombination<Fp>;
 
     /// Create a new (sub)namespace and enter into it. Not intended
     /// for downstream use; use `namespace` instead.
@@ -72,7 +72,7 @@ pub trait ConstraintSystem<F: Field>: Sized {
     fn get_root(&mut self) -> &mut Self::Root;
 
     /// Begin a namespace for this constraint system.
-    fn ns<NR, N>(&mut self, name_fn: N) -> Namespace<'_, F, Self::Root>
+    fn ns<NR, N>(&mut self, name_fn: N) -> Namespace<'_, Self::Root>
     where
         NR: AsRef<str>,
         N: FnOnce() -> NR,

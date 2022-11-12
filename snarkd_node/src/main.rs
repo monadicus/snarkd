@@ -170,7 +170,7 @@ async fn main() {
                     }
                     if let Some(mut peer) = peer_book.peer_mut(&remote_addr) {
                         peer.register_connection(PeerDirection::Inbound, connection);
-                        if let Err(e) = peer.save(&*database).await {
+                        if let Err(e) = peer.save(&database).await {
                             error!("failed to save received peer: {e:?}");
                         }
                     }
@@ -229,7 +229,7 @@ async fn main() {
                     let peer_book = self.peer_book.clone();
 
                     tokio::spawn(async move {
-                        if let Err(e) = peer_book.discovered_peers(&*database, peers).await {
+                        if let Err(e) = peer_book.discovered_peers(&database, peers).await {
                             error!("failed storing discovered peers: {e:?}");
                         }
                     });
@@ -248,7 +248,7 @@ async fn main() {
             .await;
         });
     } else if let Err(e) = peer_book
-        .discovered_peers(&*database, config.tracker.peers.iter().copied())
+        .discovered_peers(&database, config.tracker.peers.iter().copied())
         .await
     {
         error!("failed to add in raw tracker peers: {e:?}");
