@@ -777,8 +777,6 @@ impl SonicKZG10 {
 
 #[cfg(test)]
 mod tests {
-    #![allow(non_camel_case_types)]
-
     use super::{CommitterKey, SonicKZG10};
     use crate::{bls12_377::Field, polycommit::test_templates::*, utils::PoseidonSponge};
 
@@ -817,44 +815,37 @@ mod tests {
     #[test]
     fn test_full_end_to_end() {
         full_end_to_end_test().expect("test failed for bls12-377");
-        println!("Finished bls12-377");
     }
 
     #[test]
     fn test_single_equation() {
         single_equation_test().expect("test failed for bls12-377");
-        println!("Finished bls12-377");
     }
 
     #[test]
     fn test_two_equation() {
         two_equation_test().expect("test failed for bls12-377");
-        println!("Finished bls12-377");
     }
 
     #[test]
     fn test_two_equation_degree_bound() {
         two_equation_degree_bound_test().expect("test failed for bls12-377");
-        println!("Finished bls12-377");
     }
 
     #[test]
     fn test_full_end_to_end_equation() {
         full_end_to_end_equation_test().expect("test failed for bls12-377");
-        println!("Finished bls12-377");
     }
 
     #[test]
     #[should_panic]
     fn test_bad_degree_bound() {
         bad_degree_bound_test().expect("test failed for bls12-377");
-        println!("Finished bls12-377");
     }
 
     #[test]
     fn test_lagrange_commitment() {
         crate::polycommit::test_templates::lagrange_test_template()
             .expect("test failed for bls12-377");
-        println!("Finished bls12-377");
     }
 }

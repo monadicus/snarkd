@@ -79,7 +79,7 @@ impl PowersOfG {
         // Ensure the lower power is less than the upper power.
         assert!(lower < upper, "Lower power must be less than upper power");
         // Ensure the powers exist, and download the missing powers if necessary.
-        if upper >= self.current_degree {
+        if upper > self.current_degree {
             self.download_up_to(upper)?;
         }
         // Return the powers.
