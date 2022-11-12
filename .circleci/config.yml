@@ -55,7 +55,7 @@ jobs:
     environment:
       RUST_BACKTRACE: 1
     docker:
-      - image: cimg/rust:1.64.0
+      - image: cimg/rust:1.65.0
     steps:
       - checkout
       - setup:
@@ -68,9 +68,8 @@ jobs:
   test_arm64:
     environment:
       RUST_BACKTRACE: 1
-    machine:
-      image: ubuntu-2204:current
-    resource_class: arm.medium
+    machine: true
+    resource_class: monadicus/tleilax_arm
     steps:
       - checkout
       - setup:
