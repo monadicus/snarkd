@@ -36,14 +36,15 @@ pub struct UniversalParams {
 
 impl UniversalParams {
     pub fn lagrange_basis(&self, domain: EvaluationDomain) -> Result<Vec<G1Affine>> {
-        let basis = domain.ifft(
-            &self
-                .powers_of_beta_g(0, domain.size())?
+        let mut basis = domain.ifft_projective(
+            self.powers_of_beta_g(0, domain.size())?
                 .iter()
                 .map(|e| (*e).to_projective())
-                .collect::<Vec<_>>(),
+                .collect::<Vec<_>>()
+                .as_slice(),
         );
-        Ok(G1Projective::batch_normalization_into_affine(basis))
+        G1Projective::batch_normalization(&mut basis);
+        Ok(basis.iter().map(|e| (*e).into()).collect())
     }
 
     pub fn power_of_beta_g(&self, which_power: usize) -> Result<G1Affine> {
@@ -301,7 +302,7 @@ pub struct Proof {
 
 impl Proof {
     pub fn absorb_into_sponge(&self, sponge: &mut PoseidonSponge) {
-        sponge.absorb_native_field_elements(&self.w.to_field_elements().unwrap());
+        sponge.absorb_native_field_elements(&[self.w.x, self.w.y]);
         if let Some(random_v) = self.random_v {
             sponge.absorb_nonnative_field_elements([random_v]);
         }

@@ -23,6 +23,7 @@ use core::{
 };
 use itertools::Itertools;
 use parking_lot::RwLock;
+use rand::Rng;
 use rand_core::RngCore;
 use rayon::prelude::*;
 use ruint::Uint;
@@ -479,7 +480,7 @@ impl KZG10 {
             total_w += &w.mul(randomizer);
             // We don't need to sample randomizers from the full field,
             // only from 128-bit strings.
-            randomizer = u128::rand(rng).into();
+            randomizer = Scalar(Uint::from(rng.gen::<u128>()));
         }
         total_c -= &g.mul(g_multiplier);
         total_c -= &gamma_g.mul(gamma_g_multiplier);

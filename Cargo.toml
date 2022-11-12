@@ -47,6 +47,7 @@ refinery = { version = "0.8.6", features = [
 rusqlite = { version = "0.28", features = ["bundled"] }
 serde = { version = "1.0.147", features = ["derive"] }
 serde_yaml = "0.9.14"
+sha2 = { version = "0.10", default-features = false }
 smallvec = "1.10"
 strum = { version = "0.24", features = ["derive"] }
 thiserror = "1.0"

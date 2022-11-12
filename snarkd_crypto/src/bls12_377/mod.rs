@@ -70,6 +70,13 @@ const HALF_R: [u64; 8] = [0, 0, 0, 0x8000000000000000, 0, 0, 0, 0];
 
 const X: u64 = 0x8508c00000000001;
 
+pub fn product_of_pairings<'a, I>(i: I) -> Fp12
+where
+    I: Iterator<Item = (&'a G1Prepared, &'a G2Prepared)>,
+{
+    final_exponentiation(&miller_loop(i)).unwrap()
+}
+
 /// Performs multiple pairing operations
 pub fn pairing<G1: Into<G1Affine>, G2: Into<G2Affine>>(p: G1, q: G2) -> Fp12 {
     final_exponentiation(&miller_loop(core::iter::once((

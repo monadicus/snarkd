@@ -11,13 +11,17 @@
 //! by performing an O(n log n) FFT over such a domain.
 
 use crate::{
-    bls12_377::{scalar, Field, Scalar},
+    bls12_377::{scalar, Field, G1Projective, Projective, Scalar},
     fft::SparsePolynomial,
     utils::*,
 };
 use rand::Rng;
 use rayon::prelude::*;
-use std::{borrow::Cow, fmt};
+use std::{
+    borrow::Cow,
+    fmt,
+    ops::{AddAssign, MulAssign, Sub},
+};
 
 #[cfg(not(feature = "parallel"))]
 use itertools::Itertools;
@@ -147,7 +151,7 @@ impl EvaluationDomain {
     pub fn fft_in_place(&self, coeffs: &mut Vec<Scalar>) {
         execute_with_max_available_threads(|| {
             coeffs.resize(self.size(), Scalar::ZERO);
-            self.in_order_fft_in_place(&mut *coeffs);
+            self.in_order_fft_in_place::<Scalar>(&mut *coeffs);
         });
     }
 
@@ -163,6 +167,22 @@ impl EvaluationDomain {
     pub fn ifft_in_place(&self, evals: &mut Vec<Scalar>) {
         execute_with_max_available_threads(|| {
             evals.resize(self.size(), Scalar::ZERO);
+            self.in_order_ifft_in_place(&mut *evals);
+        });
+    }
+
+    /// Compute an IFFT.
+    pub fn ifft_projective(&self, evals: &[G1Projective]) -> Vec<G1Projective> {
+        let mut evals = evals.to_vec();
+        self.ifft_in_place_projective(&mut evals);
+        evals
+    }
+
+    /// Compute an IFFT, modifying the vector in place.
+    #[inline]
+    pub fn ifft_in_place_projective(&self, evals: &mut Vec<G1Projective>) {
+        execute_with_max_available_threads(|| {
+            evals.resize(self.size(), G1Projective::ZERO);
             self.in_order_ifft_in_place(&mut *evals);
         });
     }
@@ -204,19 +224,13 @@ impl EvaluationDomain {
     }
 
     /// Multiply the `i`-th element of `coeffs` with `c*g^i`.
-    #[cfg(not(feature = "parallel"))]
-    fn distribute_powers_and_mul_by_const(coeffs: &mut [Scalar], g: Scalar, c: Scalar) {
-        // invariant: pow = c*g^i at the ith iteration of the loop
-        let mut pow = c;
-        coeffs.iter_mut().for_each(|coeff| {
-            *coeff *= pow;
-            pow *= &g
-        })
-    }
-
-    /// Multiply the `i`-th element of `coeffs` with `c*g^i`.
-    #[cfg(feature = "parallel")]
-    fn distribute_powers_and_mul_by_const(coeffs: &mut [Scalar], g: Scalar, c: Scalar) {
+    fn distribute_powers_and_mul_by_const<
+        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Send + Sync,
+    >(
+        coeffs: &mut [T],
+        g: Scalar,
+        c: Scalar,
+    ) {
         let min_parallel_chunk_size = 1024;
         let num_cpus_available = max_available_threads();
         let num_elem_per_thread =
@@ -225,7 +239,7 @@ impl EvaluationDomain {
         cfg_chunks_mut!(coeffs, num_elem_per_thread)
             .enumerate()
             .for_each(|(i, chunk)| {
-                let offset = c * g.pow([(i * num_elem_per_thread) as u64]);
+                let offset = c * g.pow(&[(i * num_elem_per_thread) as u64]);
                 let mut pow = offset;
                 chunk.iter_mut().for_each(|coeff| {
                     *coeff *= pow;
@@ -365,18 +379,33 @@ impl EvaluationDomain {
         })
     }
 
-    pub(crate) fn in_order_fft_in_place(&self, x_s: &mut [Scalar]) {
+    pub(crate) fn in_order_fft_in_place<
+        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Send + Sync,
+    >(
+        &self,
+        x_s: &mut [Scalar],
+    ) {
         let pc = self.precompute_fft();
         self.fft_helper_in_place_with_pc(x_s, FFTOrder::II, &pc)
     }
 
-    pub(crate) fn in_order_ifft_in_place(&self, x_s: &mut [Scalar]) {
+    pub(crate) fn in_order_ifft_in_place<
+        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Send + Sync,
+    >(
+        &self,
+        x_s: &mut [T],
+    ) {
         let pc = self.precompute_ifft();
         self.ifft_helper_in_place_with_pc(x_s, FFTOrder::II, &pc);
         cfg_iter_mut!(x_s).for_each(|val| *val *= self.size_inv);
     }
 
-    pub(crate) fn in_order_coset_ifft_in_place(&self, x_s: &mut [Scalar]) {
+    pub(crate) fn in_order_coset_ifft_in_place<
+        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Send + Sync,
+    >(
+        &self,
+        x_s: &mut [T],
+    ) {
         let pc = self.precompute_ifft();
         self.ifft_helper_in_place_with_pc(x_s, FFTOrder::II, &pc);
         let coset_shift = self.generator_inv;
@@ -384,34 +413,42 @@ impl EvaluationDomain {
     }
 
     #[allow(unused)]
-    pub(crate) fn in_order_fft_in_place_with_pc(
+    pub(crate) fn in_order_fft_in_place_with_pc<
+        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Send + Sync,
+    >(
         &self,
-        x_s: &mut [Scalar],
+        x_s: &mut [T],
         pre_comp: &FFTPrecomputation,
     ) {
         self.fft_helper_in_place_with_pc(x_s, FFTOrder::II, pre_comp)
     }
 
-    pub(crate) fn out_order_fft_in_place_with_pc(
+    pub(crate) fn out_order_fft_in_place_with_pc<
+        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Send + Sync,
+    >(
         &self,
-        x_s: &mut [Scalar],
+        x_s: &mut [T],
         pre_comp: &FFTPrecomputation,
     ) {
         self.fft_helper_in_place_with_pc(x_s, FFTOrder::IO, pre_comp)
     }
 
-    pub(crate) fn in_order_ifft_in_place_with_pc(
+    pub(crate) fn in_order_ifft_in_place_with_pc<
+        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Send + Sync,
+    >(
         &self,
-        x_s: &mut [Scalar],
+        x_s: &mut [T],
         pre_comp: &IFFTPrecomputation,
     ) {
         self.ifft_helper_in_place_with_pc(x_s, FFTOrder::II, pre_comp);
         cfg_iter_mut!(x_s).for_each(|val| *val *= self.size_inv);
     }
 
-    pub(crate) fn out_order_ifft_in_place_with_pc(
+    pub(crate) fn out_order_ifft_in_place_with_pc<
+        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Send + Sync,
+    >(
         &self,
-        x_s: &mut [Scalar],
+        x_s: &mut [T],
         pre_comp: &IFFTPrecomputation,
     ) {
         self.ifft_helper_in_place_with_pc(x_s, FFTOrder::OI, pre_comp);
@@ -419,9 +456,11 @@ impl EvaluationDomain {
     }
 
     #[allow(unused)]
-    pub(crate) fn in_order_coset_ifft_in_place_with_pc(
+    pub(crate) fn in_order_coset_ifft_in_place_with_pc<
+        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Send + Sync,
+    >(
         &self,
-        x_s: &mut [Scalar],
+        x_s: &mut [T],
         pre_comp: &IFFTPrecomputation,
     ) {
         self.ifft_helper_in_place_with_pc(x_s, FFTOrder::II, pre_comp);
@@ -429,9 +468,11 @@ impl EvaluationDomain {
         Self::distribute_powers_and_mul_by_const(x_s, coset_shift, self.size_inv);
     }
 
-    fn fft_helper_in_place_with_pc(
+    fn fft_helper_in_place_with_pc<
+        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Send + Sync,
+    >(
         &self,
-        x_s: &mut [Scalar],
+        x_s: &mut [T],
         ord: FFTOrder,
         pre_comp: &FFTPrecomputation,
     ) {
@@ -454,9 +495,11 @@ impl EvaluationDomain {
     // Handles doing an IFFT with handling of being in order and out of order.
     // The results here must all be divided by |x_s|,
     // which is left up to the caller to do.
-    fn ifft_helper_in_place_with_pc(
+    fn ifft_helper_in_place_with_pc<
+        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Send + Sync,
+    >(
         &self,
-        x_s: &mut [Scalar],
+        x_s: &mut [T],
         ord: FFTOrder,
         pre_comp: &IFFTPrecomputation,
     ) {
@@ -545,7 +588,9 @@ impl EvaluationDomain {
     }
 
     #[inline(always)]
-    fn butterfly_fn_io(((lo, hi), root): ((&mut Scalar, &mut Scalar), &Scalar)) {
+    fn butterfly_fn_io<T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T>>(
+        ((lo, hi), root): ((&mut T, &mut T), &Scalar),
+    ) {
         let neg = *lo - *hi;
         *lo += *hi;
         *hi = neg;
@@ -553,7 +598,9 @@ impl EvaluationDomain {
     }
 
     #[inline(always)]
-    fn butterfly_fn_oi(((lo, hi), root): ((&mut Scalar, &mut Scalar), &Scalar)) {
+    fn butterfly_fn_oi<T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T>>(
+        ((lo, hi), root): ((&mut T, &mut T), &Scalar),
+    ) {
         *hi *= *root;
         let neg = *lo - *hi;
         *lo += *hi;
@@ -561,9 +608,12 @@ impl EvaluationDomain {
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn apply_butterfly<G: Fn(((&mut Scalar, &mut Scalar), &Scalar)) + Copy + Sync + Send>(
+    fn apply_butterfly<
+        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Send + Sync,
+        G: Fn(((&mut T, &mut T), &Scalar)) + Copy + Sync + Send,
+    >(
         g: G,
-        xi: &mut [Scalar],
+        xi: &mut [T],
         roots: &[Scalar],
         step: usize,
         chunk_size: usize,
@@ -590,7 +640,13 @@ impl EvaluationDomain {
         });
     }
 
-    fn io_helper_with_roots(&self, xi: &mut [Scalar], roots: &[Scalar]) {
+    fn io_helper_with_roots<
+        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Send + Sync,
+    >(
+        &self,
+        xi: &mut [T],
+        roots: &[Scalar],
+    ) {
         let mut roots = std::borrow::Cow::Borrowed(roots);
 
         let mut step = 1;
@@ -640,7 +696,13 @@ impl EvaluationDomain {
         }
     }
 
-    fn oi_helper_with_roots(&self, xi: &mut [Scalar], roots_cache: &[Scalar]) {
+    fn oi_helper_with_roots<
+        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Send + Sync,
+    >(
+        &self,
+        xi: &mut [T],
+        roots_cache: &[Scalar],
+    ) {
         // The `cmp::min` is only necessary for the case where
         // `MIN_NUM_CHUNKS_FOR_COMPACTION = 1`. Else, notice that we compact
         // the roots cache by a stride of at least `MIN_NUM_CHUNKS_FOR_COMPACTION`.
