@@ -1058,7 +1058,7 @@ impl PoseidonSponge {
 
     /// Convert a `TargetField` element into limbs (not constraints)
     /// This is an internal function that would be reused by a number of other functions
-    pub fn get_limbs_representations(
+    fn get_limbs_representations(
         elem: &Scalar,
         optimization_type: OptimizationType,
     ) -> SmallVec<[Fp; 10]> {
@@ -1066,7 +1066,7 @@ impl PoseidonSponge {
     }
 
     /// Obtain the limbs directly from a big int
-    pub fn get_limbs_representations_from_big_integer(
+    fn get_limbs_representations_from_big_integer(
         elem: &Uint<256, 4>,
         optimization_type: OptimizationType,
     ) -> SmallVec<[Fp; 10]> {
@@ -1079,19 +1079,10 @@ impl PoseidonSponge {
         // Push the lower limbs first
         let mut limbs: SmallVec<[Fp; 10]> = SmallVec::new();
         let mut cur = *elem;
+        let cmp = Uint::<256, 4>::from(1u64) << bits_per_limb;
         for _ in 0..num_limbs {
-            let cur_bits = cur
-                .as_limbs()
-                .iter()
-                .flat_map(|limb| limb.view_bits::<Lsb0>())
-                .map(|b| *b.deref())
-                .rev()
-                .collect::<Vec<_>>(); // `to_bits` is big endian
-            let cur_mod_r = <F as PrimeField>::BigInteger::from_bits_be(
-                &cur_bits[cur_bits.len() - bits_per_limb..],
-            )
-            .unwrap(); // therefore, the lowest `bits_per_non_top_limb` bits is what we want.
-            limbs.push(Fp(cur_mod_r));
+            let cur_mod_r = cur & cmp;
+            limbs.push(Fp(Uint::<384, 6>::from(cur_mod_r)));
             cur = cur >> bits_per_limb;
         }
 
