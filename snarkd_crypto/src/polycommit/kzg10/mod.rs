@@ -625,13 +625,13 @@ mod tests {
     }
 
     fn end_to_end_test_template() -> Result<(), PCError> {
+        (0..10).into_par_iter().for_each(|_| {
         let rng = &mut rand::thread_rng();
-        for _ in 0..100 {
             let mut degree = 0;
             while degree <= 1 {
                 degree = rng.gen::<usize>() % 20;
             }
-            let pp = KZG10::setup(degree, &KZG10DegreeBoundsConfig::NONE, false, rng)?;
+            let pp = KZG10::setup(degree, &KZG10DegreeBoundsConfig::NONE, false, rng).unwrap();
             let (ck, vk) = KZG10::trim(&pp, degree);
             let p = DensePolynomial::rand(degree, rng);
             let hiding_bound = Some(1);
@@ -641,26 +641,26 @@ mod tests {
                 hiding_bound,
                 &AtomicBool::new(false),
                 Some(rng),
-            )?;
+            ).unwrap();
             let point = Scalar::rand();
             let value = p.evaluate(point);
-            let proof = KZG10::open(&ck, &p, point, &rand)?;
+            let proof = KZG10::open(&ck, &p, point, &rand).unwrap();
             assert!(
-                KZG10::check(&vk, &comm, point, value, &proof)?,
+                KZG10::check(&vk, &comm, point, value, &proof).unwrap(),
                 "proof was incorrect for max_degree = {}, polynomial_degree = {}, hiding_bound = {:?}",
                 degree,
                 p.degree(),
                 hiding_bound,
             );
-        }
+        });
         Ok(())
     }
 
     fn linear_polynomial_test_template() -> Result<(), PCError> {
-        let rng = &mut rand::thread_rng();
-        for _ in 0..100 {
+        (0..10).into_par_iter().for_each(|_| {
+            let rng = &mut rand::thread_rng();
             let degree = 50;
-            let pp = KZG10::setup(degree, &KZG10DegreeBoundsConfig::NONE, false, rng)?;
+            let pp = KZG10::setup(degree, &KZG10DegreeBoundsConfig::NONE, false, rng).unwrap();
             let (ck, vk) = KZG10::trim(&pp, 2);
             let p = DensePolynomial::rand(1, rng);
             let hiding_bound = Some(1);
@@ -670,29 +670,30 @@ mod tests {
                 hiding_bound,
                 &AtomicBool::new(false),
                 Some(rng),
-            )?;
+            )
+            .unwrap();
             let point = Scalar::rand();
             let value = p.evaluate(point);
-            let proof = KZG10::open(&ck, &p, point, &rand)?;
+            let proof = KZG10::open(&ck, &p, point, &rand).unwrap();
             assert!(
-                KZG10::check(&vk, &comm, point, value, &proof)?,
+                KZG10::check(&vk, &comm, point, value, &proof).unwrap(),
                 "proof was incorrect for max_degree = {}, polynomial_degree = {}, hiding_bound = {:?}",
                 degree,
                 p.degree(),
                 hiding_bound,
             );
-        }
+        });
         Ok(())
     }
 
     fn batch_check_test_template() -> Result<(), PCError> {
-        let rng = &mut rand::thread_rng();
-        for _ in 0..10 {
+        (0..10).into_par_iter().for_each(|_| {
+            let rng = &mut rand::thread_rng();
             let mut degree = 0;
             while degree <= 1 {
                 degree = rng.gen::<usize>() % 20;
             }
-            let pp = KZG10::setup(degree, &KZG10DegreeBoundsConfig::NONE, false, rng)?;
+            let pp = KZG10::setup(degree, &KZG10DegreeBoundsConfig::NONE, false, rng).unwrap();
             let (ck, vk) = KZG10::trim(&pp, degree);
 
             let mut comms = Vec::new();
@@ -709,21 +710,20 @@ mod tests {
                     hiding_bound,
                     &AtomicBool::new(false),
                     Some(rng),
-                )?;
+                )
+                .unwrap();
                 let point = Scalar::rand();
                 let value = p.evaluate(point);
-                let proof = KZG10::open(&ck, &p, point, &rand)?;
+                let proof = KZG10::open(&ck, &p, point, &rand).unwrap();
 
-                assert!(KZG10::check(&vk, &comm, point, value, &proof)?);
+                assert!(KZG10::check(&vk, &comm, point, value, &proof).unwrap());
                 comms.push(comm);
                 values.push(value);
                 points.push(point);
                 proofs.push(proof);
             }
-            assert!(KZG10::batch_check(
-                &vk, &comms, &points, &values, &proofs, rng
-            )?);
-        }
+            assert!(KZG10::batch_check(&vk, &comms, &points, &values, &proofs, rng).unwrap());
+        });
         Ok(())
     }
 

@@ -18,6 +18,7 @@ use rand::{
     distributions::{self, Distribution},
     Rng,
 };
+use rayon::prelude::*;
 
 #[derive(Default)]
 struct TestInfo {
@@ -45,7 +46,8 @@ pub fn bad_degree_bound_test() -> Result<(), PCError> {
     let max_degree = 100;
     let pp = SonicKZG10::setup(max_degree, rng)?;
 
-    for _ in 0..10 {
+    (0..10).into_par_iter().for_each(|_| {
+        let rng = &mut rand::thread_rng();
         let supported_degree = distributions::Uniform::from(1..=max_degree).sample(rng);
         assert!(
             max_degree >= supported_degree,
@@ -80,11 +82,12 @@ pub fn bad_degree_bound_test() -> Result<(), PCError> {
             None,
             supported_degree,
             Some(degree_bounds.as_slice()),
-        )?;
+        )
+        .unwrap();
         println!("Trimmed");
 
         let (comms, rands) =
-            SonicKZG10::commit(&ck, polynomials.iter().map(Into::into), Some(rng))?;
+            SonicKZG10::commit(&ck, polynomials.iter().map(Into::into), Some(rng)).unwrap();
 
         let mut query_set = QuerySet::new();
         let mut values = Evaluations::new();
@@ -104,7 +107,8 @@ pub fn bad_degree_bound_test() -> Result<(), PCError> {
             &query_set,
             &rands,
             &mut sponge_for_open,
-        )?;
+        )
+        .unwrap();
         let mut sponge_for_check = PoseidonSponge::default();
         let result = SonicKZG10::batch_check(
             &vk,
@@ -113,25 +117,26 @@ pub fn bad_degree_bound_test() -> Result<(), PCError> {
             &values,
             &proof,
             &mut sponge_for_check,
-        )?;
+        )
+        .unwrap();
         assert!(result, "proof was incorrect, Query set: {:#?}", query_set);
-    }
+    });
     Ok(())
 }
 
-pub fn lagrange_test_template() -> Result<Vec<TestComponents>, PCError> {
+pub fn lagrange_test_template() -> Result<(), PCError> {
     let num_iters = 10usize;
     let max_degree = 256usize;
     let supported_degree = 127usize;
     let eval_size = 128usize;
     let num_polynomials = 1usize;
     let max_num_queries = 2usize;
-    let mut test_components = Vec::new();
 
     let rng = &mut rand::thread_rng();
     let pp = SonicKZG10::setup(max_degree, rng)?;
 
-    for _ in 0..num_iters {
+    (0..num_iters).into_par_iter().for_each(|_| {
+        let rng = &mut rand::thread_rng();
         assert!(
             max_degree >= supported_degree,
             "max_degree < supported_degree"
@@ -191,7 +196,8 @@ pub fn lagrange_test_template() -> Result<Vec<TestComponents>, PCError> {
             supported_lagrange_sizes,
             supported_hiding_bound,
             degree_bounds,
-        )?;
+        )
+        .unwrap();
         println!("Trimmed");
 
         let (comms, rands) = SonicKZG10::commit(&ck, lagrange_polynomials, Some(rng)).unwrap();
@@ -218,7 +224,8 @@ pub fn lagrange_test_template() -> Result<Vec<TestComponents>, PCError> {
             &query_set,
             &rands,
             &mut sponge_for_open,
-        )?;
+        )
+        .unwrap();
         let mut sponge_for_check = PoseidonSponge::default();
         let result = SonicKZG10::batch_check(
             &vk,
@@ -227,7 +234,8 @@ pub fn lagrange_test_template() -> Result<Vec<TestComponents>, PCError> {
             &values,
             &proof,
             &mut sponge_for_check,
-        )?;
+        )
+        .unwrap();
         if !result {
             println!(
                 "Failed with {} polynomials, num_points_in_query_set: {:?}",
@@ -239,21 +247,11 @@ pub fn lagrange_test_template() -> Result<Vec<TestComponents>, PCError> {
             }
         }
         assert!(result, "proof was incorrect, Query set: {:#?}", query_set);
-
-        test_components.push(TestComponents {
-            verification_key: vk,
-            commitments: comms,
-            query_set,
-            evaluations: values,
-            batch_lc_proof: None,
-            batch_proof: Some(proof),
-            randomness: rands,
-        });
-    }
-    Ok(test_components)
+    });
+    Ok(())
 }
 
-fn test_template(info: TestInfo) -> Result<Vec<TestComponents>, PCError>
+fn test_template(info: TestInfo) -> Result<(), PCError>
 where
 {
     let TestInfo {
@@ -266,14 +264,13 @@ where
         ..
     } = info;
 
-    let mut test_components = Vec::new();
-
     let rng = &mut rand::thread_rng();
     let max_degree = max_degree.unwrap_or_else(|| distributions::Uniform::from(8..=64).sample(rng));
     let pp = SonicKZG10::setup(max_degree, rng)?;
     let supported_degree_bounds = pp.supported_degree_bounds();
 
-    for _ in 0..num_iters {
+    (0..num_iters).into_par_iter().for_each(|_| {
+        let rng = &mut rand::thread_rng();
         let supported_degree = supported_degree
             .unwrap_or_else(|| distributions::Uniform::from(4..=max_degree).sample(rng));
         assert!(
@@ -349,11 +346,12 @@ where
             None,
             supported_hiding_bound,
             degree_bounds.as_deref(),
-        )?;
+        )
+        .unwrap();
         println!("Trimmed");
 
         let (comms, rands) =
-            SonicKZG10::commit(&ck, polynomials.iter().map(Into::into), Some(rng))?;
+            SonicKZG10::commit(&ck, polynomials.iter().map(Into::into), Some(rng)).unwrap();
 
         // Construct query set
         let mut query_set = QuerySet::new();
@@ -377,7 +375,8 @@ where
             &query_set,
             &rands,
             &mut sponge_for_open,
-        )?;
+        )
+        .unwrap();
         let mut sponge_for_check = PoseidonSponge::default();
         let result = SonicKZG10::batch_check(
             &vk,
@@ -386,7 +385,8 @@ where
             &values,
             &proof,
             &mut sponge_for_check,
-        )?;
+        )
+        .unwrap();
         if !result {
             println!(
                 "Failed with {} polynomials, num_points_in_query_set: {:?}",
@@ -398,21 +398,11 @@ where
             }
         }
         assert!(result, "proof was incorrect, Query set: {:#?}", query_set);
-
-        test_components.push(TestComponents {
-            verification_key: vk,
-            commitments: comms,
-            query_set,
-            evaluations: values,
-            batch_lc_proof: None,
-            batch_proof: Some(proof),
-            randomness: rands,
-        });
-    }
-    Ok(test_components)
+    });
+    Ok(())
 }
 
-fn equation_test_template(info: TestInfo) -> Result<Vec<TestComponents>, PCError> {
+fn equation_test_template(info: TestInfo) -> Result<(), PCError> {
     let TestInfo {
         num_iters,
         max_degree,
@@ -423,14 +413,13 @@ fn equation_test_template(info: TestInfo) -> Result<Vec<TestComponents>, PCError
         num_equations,
     } = info;
 
-    let mut test_components = Vec::new();
-
     let rng = &mut rand::thread_rng();
     let max_degree = max_degree.unwrap_or_else(|| distributions::Uniform::from(8..=64).sample(rng));
     let pp = SonicKZG10::setup(max_degree, rng)?;
     let supported_degree_bounds = pp.supported_degree_bounds();
 
-    for _ in 0..num_iters {
+    (0..num_iters).into_par_iter().for_each(|_| {
+        let rng = &mut rand::thread_rng();
         let supported_degree = supported_degree
             .unwrap_or_else(|| distributions::Uniform::from(4..=max_degree).sample(rng));
         assert!(
@@ -510,11 +499,12 @@ fn equation_test_template(info: TestInfo) -> Result<Vec<TestComponents>, PCError
             None,
             supported_hiding_bound,
             degree_bounds.as_deref(),
-        )?;
+        )
+        .unwrap();
         println!("Trimmed");
 
         let (comms, rands) =
-            SonicKZG10::commit(&ck, polynomials.iter().map(Into::into), Some(rng))?;
+            SonicKZG10::commit(&ck, polynomials.iter().map(Into::into), Some(rng)).unwrap();
 
         // Let's construct our equations
         let mut linear_combinations = Vec::new();
@@ -553,63 +543,54 @@ fn equation_test_template(info: TestInfo) -> Result<Vec<TestComponents>, PCError
                 }
             }
         }
-        if linear_combinations.is_empty() {
-            continue;
-        }
-        println!("Generated query set");
-        println!("Linear combinations: {:?}", linear_combinations);
+        if !linear_combinations.is_empty() {
+            println!("Generated query set");
+            println!("Linear combinations: {:?}", linear_combinations);
 
-        let mut sponge_for_open = PoseidonSponge::default();
-        let proof = SonicKZG10::open_combinations(
-            &ck,
-            &linear_combinations,
-            &polynomials,
-            &comms,
-            &query_set,
-            &rands,
-            &mut sponge_for_open,
-        )?;
-        println!("Generated proof");
-        let mut sponge_for_check = PoseidonSponge::default();
-        let result = SonicKZG10::check_combinations(
-            &vk,
-            &linear_combinations,
-            &comms,
-            &query_set,
-            &values,
-            &proof,
-            &mut sponge_for_check,
-        )?;
-        if !result {
-            println!(
-                "Failed with {} polynomials, num_points_in_query_set: {:?}",
-                num_polynomials, num_points_in_query_set
-            );
-            println!("Degree of polynomials:");
-            for poly in polynomials {
-                println!("Degree: {:?}", poly.degree());
+            let mut sponge_for_open = PoseidonSponge::default();
+            let proof = SonicKZG10::open_combinations(
+                &ck,
+                &linear_combinations,
+                &polynomials,
+                &comms,
+                &query_set,
+                &rands,
+                &mut sponge_for_open,
+            )
+            .unwrap();
+            println!("Generated proof");
+            let mut sponge_for_check = PoseidonSponge::default();
+            let result = SonicKZG10::check_combinations(
+                &vk,
+                &linear_combinations,
+                &comms,
+                &query_set,
+                &values,
+                &proof,
+                &mut sponge_for_check,
+            )
+            .unwrap();
+            if !result {
+                println!(
+                    "Failed with {} polynomials, num_points_in_query_set: {:?}",
+                    num_polynomials, num_points_in_query_set
+                );
+                println!("Degree of polynomials:");
+                for poly in polynomials {
+                    println!("Degree: {:?}", poly.degree());
+                }
             }
+            assert!(
+                result,
+                "proof was incorrect, equations: {:#?}",
+                linear_combinations
+            );
         }
-        assert!(
-            result,
-            "proof was incorrect, equations: {:#?}",
-            linear_combinations
-        );
-
-        test_components.push(TestComponents {
-            verification_key: vk,
-            commitments: comms,
-            query_set,
-            evaluations: values,
-            batch_lc_proof: Some(proof),
-            batch_proof: None,
-            randomness: rands,
-        });
-    }
-    Ok(test_components)
+    });
+    Ok(())
 }
 
-pub fn single_poly_test() -> Result<Vec<TestComponents>, PCError> {
+pub fn single_poly_test() -> Result<(), PCError> {
     let info = TestInfo {
         num_iters: 10,
         max_degree: None,
@@ -622,7 +603,7 @@ pub fn single_poly_test() -> Result<Vec<TestComponents>, PCError> {
     test_template(info)
 }
 
-pub fn linear_poly_degree_bound_test() -> Result<Vec<TestComponents>, PCError> {
+pub fn linear_poly_degree_bound_test() -> Result<(), PCError> {
     let info = TestInfo {
         num_iters: 10,
         max_degree: Some(2),
@@ -635,7 +616,7 @@ pub fn linear_poly_degree_bound_test() -> Result<Vec<TestComponents>, PCError> {
     test_template(info)
 }
 
-pub fn single_poly_degree_bound_test() -> Result<Vec<TestComponents>, PCError> {
+pub fn single_poly_degree_bound_test() -> Result<(), PCError> {
     let info = TestInfo {
         num_iters: 10,
         max_degree: None,
@@ -648,7 +629,7 @@ pub fn single_poly_degree_bound_test() -> Result<Vec<TestComponents>, PCError> {
     test_template(info)
 }
 
-pub fn quadratic_poly_degree_bound_multiple_queries_test() -> Result<Vec<TestComponents>, PCError> {
+pub fn quadratic_poly_degree_bound_multiple_queries_test() -> Result<(), PCError> {
     let info = TestInfo {
         num_iters: 10,
         max_degree: Some(3),
@@ -661,7 +642,7 @@ pub fn quadratic_poly_degree_bound_multiple_queries_test() -> Result<Vec<TestCom
     test_template(info)
 }
 
-pub fn single_poly_degree_bound_multiple_queries_test() -> Result<Vec<TestComponents>, PCError> {
+pub fn single_poly_degree_bound_multiple_queries_test() -> Result<(), PCError> {
     let info = TestInfo {
         num_iters: 10,
         max_degree: None,
@@ -674,7 +655,7 @@ pub fn single_poly_degree_bound_multiple_queries_test() -> Result<Vec<TestCompon
     test_template(info)
 }
 
-pub fn two_polys_degree_bound_single_query_test() -> Result<Vec<TestComponents>, PCError> {
+pub fn two_polys_degree_bound_single_query_test() -> Result<(), PCError> {
     let info = TestInfo {
         num_iters: 10,
         max_degree: None,
@@ -687,7 +668,7 @@ pub fn two_polys_degree_bound_single_query_test() -> Result<Vec<TestComponents>,
     test_template(info)
 }
 
-pub fn full_end_to_end_test() -> Result<Vec<TestComponents>, PCError> {
+pub fn full_end_to_end_test() -> Result<(), PCError> {
     let info = TestInfo {
         num_iters: 10,
         max_degree: None,
@@ -700,7 +681,7 @@ pub fn full_end_to_end_test() -> Result<Vec<TestComponents>, PCError> {
     test_template(info)
 }
 
-pub fn full_end_to_end_equation_test() -> Result<Vec<TestComponents>, PCError> {
+pub fn full_end_to_end_equation_test() -> Result<(), PCError> {
     let info = TestInfo {
         num_iters: 10,
         max_degree: None,
@@ -713,7 +694,7 @@ pub fn full_end_to_end_equation_test() -> Result<Vec<TestComponents>, PCError> {
     equation_test_template(info)
 }
 
-pub fn single_equation_test() -> Result<Vec<TestComponents>, PCError> {
+pub fn single_equation_test() -> Result<(), PCError> {
     let info = TestInfo {
         num_iters: 10,
         max_degree: None,
@@ -726,7 +707,7 @@ pub fn single_equation_test() -> Result<Vec<TestComponents>, PCError> {
     equation_test_template(info)
 }
 
-pub fn two_equation_test() -> Result<Vec<TestComponents>, PCError> {
+pub fn two_equation_test() -> Result<(), PCError> {
     let info = TestInfo {
         num_iters: 10,
         max_degree: None,
@@ -739,7 +720,7 @@ pub fn two_equation_test() -> Result<Vec<TestComponents>, PCError> {
     equation_test_template(info)
 }
 
-pub fn two_equation_degree_bound_test() -> Result<Vec<TestComponents>, PCError> {
+pub fn two_equation_degree_bound_test() -> Result<(), PCError> {
     let info = TestInfo {
         num_iters: 10,
         max_degree: None,
