@@ -1,3 +1,7 @@
+pub mod poseidon;
+pub mod sha256;
+pub use poseidon::*;
+
 pub struct ExecutionPool<'a, T> {
     jobs: Vec<Box<dyn 'a + FnOnce() -> T + Send>>,
 }
