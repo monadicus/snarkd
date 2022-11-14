@@ -157,3 +157,22 @@ impl Message for Digest {
         self.truncate(0);
     }
 }
+
+#[cfg(feature = "rusqlite")]
+impl rusqlite::types::FromSql for Digest {
+    fn column_result(value: rusqlite::types::ValueRef<'_>) -> rusqlite::types::FromSqlResult<Self> {
+        match value {
+            rusqlite::types::ValueRef::Blob(blob) => Ok(Self::from(blob)),
+            _ => Err(rusqlite::types::FromSqlError::InvalidType),
+        }
+    }
+}
+
+#[cfg(feature = "rusqlite")]
+impl rusqlite::types::ToSql for Digest {
+    fn to_sql(&self) -> rusqlite::Result<rusqlite::types::ToSqlOutput<'_>> {
+        Ok(rusqlite::types::ToSqlOutput::Borrowed(
+            rusqlite::types::ValueRef::Blob(&self[..]),
+        ))
+    }
+}
