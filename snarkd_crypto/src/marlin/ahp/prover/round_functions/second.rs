@@ -1,41 +1,19 @@
-// Copyright (C) 2019-2022 Aleo Systems Inc.
-// This file is part of the snarkVM library.
-
-// The snarkVM library is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// The snarkVM library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with the snarkVM library. If not, see <https://www.gnu.org/licenses/>.
-
 use core::convert::TryInto;
 use std::collections::BTreeMap;
 
 use crate::{
     fft,
     fft::{
-        domain::IFFTPrecomputation,
-        polynomial::PolyMultiplier,
-        DensePolynomial,
-        EvaluationDomain,
+        domain::IFFTPrecomputation, polynomial::PolyMultiplier, DensePolynomial, EvaluationDomain,
         SparsePolynomial,
     },
     polycommit::sonic_pc::{LabeledPolynomial, PolynomialInfo, PolynomialLabel},
     snark::marlin::{
         ahp::{
             indexer::{CircuitInfo, Matrix},
-            verifier,
-            AHPForR1CS,
-            UnnormalizedBivariateLagrangePoly,
+            verifier, AHPForR1CS, UnnormalizedBivariateLagrangePoly,
         },
-        prover,
-        MarlinMode,
+        prover, MarlinMode,
     },
 };
 use snarkvm_fields::PrimeField;
@@ -54,10 +32,17 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
     }
 
     /// Output the degree bounds of oracles in the first round.
-    pub fn second_round_polynomial_info(info: &CircuitInfo<F>) -> BTreeMap<PolynomialLabel, PolynomialInfo> {
-        let constraint_domain_size = EvaluationDomain::<F>::compute_size_of_domain(info.num_constraints).unwrap();
+    pub fn second_round_polynomial_info(
+        info: &CircuitInfo<F>,
+    ) -> BTreeMap<PolynomialLabel, PolynomialInfo> {
+        let constraint_domain_size =
+            EvaluationDomain::<F>::compute_size_of_domain(info.num_constraints).unwrap();
         [
-            PolynomialInfo::new("g_1".into(), Some(constraint_domain_size - 2), Self::zk_bound()),
+            PolynomialInfo::new(
+                "g_1".into(),
+                Some(constraint_domain_size - 2),
+                Self::zk_bound(),
+            ),
             PolynomialInfo::new("h_1".into(), None, None),
         ]
         .into_iter()
@@ -76,18 +61,32 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
         let constraint_domain = state.constraint_domain;
         let zk_bound = Self::zk_bound();
 
-        let verifier::FirstMessage { alpha, eta_b, eta_c, batch_combiners } = verifier_message;
+        let verifier::FirstMessage {
+            alpha,
+            eta_b,
+            eta_c,
+            batch_combiners,
+        } = verifier_message;
 
-        let (summed_z_m, t) = Self::calculate_summed_z_m_and_t(&state, *alpha, *eta_b, *eta_c, batch_combiners);
+        let (summed_z_m, t) =
+            Self::calculate_summed_z_m_and_t(&state, *alpha, *eta_b, *eta_c, batch_combiners);
 
         let z_time = start_timer!(|| "Compute z poly");
         let z = cfg_iter!(state.first_round_oracles.as_ref().unwrap().batches)
             .zip_eq(batch_combiners)
             .zip(&state.x_poly)
             .map(|((b, &coeff), x_poly)| {
-                let mut z = b.w_poly.polynomial().as_dense().unwrap().mul_by_vanishing_poly(state.input_domain);
+                let mut z = b
+                    .w_poly
+                    .polynomial()
+                    .as_dense()
+                    .unwrap()
+                    .mul_by_vanishing_poly(state.input_domain);
                 // Zip safety: `x_poly` is smaller than `z_poly`.
-                z.coeffs.iter_mut().zip(&x_poly.coeffs).for_each(|(z, x)| *z += x);
+                z.coeffs
+                    .iter_mut()
+                    .zip(&x_poly.coeffs)
+                    .for_each(|(z, x)| *z += x);
                 cfg_iter_mut!(z.coeffs).for_each(|z| *z *= &coeff);
                 z
             })
@@ -98,12 +97,17 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
 
         let sumcheck_lhs = Self::calculate_lhs(&state, t, summed_z_m, z, *alpha);
 
-        debug_assert!(
-            sumcheck_lhs.evaluate_over_domain_by_ref(constraint_domain).evaluations.into_iter().sum::<F>().is_zero()
-        );
+        debug_assert!(sumcheck_lhs
+            .evaluate_over_domain_by_ref(constraint_domain)
+            .evaluations
+            .into_iter()
+            .sum::<F>()
+            .is_zero());
 
         let sumcheck_time = start_timer!(|| "Compute sumcheck h and g polys");
-        let (h_1, x_g_1) = sumcheck_lhs.divide_by_vanishing_poly(constraint_domain).unwrap();
+        let (h_1, x_g_1) = sumcheck_lhs
+            .divide_by_vanishing_poly(constraint_domain)
+            .unwrap();
         let g_1 = DensePolynomial::from_coefficients_slice(&x_g_1.coeffs[1..]);
         drop(x_g_1);
         end_timer!(sumcheck_time);
@@ -112,7 +116,12 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
         assert!(h_1.degree() <= 2 * constraint_domain.size() + 2 * zk_bound.unwrap_or(0) - 2);
 
         let oracles = prover::SecondOracles {
-            g_1: LabeledPolynomial::new("g_1".into(), g_1, Some(constraint_domain.size() - 2), zk_bound),
+            g_1: LabeledPolynomial::new(
+                "g_1".into(),
+                g_1,
+                Some(constraint_domain.size() - 2),
+                zk_bound,
+            ),
             h_1: LabeledPolynomial::new("h_1".into(), h_1, None, None),
         };
         assert!(oracles.matches_info(&Self::second_round_polynomial_info(&state.index.index_info)));
@@ -133,12 +142,18 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
         let constraint_domain = state.constraint_domain;
         let q_1_time = start_timer!(|| "Compute LHS of sumcheck");
 
-        let mask_poly = state.first_round_oracles.as_ref().unwrap().mask_poly.as_ref();
+        let mask_poly = state
+            .first_round_oracles
+            .as_ref()
+            .unwrap()
+            .mask_poly
+            .as_ref();
         assert_eq!(MM::ZK, mask_poly.is_some());
 
-        let mul_domain_size = (constraint_domain.size() + summed_z_m.coeffs.len()).max(t.coeffs.len() + z.len());
-        let mul_domain =
-            EvaluationDomain::new(mul_domain_size).expect("field is not smooth enough to construct domain");
+        let mul_domain_size =
+            (constraint_domain.size() + summed_z_m.coeffs.len()).max(t.coeffs.len() + z.len());
+        let mul_domain = EvaluationDomain::new(mul_domain_size)
+            .expect("field is not smooth enough to construct domain");
         let mut multiplier = PolyMultiplier::new();
         multiplier.add_precomputation(state.fft_precomputation(), state.ifft_precomputation());
         multiplier.add_polynomial(summed_z_m, "summed_z_m");
@@ -146,17 +161,24 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
         multiplier.add_polynomial(t, "t");
         let r_alpha_x_evals = {
             let r_alpha_x_evals = constraint_domain
-                .batch_eval_unnormalized_bivariate_lagrange_poly_with_diff_inputs_over_domain(alpha, &mul_domain);
+                .batch_eval_unnormalized_bivariate_lagrange_poly_with_diff_inputs_over_domain(
+                    alpha,
+                    &mul_domain,
+                );
             fft::Evaluations::from_vec_and_domain(r_alpha_x_evals, mul_domain)
         };
         multiplier.add_evaluation(r_alpha_x_evals, "r_alpha_x");
         let mut lhs = multiplier
-            .element_wise_arithmetic_4_over_domain(mul_domain, ["r_alpha_x", "summed_z_m", "z", "t"], |a, b, c, d| {
-                a * b - c * d
-            })
+            .element_wise_arithmetic_4_over_domain(
+                mul_domain,
+                ["r_alpha_x", "summed_z_m", "z", "t"],
+                |a, b, c, d| a * b - c * d,
+            )
             .unwrap();
 
-        lhs += &mask_poly.map_or(SparsePolynomial::zero(), |p| p.polynomial().as_sparse().unwrap().clone());
+        lhs += &mask_poly.map_or(SparsePolynomial::zero(), |p| {
+            p.polynomial().as_sparse().unwrap().clone()
+        });
         end_timer!(q_1_time);
         lhs
     }
@@ -208,7 +230,9 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
                         result
                     };
                     // ... and then multiplying by eta_b/eta_c, instead of just eta_b.
-                    cfg_iter_mut!(summed_z_m.coeffs).zip(&z_b.coeffs).for_each(|(c, b)| *c += eta_b_over_eta_c * b);
+                    cfg_iter_mut!(summed_z_m.coeffs)
+                        .zip(&z_b.coeffs)
+                        .for_each(|(c, b)| *c += eta_b_over_eta_c * b);
 
                     // Multiply by linear combination coefficient.
                     cfg_iter_mut!(summed_z_m.coeffs).for_each(|c| *c *= *combiner);
@@ -223,8 +247,8 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
         job_pool.add_job(|| {
             let t_poly_time = start_timer!(|| "Compute t poly");
 
-            let r_alpha_x_evals =
-                constraint_domain.batch_eval_unnormalized_bivariate_lagrange_poly_with_diff_inputs(alpha);
+            let r_alpha_x_evals = constraint_domain
+                .batch_eval_unnormalized_bivariate_lagrange_poly_with_diff_inputs(alpha);
             let t = Self::calculate_t(
                 &[&state.index.a, &state.index.b, &state.index.c],
                 [F::one(), eta_b, eta_c],
@@ -257,6 +281,7 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
                 }
             }
         }
-        fft::Evaluations::from_vec_and_domain(t_evals_on_h, *constraint_domain).interpolate_with_pc(ifft_precomputation)
+        fft::Evaluations::from_vec_and_domain(t_evals_on_h, *constraint_domain)
+            .interpolate_with_pc(ifft_precomputation)
     }
 }

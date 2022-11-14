@@ -1,19 +1,3 @@
-// Copyright (C) 2019-2022 Aleo Systems Inc.
-// This file is part of the snarkVM library.
-
-// The snarkVM library is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// The snarkVM library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with the snarkVM library. If not, see <https://www.gnu.org/licenses/>.
-
 use core::marker::PhantomData;
 
 use crate::{
@@ -22,7 +6,9 @@ use crate::{
         EvaluationDomain,
     },
     polycommit::sonic_pc::LabeledPolynomial,
-    snark::marlin::{ahp::matrices::MatrixArithmetization, AHPForR1CS, CircuitInfo, MarlinMode, Matrix},
+    snark::marlin::{
+        ahp::matrices::MatrixArithmetization, AHPForR1CS, CircuitInfo, MarlinMode, Matrix,
+    },
 };
 use snarkvm_fields::PrimeField;
 use snarkvm_utilities::{serialize::*, SerializationError};
@@ -65,7 +51,9 @@ impl<F: PrimeField, MM: MarlinMode> Circuit<F, MM> {
 
     /// The number of constraints in this R1CS instance.
     pub fn constraint_domain_size(&self) -> usize {
-        crate::fft::EvaluationDomain::<F>::new(self.index_info.num_constraints).unwrap().size()
+        crate::fft::EvaluationDomain::<F>::new(self.index_info.num_constraints)
+            .unwrap()
+            .size()
     }
 
     /// Iterate over the indexed polynomials.
@@ -91,7 +79,11 @@ impl<F: PrimeField, MM: MarlinMode> Circuit<F, MM> {
 
 impl<F: PrimeField, MM: MarlinMode> CanonicalSerialize for Circuit<F, MM> {
     #[allow(unused_mut, unused_variables)]
-    fn serialize_with_mode<W: Write>(&self, mut writer: W, compress: Compress) -> Result<(), SerializationError> {
+    fn serialize_with_mode<W: Write>(
+        &self,
+        mut writer: W,
+        compress: Compress,
+    ) -> Result<(), SerializationError> {
         self.index_info.serialize_with_mode(&mut writer, compress)?;
         self.a.serialize_with_mode(&mut writer, compress)?;
         self.b.serialize_with_mode(&mut writer, compress)?;
@@ -122,7 +114,9 @@ impl<F: PrimeField, MM: MarlinMode> snarkvm_utilities::Valid for Circuit<F, MM> 
         Ok(())
     }
 
-    fn batch_check<'a>(_batch: impl Iterator<Item = &'a Self> + Send) -> Result<(), SerializationError>
+    fn batch_check<'a>(
+        _batch: impl Iterator<Item = &'a Self> + Send,
+    ) -> Result<(), SerializationError>
     where
         Self: 'a,
     {
@@ -137,15 +131,20 @@ impl<F: PrimeField, MM: MarlinMode> CanonicalDeserialize for Circuit<F, MM> {
         compress: Compress,
         validate: Validate,
     ) -> Result<Self, SerializationError> {
-        let index_info: CircuitInfo<F> = CanonicalDeserialize::deserialize_with_mode(&mut reader, compress, validate)?;
-        let constraint_domain_size = EvaluationDomain::<F>::compute_size_of_domain(index_info.num_constraints)
-            .ok_or(SerializationError::InvalidData)?;
-        let non_zero_a_domain_size = EvaluationDomain::<F>::compute_size_of_domain(index_info.num_non_zero_a)
-            .ok_or(SerializationError::InvalidData)?;
-        let non_zero_b_domain_size = EvaluationDomain::<F>::compute_size_of_domain(index_info.num_non_zero_b)
-            .ok_or(SerializationError::InvalidData)?;
-        let non_zero_c_domain_size = EvaluationDomain::<F>::compute_size_of_domain(index_info.num_non_zero_c)
-            .ok_or(SerializationError::InvalidData)?;
+        let index_info: CircuitInfo<F> =
+            CanonicalDeserialize::deserialize_with_mode(&mut reader, compress, validate)?;
+        let constraint_domain_size =
+            EvaluationDomain::<F>::compute_size_of_domain(index_info.num_constraints)
+                .ok_or(SerializationError::InvalidData)?;
+        let non_zero_a_domain_size =
+            EvaluationDomain::<F>::compute_size_of_domain(index_info.num_non_zero_a)
+                .ok_or(SerializationError::InvalidData)?;
+        let non_zero_b_domain_size =
+            EvaluationDomain::<F>::compute_size_of_domain(index_info.num_non_zero_b)
+                .ok_or(SerializationError::InvalidData)?;
+        let non_zero_c_domain_size =
+            EvaluationDomain::<F>::compute_size_of_domain(index_info.num_non_zero_c)
+                .ok_or(SerializationError::InvalidData)?;
 
         let (fft_precomputation, ifft_precomputation) = AHPForR1CS::<F, MM>::fft_precomputation(
             constraint_domain_size,

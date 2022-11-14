@@ -1,19 +1,3 @@
-// Copyright (C) 2019-2022 Aleo Systems Inc.
-// This file is part of the snarkVM library.
-
-// The snarkVM library is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// The snarkVM library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with the snarkVM library. If not, see <https://www.gnu.org/licenses/>.
-
 use crate::{
     fft::{
         domain::{FFTPrecomputation, IFFTPrecomputation},
@@ -22,8 +6,7 @@ use crate::{
     polycommit::sonic_pc::{LCTerm, LabeledPolynomial, LinearCombination},
     snark::marlin::{
         ahp::{matrices, verifier, AHPError, CircuitInfo},
-        prover,
-        MarlinMode,
+        prover, MarlinMode,
     },
 };
 use itertools::Itertools;
@@ -70,17 +53,26 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
     /// of this protocol.
     /// The number of the variables must include the "one" variable. That is, it
     /// must be with respect to the number of formatted public inputs.
-    pub fn max_degree(num_constraints: usize, num_variables: usize, num_non_zero: usize) -> Result<usize, AHPError> {
+    pub fn max_degree(
+        num_constraints: usize,
+        num_variables: usize,
+        num_non_zero: usize,
+    ) -> Result<usize, AHPError> {
         let padded_matrix_dim = matrices::padded_matrix_dim(num_variables, num_constraints);
         let zk_bound = 1;
-        let constraint_domain_size = EvaluationDomain::<F>::compute_size_of_domain(padded_matrix_dim)
+        let constraint_domain_size =
+            EvaluationDomain::<F>::compute_size_of_domain(padded_matrix_dim)
+                .ok_or(AHPError::PolynomialDegreeTooLarge)?;
+        let non_zero_domain_size = EvaluationDomain::<F>::compute_size_of_domain(num_non_zero)
             .ok_or(AHPError::PolynomialDegreeTooLarge)?;
-        let non_zero_domain_size =
-            EvaluationDomain::<F>::compute_size_of_domain(num_non_zero).ok_or(AHPError::PolynomialDegreeTooLarge)?;
 
         Ok(*[
             2 * constraint_domain_size + zk_bound - 2,
-            if MM::ZK { 3 * constraint_domain_size + 2 * zk_bound - 3 } else { 0 }, //  mask_poly
+            if MM::ZK {
+                3 * constraint_domain_size + 2 * zk_bound - 3
+            } else {
+                0
+            }, //  mask_poly
             constraint_domain_size,
             constraint_domain_size,
             non_zero_domain_size - 1,
@@ -117,7 +109,10 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
         domain_b: EvaluationDomain<F>,
         domain_c: EvaluationDomain<F>,
     ) -> EvaluationDomain<F> {
-        [domain_a, domain_b, domain_c].into_iter().max_by_key(|d| d.size()).unwrap()
+        [domain_a, domain_b, domain_c]
+            .into_iter()
+            .max_by_key(|d| d.size())
+            .unwrap()
     }
 
     pub fn fft_precomputation(
@@ -158,8 +153,11 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
         let non_zero_c_domain = state.non_zero_c_domain;
         let input_domain = state.input_domain;
 
-        let largest_non_zero_domain =
-            Self::max_non_zero_domain_helper(state.non_zero_a_domain, state.non_zero_b_domain, state.non_zero_c_domain);
+        let largest_non_zero_domain = Self::max_non_zero_domain_helper(
+            state.non_zero_a_domain,
+            state.non_zero_b_domain,
+            state.non_zero_c_domain,
+        );
 
         let public_inputs = public_inputs
             .iter()
@@ -176,7 +174,11 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
         let eta_b = first_round_msg.eta_b;
         let eta_c = first_round_msg.eta_c;
         let batch_combiners = &first_round_msg.batch_combiners;
-        let prover::ThirdMessage { sum_a, sum_b, sum_c } = prover_third_message;
+        let prover::ThirdMessage {
+            sum_a,
+            sum_b,
+            sum_c,
+        } = prover_third_message;
 
         #[rustfmt::skip]
         let t_at_beta =
@@ -202,7 +204,8 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
         let g_1 = LinearCombination::new("g_1", [(F::one(), "g_1")]);
 
         let bivariate_poly_time = start_timer!(|| "Bivariate poly");
-        let r_alpha_at_beta = constraint_domain.eval_unnormalized_bivariate_lagrange_poly(alpha, beta);
+        let r_alpha_at_beta =
+            constraint_domain.eval_unnormalized_bivariate_lagrange_poly(alpha, beta);
         end_timer!(bivariate_poly_time);
 
         let v_H_at_alpha_time = start_timer!(|| "v_H_at_alpha");
@@ -217,16 +220,28 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
         let v_X_at_beta = input_domain.evaluate_vanishing_polynomial(beta);
         end_timer!(v_X_at_beta_time);
 
-        let z_b_s_at_beta = z_b_s.iter().map(|z_b| evals.get_lc_eval(z_b, beta)).collect::<Result<Vec<_>, _>>()?;
-        let batch_z_b_at_beta: F =
-            z_b_s_at_beta.iter().zip_eq(batch_combiners).map(|(z_b_at_beta, combiner)| *z_b_at_beta * combiner).sum();
+        let z_b_s_at_beta = z_b_s
+            .iter()
+            .map(|z_b| evals.get_lc_eval(z_b, beta))
+            .collect::<Result<Vec<_>, _>>()?;
+        let batch_z_b_at_beta: F = z_b_s_at_beta
+            .iter()
+            .zip_eq(batch_combiners)
+            .map(|(z_b_at_beta, combiner)| *z_b_at_beta * combiner)
+            .sum();
         let g_1_at_beta = evals.get_lc_eval(&g_1, beta)?;
 
         let lag_at_beta = input_domain.evaluate_all_lagrange_coefficients(beta);
         let combined_x_at_beta = batch_combiners
             .iter()
             .zip_eq(&public_inputs)
-            .map(|(c, x)| x.iter().zip_eq(&lag_at_beta).map(|(x, l)| *x * l).sum::<F>() * c)
+            .map(|(c, x)| {
+                x.iter()
+                    .zip_eq(&lag_at_beta)
+                    .map(|(x, l)| *x * l)
+                    .sum::<F>()
+                    * c
+            })
             .sum::<F>();
 
         #[rustfmt::skip]
@@ -261,27 +276,59 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
 
         let g_a = LinearCombination::new("g_a", [(F::one(), "g_a")]);
         let g_a_at_gamma = evals.get_lc_eval(&g_a, gamma)?;
-        let selector_a = largest_non_zero_domain.evaluate_selector_polynomial(non_zero_a_domain, gamma);
-        let lhs_a =
-            Self::construct_lhs("a", alpha, beta, gamma, v_H_at_alpha * v_H_at_beta, g_a_at_gamma, *sum_a, selector_a);
+        let selector_a =
+            largest_non_zero_domain.evaluate_selector_polynomial(non_zero_a_domain, gamma);
+        let lhs_a = Self::construct_lhs(
+            "a",
+            alpha,
+            beta,
+            gamma,
+            v_H_at_alpha * v_H_at_beta,
+            g_a_at_gamma,
+            *sum_a,
+            selector_a,
+        );
         matrix_sumcheck += &lhs_a;
 
         let g_b = LinearCombination::new("g_b", [(F::one(), "g_b")]);
         let g_b_at_gamma = evals.get_lc_eval(&g_b, gamma)?;
-        let selector_b = largest_non_zero_domain.evaluate_selector_polynomial(non_zero_b_domain, gamma);
-        let lhs_b =
-            Self::construct_lhs("b", alpha, beta, gamma, v_H_at_alpha * v_H_at_beta, g_b_at_gamma, *sum_b, selector_b);
+        let selector_b =
+            largest_non_zero_domain.evaluate_selector_polynomial(non_zero_b_domain, gamma);
+        let lhs_b = Self::construct_lhs(
+            "b",
+            alpha,
+            beta,
+            gamma,
+            v_H_at_alpha * v_H_at_beta,
+            g_b_at_gamma,
+            *sum_b,
+            selector_b,
+        );
         matrix_sumcheck += (r_b, &lhs_b);
 
         let g_c = LinearCombination::new("g_c", [(F::one(), "g_c")]);
         let g_c_at_gamma = evals.get_lc_eval(&g_c, gamma)?;
-        let selector_c = largest_non_zero_domain.evaluate_selector_polynomial(non_zero_c_domain, gamma);
-        let lhs_c =
-            Self::construct_lhs("c", alpha, beta, gamma, v_H_at_alpha * v_H_at_beta, g_c_at_gamma, *sum_c, selector_c);
+        let selector_c =
+            largest_non_zero_domain.evaluate_selector_polynomial(non_zero_c_domain, gamma);
+        let lhs_c = Self::construct_lhs(
+            "c",
+            alpha,
+            beta,
+            gamma,
+            v_H_at_alpha * v_H_at_beta,
+            g_c_at_gamma,
+            *sum_c,
+            selector_c,
+        );
         matrix_sumcheck += (r_c, &lhs_c);
 
-        matrix_sumcheck -=
-            &LinearCombination::new("h_2", [(largest_non_zero_domain.evaluate_vanishing_polynomial(gamma), "h_2")]);
+        matrix_sumcheck -= &LinearCombination::new(
+            "h_2",
+            [(
+                largest_non_zero_domain.evaluate_vanishing_polynomial(gamma),
+                "h_2",
+            )],
+        );
         debug_assert!(evals.get_lc_eval(&matrix_sumcheck, gamma)?.is_zero());
 
         linear_combinations.insert("g_a".into(), g_a);
@@ -303,16 +350,21 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
         sum: F,
         selector_at_gamma: F,
     ) -> LinearCombination<F> {
-        let a =
-            LinearCombination::new("a_poly_".to_string() + label, [(v_h_at_alpha_beta, "val_".to_string() + label)]);
+        let a = LinearCombination::new(
+            "a_poly_".to_string() + label,
+            [(v_h_at_alpha_beta, "val_".to_string() + label)],
+        );
         let alpha_beta = alpha * beta;
 
-        let mut b = LinearCombination::new("denom_".to_string() + label, [
-            (alpha_beta, LCTerm::One),
-            (-alpha, ("row_".to_string() + label).into()),
-            (-beta, ("col_".to_string() + label).into()),
-            (F::one(), ("row_col_".to_string() + label).into()),
-        ]);
+        let mut b = LinearCombination::new(
+            "denom_".to_string() + label,
+            [
+                (alpha_beta, LCTerm::One),
+                (-alpha, ("row_".to_string() + label).into()),
+                (-beta, ("col_".to_string() + label).into()),
+                (F::one(), ("row_col_".to_string() + label).into()),
+            ],
+        );
         b *= gamma * g_at_gamma + sum;
 
         let mut lhs = a;
@@ -334,7 +386,9 @@ pub trait EvaluationsProvider<F: PrimeField>: core::fmt::Debug {
 impl<'a, F: PrimeField> EvaluationsProvider<F> for crate::polycommit::sonic_pc::Evaluations<'a, F> {
     fn get_lc_eval(&self, lc: &LinearCombination<F>, point: F) -> Result<F, AHPError> {
         let key = (lc.label.clone(), point);
-        self.get(&key).copied().ok_or_else(|| AHPError::MissingEval(lc.label.clone()))
+        self.get(&key)
+            .copied()
+            .ok_or_else(|| AHPError::MissingEval(lc.label.clone()))
     }
 }
 
@@ -349,7 +403,9 @@ where
             let value = if let LCTerm::PolyLabel(label) = term {
                 self.iter()
                     .find(|p| (*p).borrow().label() == label)
-                    .ok_or_else(|| AHPError::MissingEval(format!("Missing {} for {}", label, lc.label)))?
+                    .ok_or_else(|| {
+                        AHPError::MissingEval(format!("Missing {} for {}", label, lc.label))
+                    })?
                     .borrow()
                     .evaluate(point)
             } else {
@@ -383,7 +439,8 @@ pub trait UnnormalizedBivariateLagrangePoly<F: PrimeField> {
 impl<F: PrimeField> UnnormalizedBivariateLagrangePoly<F> for EvaluationDomain<F> {
     fn eval_unnormalized_bivariate_lagrange_poly(&self, x: F, y: F) -> F {
         if x != y {
-            (self.evaluate_vanishing_polynomial(x) - self.evaluate_vanishing_polynomial(y)) / (x - y)
+            (self.evaluate_vanishing_polynomial(x) - self.evaluate_vanishing_polynomial(y))
+                / (x - y)
         } else {
             self.size_as_field_element * x.pow([(self.size() - 1) as u64])
         }
@@ -409,12 +466,17 @@ impl<F: PrimeField> UnnormalizedBivariateLagrangePoly<F> for EvaluationDomain<F>
             snarkvm_fields::batch_inversion(&mut denoms);
             let ratio = domain.size() / self.size();
             let mut numerators = vec![vanish_x; domain.size()];
-            cfg_iter_mut!(numerators).zip_eq(elements).enumerate().for_each(|(i, (n, e))| {
-                if i % ratio != 0 {
-                    *n -= self.evaluate_vanishing_polynomial(e);
-                }
-            });
-            cfg_iter_mut!(denoms).zip_eq(numerators).for_each(|(d, e)| *d *= e);
+            cfg_iter_mut!(numerators)
+                .zip_eq(elements)
+                .enumerate()
+                .for_each(|(i, (n, e))| {
+                    if i % ratio != 0 {
+                        *n -= self.evaluate_vanishing_polynomial(e);
+                    }
+                });
+            cfg_iter_mut!(denoms)
+                .zip_eq(numerators)
+                .for_each(|(d, e)| *d *= e);
         }
         denoms
     }
@@ -424,7 +486,10 @@ impl<F: PrimeField> UnnormalizedBivariateLagrangePoly<F> for EvaluationDomain<F>
     }
 
     fn batch_eval_unnormalized_bivariate_lagrange_poly_with_same_inputs(&self) -> Vec<F> {
-        let mut elems: Vec<F> = self.elements().map(|e| e * self.size_as_field_element).collect();
+        let mut elems: Vec<F> = self
+            .elements()
+            .map(|e| e * self.size_as_field_element)
+            .collect();
         elems[1..].reverse();
         elems
     }
@@ -456,8 +521,10 @@ mod tests {
     fn domain_unnormalized_bivariate_lagrange_poly() {
         for domain_size in 1..10 {
             let domain = EvaluationDomain::<Fr>::new(1 << domain_size).unwrap();
-            let manual: Vec<_> =
-                domain.elements().map(|elem| domain.eval_unnormalized_bivariate_lagrange_poly(elem, elem)).collect();
+            let manual: Vec<_> = domain
+                .elements()
+                .map(|elem| domain.eval_unnormalized_bivariate_lagrange_poly(elem, elem))
+                .collect();
             let fast = domain.batch_eval_unnormalized_bivariate_lagrange_poly_with_same_inputs();
             assert_eq!(fast, manual);
         }
@@ -469,8 +536,10 @@ mod tests {
         for domain_size in 1..10 {
             let domain = EvaluationDomain::<Fr>::new(1 << domain_size).unwrap();
             let x = Fr::rand(rng);
-            let manual: Vec<_> =
-                domain.elements().map(|y| domain.eval_unnormalized_bivariate_lagrange_poly(x, y)).collect();
+            let manual: Vec<_> = domain
+                .elements()
+                .map(|y| domain.eval_unnormalized_bivariate_lagrange_poly(x, y))
+                .collect();
             let fast = domain.batch_eval_unnormalized_bivariate_lagrange_poly_with_diff_inputs(x);
             assert_eq!(fast, manual);
         }
@@ -484,11 +553,19 @@ mod tests {
             let x = Fr::rand(rng);
             for other_domain_size in 1..10 {
                 let other = EvaluationDomain::<Fr>::new(1 << other_domain_size).unwrap();
-                let manual: Vec<_> =
-                    other.elements().map(|y| domain.eval_unnormalized_bivariate_lagrange_poly(x, y)).collect();
-                let fast =
-                    domain.batch_eval_unnormalized_bivariate_lagrange_poly_with_diff_inputs_over_domain(x, &other);
-                assert_eq!(fast, manual, "failed for self {:?} and other {:?}", domain, other);
+                let manual: Vec<_> = other
+                    .elements()
+                    .map(|y| domain.eval_unnormalized_bivariate_lagrange_poly(x, y))
+                    .collect();
+                let fast = domain
+                    .batch_eval_unnormalized_bivariate_lagrange_poly_with_diff_inputs_over_domain(
+                        x, &other,
+                    );
+                assert_eq!(
+                    fast, manual,
+                    "failed for self {:?} and other {:?}",
+                    domain, other
+                );
             }
         }
     }
@@ -527,15 +604,30 @@ mod tests {
                 let slow_selector = {
                     let evals = domain_i
                         .elements()
-                        .map(|e| if j_elements.contains(&e) { Fr::one() } else { Fr::zero() })
+                        .map(|e| {
+                            if j_elements.contains(&e) {
+                                Fr::one()
+                            } else {
+                                Fr::zero()
+                            }
+                        })
                         .collect();
                     Evaluations::from_vec_and_domain(evals, domain_i).interpolate()
                 };
-                assert_eq!(slow_selector.evaluate(point), domain_i.evaluate_selector_polynomial(domain_j, point));
+                assert_eq!(
+                    slow_selector.evaluate(point),
+                    domain_i.evaluate_selector_polynomial(domain_j, point)
+                );
 
                 for element in domain_i.elements() {
                     if j_elements.contains(&element) {
-                        assert_eq!(slow_selector.evaluate(element), Fr::one(), "failed for {} vs {}", i, j);
+                        assert_eq!(
+                            slow_selector.evaluate(element),
+                            Fr::one(),
+                            "failed for {} vs {}",
+                            i,
+                            j
+                        );
                     } else {
                         assert_eq!(slow_selector.evaluate(element), Fr::zero());
                     }

@@ -1,32 +1,13 @@
-// Copyright (C) 2019-2022 Aleo Systems Inc.
-// This file is part of the snarkVM library.
-
-// The snarkVM library is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// The snarkVM library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with the snarkVM library. If not, see <https://www.gnu.org/licenses/>.
-
 use std::sync::Arc;
 
 use crate::{
     fft::{
         domain::{FFTPrecomputation, IFFTPrecomputation},
-        DensePolynomial,
-        EvaluationDomain,
-        Evaluations as EvaluationsOnDomain,
+        DensePolynomial, EvaluationDomain, Evaluations as EvaluationsOnDomain,
     },
     snark::marlin::{
         ahp::{indexer::Circuit, verifier},
-        AHPError,
-        MarlinMode,
+        AHPError, MarlinMode,
     },
 };
 use snarkvm_fields::PrimeField;
@@ -96,23 +77,24 @@ impl<'a, F: PrimeField, MM: MarlinMode> State<'a, F, MM> {
         index: &'a Circuit<F, MM>,
     ) -> Result<Self, AHPError> {
         let index_info = &index.index_info;
-        let constraint_domain =
-            EvaluationDomain::new(index_info.num_constraints).ok_or(SynthesisError::PolynomialDegreeTooLarge)?;
+        let constraint_domain = EvaluationDomain::new(index_info.num_constraints)
+            .ok_or(SynthesisError::PolynomialDegreeTooLarge)?;
 
-        let non_zero_a_domain =
-            EvaluationDomain::new(index_info.num_non_zero_a).ok_or(SynthesisError::PolynomialDegreeTooLarge)?;
-        let non_zero_b_domain =
-            EvaluationDomain::new(index_info.num_non_zero_b).ok_or(SynthesisError::PolynomialDegreeTooLarge)?;
-        let non_zero_c_domain =
-            EvaluationDomain::new(index_info.num_non_zero_c).ok_or(SynthesisError::PolynomialDegreeTooLarge)?;
+        let non_zero_a_domain = EvaluationDomain::new(index_info.num_non_zero_a)
+            .ok_or(SynthesisError::PolynomialDegreeTooLarge)?;
+        let non_zero_b_domain = EvaluationDomain::new(index_info.num_non_zero_b)
+            .ok_or(SynthesisError::PolynomialDegreeTooLarge)?;
+        let non_zero_c_domain = EvaluationDomain::new(index_info.num_non_zero_c)
+            .ok_or(SynthesisError::PolynomialDegreeTooLarge)?;
 
-        let input_domain =
-            EvaluationDomain::new(padded_public_input[0].len()).ok_or(SynthesisError::PolynomialDegreeTooLarge)?;
+        let input_domain = EvaluationDomain::new(padded_public_input[0].len())
+            .ok_or(SynthesisError::PolynomialDegreeTooLarge)?;
 
         let x_poly = padded_public_input
             .iter()
             .map(|padded_public_input| {
-                EvaluationsOnDomain::from_vec_and_domain(padded_public_input.clone(), input_domain).interpolate()
+                EvaluationsOnDomain::from_vec_and_domain(padded_public_input.clone(), input_domain)
+                    .interpolate()
             })
             .collect();
         let batch_size = private_variables.len();
@@ -146,7 +128,10 @@ impl<'a, F: PrimeField, MM: MarlinMode> State<'a, F, MM> {
 
     /// Get the public inputs for the entire batch.
     pub fn public_inputs(&self) -> Vec<Vec<F>> {
-        self.padded_public_variables.iter().map(|v| super::ConstraintSystem::unformat_public_input(v)).collect()
+        self.padded_public_variables
+            .iter()
+            .map(|v| super::ConstraintSystem::unformat_public_input(v))
+            .collect()
     }
 
     /// Get the padded public inputs for the entire batch.

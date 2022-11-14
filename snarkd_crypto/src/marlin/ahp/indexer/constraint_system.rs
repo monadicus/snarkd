@@ -1,22 +1,10 @@
-// Copyright (C) 2019-2022 Aleo Systems Inc.
-// This file is part of the snarkVM library.
-
-// The snarkVM library is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// The snarkVM library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with the snarkVM library. If not, see <https://www.gnu.org/licenses/>.
-
-use crate::snark::marlin::ahp::matrices::{make_matrices_square, padded_matrix_dim, to_matrix_helper};
+use crate::snark::marlin::ahp::matrices::{
+    make_matrices_square, padded_matrix_dim, to_matrix_helper,
+};
 use snarkvm_fields::Field;
-use snarkvm_r1cs::{errors::SynthesisError, ConstraintSystem as CS, Index as VarIndex, LinearCombination, Variable};
+use snarkvm_r1cs::{
+    errors::SynthesisError, ConstraintSystem as CS, Index as VarIndex, LinearCombination, Variable,
+};
 use snarkvm_utilities::serialize::*;
 
 /// Stores constraints during index generation.
@@ -62,7 +50,11 @@ impl<F: Field> ConstraintSystem<F> {
         let num_variables = self.num_public_variables + self.num_private_variables;
         let matrix_dim = padded_matrix_dim(num_variables, self.num_constraints);
         make_matrices_square(self, num_variables);
-        assert_eq!(self.num_public_variables + self.num_private_variables, self.num_constraints, "padding failed!");
+        assert_eq!(
+            self.num_public_variables + self.num_private_variables,
+            self.num_constraints,
+            "padding failed!"
+        );
         assert_eq!(
             self.num_public_variables + self.num_private_variables,
             matrix_dim,
@@ -72,7 +64,10 @@ impl<F: Field> ConstraintSystem<F> {
 
     #[inline]
     fn make_row(l: &LinearCombination<F>) -> Vec<(F, VarIndex)> {
-        l.as_ref().iter().map(|(var, coeff)| (*coeff, var.get_unchecked())).collect()
+        l.as_ref()
+            .iter()
+            .map(|(var, coeff)| (*coeff, var.get_unchecked()))
+            .collect()
     }
 }
 

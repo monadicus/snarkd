@@ -1,19 +1,3 @@
-// Copyright (C) 2019-2022 Aleo Systems Inc.
-// This file is part of the snarkVM library.
-
-// The snarkVM library is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// The snarkVM library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with the snarkVM library. If not, see <https://www.gnu.org/licenses/>.
-
 use core::convert::TryInto;
 use std::collections::BTreeMap;
 
@@ -21,16 +5,13 @@ use crate::{
     fft::{
         domain::{FFTPrecomputation, IFFTPrecomputation},
         polynomial::PolyMultiplier,
-        DensePolynomial,
-        EvaluationDomain,
-        Evaluations as EvaluationsOnDomain,
+        DensePolynomial, EvaluationDomain, Evaluations as EvaluationsOnDomain,
     },
     polycommit::sonic_pc::{LabeledPolynomial, PolynomialInfo, PolynomialLabel},
     snark::marlin::{
         ahp::{indexer::CircuitInfo, verifier, AHPError, AHPForR1CS},
         matrices::MatrixArithmetization,
-        prover,
-        MarlinMode,
+        prover, MarlinMode,
     },
 };
 use snarkvm_fields::{batch_inversion_and_mul, PrimeField};
@@ -50,10 +31,15 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
     }
 
     /// Output the degree bounds of oracles in the first round.
-    pub fn third_round_polynomial_info(info: &CircuitInfo<F>) -> BTreeMap<PolynomialLabel, PolynomialInfo> {
-        let non_zero_a_size = EvaluationDomain::<F>::compute_size_of_domain(info.num_non_zero_a).unwrap();
-        let non_zero_b_size = EvaluationDomain::<F>::compute_size_of_domain(info.num_non_zero_b).unwrap();
-        let non_zero_c_size = EvaluationDomain::<F>::compute_size_of_domain(info.num_non_zero_c).unwrap();
+    pub fn third_round_polynomial_info(
+        info: &CircuitInfo<F>,
+    ) -> BTreeMap<PolynomialLabel, PolynomialInfo> {
+        let non_zero_a_size =
+            EvaluationDomain::<F>::compute_size_of_domain(info.num_non_zero_a).unwrap();
+        let non_zero_b_size =
+            EvaluationDomain::<F>::compute_size_of_domain(info.num_non_zero_b).unwrap();
+        let non_zero_c_size =
+            EvaluationDomain::<F>::compute_size_of_domain(info.num_non_zero_c).unwrap();
 
         [
             PolynomialInfo::new("g_a".into(), Some(non_zero_a_size - 2), None),
@@ -70,22 +56,31 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
         verifier_message: &verifier::SecondMessage<F>,
         mut state: prover::State<'a, F, MM>,
         _r: &mut R,
-    ) -> Result<(prover::ThirdMessage<F>, prover::ThirdOracles<F>, prover::State<'a, F, MM>), AHPError> {
+    ) -> Result<
+        (
+            prover::ThirdMessage<F>,
+            prover::ThirdOracles<F>,
+            prover::State<'a, F, MM>,
+        ),
+        AHPError,
+    > {
         let round_time = start_timer!(|| "AHP::Prover::ThirdRound");
 
-        let verifier::FirstMessage { alpha, .. } = state
-            .verifier_first_message
-            .as_ref()
-            .expect("prover::State should include verifier_first_msg when prover_third_round is called");
+        let verifier::FirstMessage { alpha, .. } = state.verifier_first_message.as_ref().expect(
+            "prover::State should include verifier_first_msg when prover_third_round is called",
+        );
 
         let beta = verifier_message.beta;
 
-        let v_H_at_alpha = state.constraint_domain.evaluate_vanishing_polynomial(*alpha);
+        let v_H_at_alpha = state
+            .constraint_domain
+            .evaluate_vanishing_polynomial(*alpha);
         let v_H_at_beta = state.constraint_domain.evaluate_vanishing_polynomial(beta);
 
         let v_H_alpha_v_H_beta = v_H_at_alpha * v_H_at_beta;
 
-        let largest_non_zero_domain_size = Self::max_non_zero_domain(&state.index.index_info).size_as_field_element;
+        let largest_non_zero_domain_size =
+            Self::max_non_zero_domain(&state.index.index_info).size_as_field_element;
         let mut pool = ExecutionPool::with_capacity(3);
         pool.add_job(|| {
             Self::matrix_sumcheck_helper(
@@ -132,7 +127,11 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
         let [(sum_a, lhs_a, g_a), (sum_b, lhs_b, g_b), (sum_c, lhs_c, g_c)]: [_; 3] =
             pool.execute_all().try_into().unwrap();
 
-        let msg = prover::ThirdMessage { sum_a, sum_b, sum_c };
+        let msg = prover::ThirdMessage {
+            sum_a,
+            sum_b,
+            sum_c,
+        };
         let oracles = prover::ThirdOracles { g_a, g_b, g_c };
         state.lhs_polynomials = Some([lhs_a, lhs_b, lhs_c]);
         state.sums = Some([sum_a, sum_b, sum_c]);
@@ -168,8 +167,11 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
             a_poly
         });
 
-        let (row_on_K, col_on_K, row_col_on_K) =
-            (&arithmetization.evals_on_K.row, &arithmetization.evals_on_K.col, &arithmetization.evals_on_K.row_col);
+        let (row_on_K, col_on_K, row_col_on_K) = (
+            &arithmetization.evals_on_K.row,
+            &arithmetization.evals_on_K.col,
+            &arithmetization.evals_on_K.row_col,
+        );
 
         job_pool.add_job(|| {
             let b_poly_time = start_timer!(|| "Computing b poly");
@@ -195,7 +197,9 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
             .collect();
         batch_inversion_and_mul(&mut inverses, &v_H_alpha_v_H_beta);
 
-        cfg_iter_mut!(inverses).zip_eq(&arithmetization.evals_on_K.val.evaluations).for_each(|(inv, a)| *inv *= a);
+        cfg_iter_mut!(inverses)
+            .zip_eq(&arithmetization.evals_on_K.val.evaluations)
+            .for_each(|(inv, a)| *inv *= a);
         let f_evals_on_K = inverses;
         end_timer!(f_evals_time);
 
@@ -226,7 +230,12 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
         let multiplier = non_zero_domain.size_as_field_element / largest_non_zero_domain_size;
         cfg_iter_mut!(h.coeffs).for_each(|c| *c *= multiplier);
 
-        let g = LabeledPolynomial::new("g_".to_string() + label, g, Some(non_zero_domain.size() - 2), None);
+        let g = LabeledPolynomial::new(
+            "g_".to_string() + label,
+            g,
+            Some(non_zero_domain.size() - 2),
+            None,
+        );
 
         assert!(h.degree() <= non_zero_domain.size() - 2);
         assert!(g.degree() <= non_zero_domain.size() - 2);

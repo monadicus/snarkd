@@ -1,19 +1,3 @@
-// Copyright (C) 2019-2022 Aleo Systems Inc.
-// This file is part of the snarkVM library.
-
-// The snarkVM library is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// The snarkVM library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with the snarkVM library. If not, see <https://www.gnu.org/licenses/>.
-
 use crate::{polycommit::sonic_pc, snark::marlin::ahp};
 
 use snarkvm_curves::PairingEngine;
@@ -22,8 +6,7 @@ use snarkvm_utilities::{
     error,
     io::{self, Read, Write},
     serialize::*,
-    FromBytes,
-    ToBytes,
+    FromBytes, ToBytes,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, CanonicalSerialize, CanonicalDeserialize)]
@@ -86,11 +69,19 @@ impl<E: PairingEngine> Commitments<E> {
     ) -> Result<Self, snarkvm_utilities::SerializationError> {
         let mut witness_commitments = Vec::new();
         for _ in 0..batch_size {
-            witness_commitments.push(CanonicalDeserialize::deserialize_with_mode(&mut reader, compress, validate)?);
+            witness_commitments.push(CanonicalDeserialize::deserialize_with_mode(
+                &mut reader,
+                compress,
+                validate,
+            )?);
         }
         Ok(Commitments {
             witness_commitments,
-            mask_poly: CanonicalDeserialize::deserialize_with_mode(&mut reader, compress, validate)?,
+            mask_poly: CanonicalDeserialize::deserialize_with_mode(
+                &mut reader,
+                compress,
+                validate,
+            )?,
             g_1: CanonicalDeserialize::deserialize_with_mode(&mut reader, compress, validate)?,
             h_1: CanonicalDeserialize::deserialize_with_mode(&mut reader, compress, validate)?,
             g_a: CanonicalDeserialize::deserialize_with_mode(&mut reader, compress, validate)?,
@@ -143,7 +134,11 @@ impl<F: PrimeField> Evaluations<F> {
 
     fn serialized_size(&self, compress: Compress) -> usize {
         let mut size = 0;
-        size += self.z_b_evals.iter().map(|s| s.serialized_size(compress)).sum::<usize>();
+        size += self
+            .z_b_evals
+            .iter()
+            .map(|s| s.serialized_size(compress))
+            .sum::<usize>();
         size += CanonicalSerialize::serialized_size(&self.g_1_eval, compress);
         size += CanonicalSerialize::serialized_size(&self.g_a_eval, compress);
         size += CanonicalSerialize::serialized_size(&self.g_b_eval, compress);
@@ -159,7 +154,11 @@ impl<F: PrimeField> Evaluations<F> {
     ) -> Result<Self, snarkvm_utilities::SerializationError> {
         let mut z_b_evals = Vec::with_capacity(batch_size);
         for _ in 0..batch_size {
-            z_b_evals.push(CanonicalDeserialize::deserialize_with_mode(&mut reader, compress, validate)?);
+            z_b_evals.push(CanonicalDeserialize::deserialize_with_mode(
+                &mut reader,
+                compress,
+                validate,
+            )?);
         }
         Ok(Evaluations {
             z_b_evals,
@@ -173,9 +172,18 @@ impl<F: PrimeField> Evaluations<F> {
 
 impl<F: PrimeField> Evaluations<F> {
     pub(crate) fn from_map(map: &std::collections::BTreeMap<String, F>, batch_size: usize) -> Self {
-        let z_b_evals = map.iter().filter_map(|(k, v)| k.starts_with("z_b_").then_some(*v)).collect::<Vec<_>>();
+        let z_b_evals = map
+            .iter()
+            .filter_map(|(k, v)| k.starts_with("z_b_").then_some(*v))
+            .collect::<Vec<_>>();
         assert_eq!(z_b_evals.len(), batch_size);
-        Self { z_b_evals, g_1_eval: map["g_1"], g_a_eval: map["g_a"], g_b_eval: map["g_b"], g_c_eval: map["g_c"] }
+        Self {
+            z_b_evals,
+            g_1_eval: map["g_1"],
+            g_a_eval: map["g_a"],
+            g_b_eval: map["g_b"],
+            g_c_eval: map["g_c"],
+        }
     }
 
     pub(crate) fn get(&self, label: &str) -> Option<F> {
@@ -239,12 +247,22 @@ impl<E: PairingEngine> Proof<E> {
         msg: ahp::prover::ThirdMessage<E::Fr>,
         pc_proof: sonic_pc::BatchLCProof<E>,
     ) -> Self {
-        Self { batch_size, commitments, evaluations, msg, pc_proof }
+        Self {
+            batch_size,
+            commitments,
+            evaluations,
+            msg,
+            pc_proof,
+        }
     }
 }
 
 impl<E: PairingEngine> CanonicalSerialize for Proof<E> {
-    fn serialize_with_mode<W: Write>(&self, mut writer: W, compress: Compress) -> Result<(), SerializationError> {
+    fn serialize_with_mode<W: Write>(
+        &self,
+        mut writer: W,
+        compress: Compress,
+    ) -> Result<(), SerializationError> {
         CanonicalSerialize::serialize_with_mode(&self.batch_size, &mut writer, compress)?;
         Commitments::serialize_with_mode(&self.commitments, &mut writer, compress)?;
         Evaluations::serialize_with_mode(&self.evaluations, &mut writer, compress)?;
@@ -280,11 +298,22 @@ impl<E: PairingEngine> CanonicalDeserialize for Proof<E> {
         compress: Compress,
         validate: Validate,
     ) -> Result<Self, SerializationError> {
-        let batch_size = CanonicalDeserialize::deserialize_with_mode(&mut reader, compress, validate)?;
+        let batch_size =
+            CanonicalDeserialize::deserialize_with_mode(&mut reader, compress, validate)?;
         Ok(Proof {
             batch_size,
-            commitments: Commitments::deserialize_with_mode(batch_size, &mut reader, compress, validate)?,
-            evaluations: Evaluations::deserialize_with_mode(batch_size, &mut reader, compress, validate)?,
+            commitments: Commitments::deserialize_with_mode(
+                batch_size,
+                &mut reader,
+                compress,
+                validate,
+            )?,
+            evaluations: Evaluations::deserialize_with_mode(
+                batch_size,
+                &mut reader,
+                compress,
+                validate,
+            )?,
             msg: CanonicalDeserialize::deserialize_with_mode(&mut reader, compress, validate)?,
             pc_proof: CanonicalDeserialize::deserialize_with_mode(&mut reader, compress, validate)?,
         })

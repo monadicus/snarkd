@@ -1,24 +1,10 @@
-// Copyright (C) 2019-2022 Aleo Systems Inc.
-// This file is part of the snarkVM library.
-
-// The snarkVM library is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// The snarkVM library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with the snarkVM library. If not, see <https://www.gnu.org/licenses/>.
-
 use std::collections::BTreeMap;
 
 use snarkvm_fields::PrimeField;
 
-use crate::polycommit::sonic_pc::{LabeledPolynomial, LabeledPolynomialWithBasis, PolynomialInfo, PolynomialLabel};
+use crate::polycommit::sonic_pc::{
+    LabeledPolynomial, LabeledPolynomialWithBasis, PolynomialInfo, PolynomialLabel,
+};
 
 /// The first set of prover oracles.
 #[derive(Debug, Clone)]
@@ -33,19 +19,29 @@ impl<'a, F: PrimeField> FirstOracles<'a, F> {
     /// Intended for use when committing.
     #[allow(clippy::needless_collect)]
     pub fn iter_for_commit(&mut self) -> impl Iterator<Item = LabeledPolynomialWithBasis<'a, F>> {
-        let t = self.batches.iter_mut().flat_map(|b| b.iter_for_commit()).collect::<Vec<_>>();
+        let t = self
+            .batches
+            .iter_mut()
+            .flat_map(|b| b.iter_for_commit())
+            .collect::<Vec<_>>();
         t.into_iter().chain(self.mask_poly.clone().map(Into::into))
     }
 
     /// Iterate over the polynomials output by the prover in the first round.
     /// Intended for use when opening.
     pub fn iter_for_open(&'a self) -> impl Iterator<Item = &'a LabeledPolynomial<F>> {
-        self.batches.iter().flat_map(|b| b.iter_for_open()).chain(self.mask_poly.as_ref())
+        self.batches
+            .iter()
+            .flat_map(|b| b.iter_for_open())
+            .chain(self.mask_poly.as_ref())
     }
 
     pub fn matches_info(&self, info: &BTreeMap<PolynomialLabel, PolynomialInfo>) -> bool {
         self.batches.iter().all(|b| b.matches_info(info))
-            && self.mask_poly.as_ref().map_or(true, |p| Some(p.info()) == info.get(p.label()))
+            && self
+                .mask_poly
+                .as_ref()
+                .map_or(true, |p| Some(p.info()) == info.get(p.label()))
     }
 }
 
@@ -70,10 +66,16 @@ impl<'a, F: PrimeField> SingleEntry<'a, F> {
         let w_poly = self.w_poly.clone();
 
         let z_a = self.z_a.clone();
-        self.z_a = LabeledPolynomialWithBasis { polynomial: vec![], info: z_a.info().clone() };
+        self.z_a = LabeledPolynomialWithBasis {
+            polynomial: vec![],
+            info: z_a.info().clone(),
+        };
 
         let z_b = self.z_b.clone();
-        self.z_b = LabeledPolynomialWithBasis { polynomial: vec![], info: z_b.info().clone() };
+        self.z_b = LabeledPolynomialWithBasis {
+            polynomial: vec![],
+            info: z_b.info().clone(),
+        };
         [w_poly.into(), z_a, z_b].into_iter()
     }
 
@@ -108,7 +110,8 @@ impl<F: PrimeField> SecondOracles<F> {
     }
 
     pub fn matches_info(&self, info: &BTreeMap<PolynomialLabel, PolynomialInfo>) -> bool {
-        Some(self.h_1.info()) == info.get(self.h_1.label()) && Some(self.g_1.info()) == info.get(self.g_1.label())
+        Some(self.h_1.info()) == info.get(self.h_1.label())
+            && Some(self.g_1.info()) == info.get(self.g_1.label())
     }
 }
 

@@ -1,23 +1,6 @@
-// Copyright (C) 2019-2022 Aleo Systems Inc.
-// This file is part of the snarkVM library.
-
-// The snarkVM library is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// The snarkVM library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with the snarkVM library. If not, see <https://www.gnu.org/licenses/>.
-
 use crate::snark::marlin::{
     ahp::{indexer::Circuit, AHPError, AHPForR1CS},
-    prover,
-    MarlinMode,
+    prover, MarlinMode,
 };
 use itertools::Itertools;
 use snarkvm_fields::PrimeField;
@@ -74,7 +57,10 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
                 assert_eq!(private_variables.len(), num_private_variables);
 
                 if cfg!(debug_assertions) {
-                    println!("Number of padded public variables in Prover::Init: {}", num_public_variables);
+                    println!(
+                        "Number of padded public variables in Prover::Init: {}",
+                        num_public_variables
+                    );
                     println!("Number of private variables: {}", num_private_variables);
                     println!("Number of constraints: {}", num_constraints);
                     println!("Number of non-zero entries in A: {}", num_non_zero_a);
@@ -83,7 +69,8 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
                 }
 
                 if index.index_info.num_constraints != num_constraints
-                    || index.index_info.num_variables != (num_public_variables + num_private_variables)
+                    || index.index_info.num_variables
+                        != (num_public_variables + num_private_variables)
                 {
                     return Err(AHPError::InstanceDoesNotMatchIndex);
                 }
@@ -92,13 +79,27 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
 
                 let eval_z_a_time = start_timer!(|| "Evaluating z_A");
                 let z_a = cfg_iter!(index.a)
-                    .map(|row| inner_product(&padded_public_variables, &private_variables, row, num_public_variables))
+                    .map(|row| {
+                        inner_product(
+                            &padded_public_variables,
+                            &private_variables,
+                            row,
+                            num_public_variables,
+                        )
+                    })
                     .collect();
                 end_timer!(eval_z_a_time);
 
                 let eval_z_b_time = start_timer!(|| "Evaluating z_B");
                 let z_b = cfg_iter!(index.b)
-                    .map(|row| inner_product(&padded_public_variables, &private_variables, row, num_public_variables))
+                    .map(|row| {
+                        inner_product(
+                            &padded_public_variables,
+                            &private_variables,
+                            row,
+                            num_public_variables,
+                        )
+                    })
                     .collect();
                 end_timer!(eval_z_b_time);
                 end_timer!(init_time);
@@ -108,7 +109,8 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
             .into_iter()
             .multiunzip();
 
-        let mut state = prover::State::initialize(padded_public_variables, private_variables, index)?;
+        let mut state =
+            prover::State::initialize(padded_public_variables, private_variables, index)?;
         state.z_a = Some(z_a);
         state.z_b = Some(z_b);
 
@@ -131,7 +133,11 @@ fn inner_product<F: PrimeField>(
             false => private_variables[i - num_public_variables],
         };
 
-        result += if coefficient.is_one() { variable } else { variable * coefficient };
+        result += if coefficient.is_one() {
+            variable
+        } else {
+            variable * coefficient
+        };
     }
 
     result

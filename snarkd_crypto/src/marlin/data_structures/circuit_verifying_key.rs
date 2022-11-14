@@ -1,19 +1,3 @@
-// Copyright (C) 2019-2022 Aleo Systems Inc.
-// This file is part of the snarkVM library.
-
-// The snarkVM library is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// The snarkVM library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with the snarkVM library. If not, see <https://www.gnu.org/licenses/>.
-
 use crate::{
     fft::EvaluationDomain,
     polycommit::sonic_pc,
@@ -28,11 +12,7 @@ use snarkvm_utilities::{
     io::{self, Read, Write},
     serialize::*,
     string::String,
-    FromBytes,
-    FromBytesDeserializer,
-    ToBytes,
-    ToBytesSerializer,
-    ToMinimalBits,
+    FromBytes, FromBytesDeserializer, ToBytes, ToBytesSerializer, ToMinimalBits,
 };
 
 use anyhow::Result;
@@ -58,13 +38,17 @@ impl<E: PairingEngine, MM: MarlinMode> Prepare for CircuitVerifyingKey<E, MM> {
     /// Prepare the circuit verifying key.
     fn prepare(&self) -> Self::Prepared {
         let constraint_domain_size =
-            EvaluationDomain::<E::Fr>::compute_size_of_domain(self.circuit_info.num_constraints).unwrap() as u64;
+            EvaluationDomain::<E::Fr>::compute_size_of_domain(self.circuit_info.num_constraints)
+                .unwrap() as u64;
         let non_zero_a_domain_size =
-            EvaluationDomain::<E::Fr>::compute_size_of_domain(self.circuit_info.num_non_zero_a).unwrap() as u64;
+            EvaluationDomain::<E::Fr>::compute_size_of_domain(self.circuit_info.num_non_zero_a)
+                .unwrap() as u64;
         let non_zero_b_domain_size =
-            EvaluationDomain::<E::Fr>::compute_size_of_domain(self.circuit_info.num_non_zero_b).unwrap() as u64;
+            EvaluationDomain::<E::Fr>::compute_size_of_domain(self.circuit_info.num_non_zero_b)
+                .unwrap() as u64;
         let non_zero_c_domain_size =
-            EvaluationDomain::<E::Fr>::compute_size_of_domain(self.circuit_info.num_non_zero_b).unwrap() as u64;
+            EvaluationDomain::<E::Fr>::compute_size_of_domain(self.circuit_info.num_non_zero_b)
+                .unwrap() as u64;
 
         PreparedCircuitVerifyingKey {
             constraint_domain_size,
@@ -76,19 +60,25 @@ impl<E: PairingEngine, MM: MarlinMode> Prepare for CircuitVerifyingKey<E, MM> {
     }
 }
 
-impl<E: PairingEngine, MM: MarlinMode> From<CircuitProvingKey<E, MM>> for CircuitVerifyingKey<E, MM> {
+impl<E: PairingEngine, MM: MarlinMode> From<CircuitProvingKey<E, MM>>
+    for CircuitVerifyingKey<E, MM>
+{
     fn from(other: CircuitProvingKey<E, MM>) -> Self {
         other.circuit_verifying_key
     }
 }
 
-impl<'a, E: PairingEngine, MM: MarlinMode> From<&'a CircuitProvingKey<E, MM>> for CircuitVerifyingKey<E, MM> {
+impl<'a, E: PairingEngine, MM: MarlinMode> From<&'a CircuitProvingKey<E, MM>>
+    for CircuitVerifyingKey<E, MM>
+{
     fn from(other: &'a CircuitProvingKey<E, MM>) -> Self {
         other.circuit_verifying_key.clone()
     }
 }
 
-impl<E: PairingEngine, MM: MarlinMode> From<PreparedCircuitVerifyingKey<E, MM>> for CircuitVerifyingKey<E, MM> {
+impl<E: PairingEngine, MM: MarlinMode> From<PreparedCircuitVerifyingKey<E, MM>>
+    for CircuitVerifyingKey<E, MM>
+{
     fn from(other: PreparedCircuitVerifyingKey<E, MM>) -> Self {
         other.orig_vk
     }
@@ -155,13 +145,15 @@ impl<E: PairingEngine, MM: MarlinMode> ToMinimalBits for CircuitVerifyingKey<E, 
 
 impl<E: PairingEngine, MM: MarlinMode> FromBytes for CircuitVerifyingKey<E, MM> {
     fn read_le<R: Read>(r: R) -> io::Result<Self> {
-        Self::deserialize_compressed(r).map_err(|_| error("could not deserialize CircuitVerifyingKey"))
+        Self::deserialize_compressed(r)
+            .map_err(|_| error("could not deserialize CircuitVerifyingKey"))
     }
 }
 
 impl<E: PairingEngine, MM: MarlinMode> ToBytes for CircuitVerifyingKey<E, MM> {
     fn write_le<W: Write>(&self, w: W) -> io::Result<()> {
-        self.serialize_compressed(w).map_err(|_| error("could not serialize CircuitVerifyingKey"))
+        self.serialize_compressed(w)
+            .map_err(|_| error("could not serialize CircuitVerifyingKey"))
     }
 }
 
@@ -175,13 +167,17 @@ impl<E: PairingEngine, MM: MarlinMode> CircuitVerifyingKey<E, MM> {
 impl<E: PairingEngine, MM: MarlinMode> ToConstraintField<E::Fq> for CircuitVerifyingKey<E, MM> {
     fn to_field_elements(&self) -> Result<Vec<E::Fq>, ConstraintFieldError> {
         let constraint_domain_size =
-            EvaluationDomain::<E::Fr>::compute_size_of_domain(self.circuit_info.num_constraints).unwrap() as u128;
+            EvaluationDomain::<E::Fr>::compute_size_of_domain(self.circuit_info.num_constraints)
+                .unwrap() as u128;
         let non_zero_a_domain_size =
-            EvaluationDomain::<E::Fr>::compute_size_of_domain(self.circuit_info.num_non_zero_a).unwrap() as u128;
+            EvaluationDomain::<E::Fr>::compute_size_of_domain(self.circuit_info.num_non_zero_a)
+                .unwrap() as u128;
         let non_zero_b_domain_size =
-            EvaluationDomain::<E::Fr>::compute_size_of_domain(self.circuit_info.num_non_zero_b).unwrap() as u128;
+            EvaluationDomain::<E::Fr>::compute_size_of_domain(self.circuit_info.num_non_zero_b)
+                .unwrap() as u128;
         let non_zero_c_domain_size =
-            EvaluationDomain::<E::Fr>::compute_size_of_domain(self.circuit_info.num_non_zero_c).unwrap() as u128;
+            EvaluationDomain::<E::Fr>::compute_size_of_domain(self.circuit_info.num_non_zero_c)
+                .unwrap() as u128;
 
         let mut res = Vec::new();
         res.append(&mut E::Fq::from(constraint_domain_size).to_field_elements()?);
@@ -210,7 +206,10 @@ impl<E: PairingEngine, MM: MarlinMode> FromStr for CircuitVerifyingKey<E, MM> {
 impl<E: PairingEngine, MM: MarlinMode> fmt::Display for CircuitVerifyingKey<E, MM> {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let vk_hex = hex::encode(self.to_bytes_le().expect("Failed to convert verifying key to bytes"));
+        let vk_hex = hex::encode(
+            self.to_bytes_le()
+                .expect("Failed to convert verifying key to bytes"),
+        );
         write!(f, "{}", vk_hex)
     }
 }
@@ -233,7 +232,10 @@ impl<'de, E: PairingEngine, MM: MarlinMode> Deserialize<'de> for CircuitVerifyin
                 let s: String = Deserialize::deserialize(deserializer)?;
                 FromStr::from_str(&s).map_err(de::Error::custom)
             }
-            false => FromBytesDeserializer::<Self>::deserialize_with_size_encoding(deserializer, "verifying key"),
+            false => FromBytesDeserializer::<Self>::deserialize_with_size_encoding(
+                deserializer,
+                "verifying key",
+            ),
         }
     }
 }

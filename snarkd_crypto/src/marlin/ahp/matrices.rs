@@ -1,19 +1,3 @@
-// Copyright (C) 2019-2022 Aleo Systems Inc.
-// This file is part of the snarkVM library.
-
-// The snarkVM library is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// The snarkVM library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with the snarkVM library. If not, see <https://www.gnu.org/licenses/>.
-
 #![allow(non_snake_case)]
 
 use crate::{
@@ -35,7 +19,10 @@ use rayon::prelude::*;
 
 // This function converts a matrix output by Zexe's constraint infrastructure
 // to the one used in this crate.
-pub(crate) fn to_matrix_helper<F: Field>(matrix: &[Vec<(F, VarIndex)>], num_input_variables: usize) -> Matrix<F> {
+pub(crate) fn to_matrix_helper<F: Field>(
+    matrix: &[Vec<(F, VarIndex)>],
+    num_input_variables: usize,
+) -> Matrix<F> {
     cfg_iter!(matrix)
         .map(|row| {
             let mut row_map = BTreeMap::new();
@@ -46,7 +33,10 @@ pub(crate) fn to_matrix_helper<F: Field>(matrix: &[Vec<(F, VarIndex)>], num_inpu
                 };
                 *row_map.entry(column).or_insert_with(F::zero) += *fe;
             });
-            row_map.into_iter().map(|(column, coeff)| (coeff, column)).collect()
+            row_map
+                .into_iter()
+                .map(|(column, coeff)| (coeff, column))
+                .collect()
         })
         .collect()
 }
@@ -57,7 +47,9 @@ pub(crate) fn padded_matrix_dim(num_formatted_variables: usize, num_constraints:
 }
 
 /// Pads the public variables up to the closest power of two.
-pub(crate) fn pad_input_for_indexer_and_prover<F: PrimeField, CS: ConstraintSystem<F>>(cs: &mut CS) {
+pub(crate) fn pad_input_for_indexer_and_prover<F: PrimeField, CS: ConstraintSystem<F>>(
+    cs: &mut CS,
+) {
     let num_public_variables = cs.num_public_variables();
 
     let power_of_two = EvaluationDomain::<F>::new(num_public_variables);
@@ -67,12 +59,16 @@ pub(crate) fn pad_input_for_indexer_and_prover<F: PrimeField, CS: ConstraintSyst
     let padded_size = power_of_two.unwrap().size();
     if padded_size > num_public_variables {
         for i in 0..(padded_size - num_public_variables) {
-            cs.alloc_input(|| format!("pad_input_{}", i), || Ok(F::zero())).unwrap();
+            cs.alloc_input(|| format!("pad_input_{}", i), || Ok(F::zero()))
+                .unwrap();
         }
     }
 }
 
-pub(crate) fn make_matrices_square<F: Field, CS: ConstraintSystem<F>>(cs: &mut CS, num_formatted_variables: usize) {
+pub(crate) fn make_matrices_square<F: Field, CS: ConstraintSystem<F>>(
+    cs: &mut CS,
+    num_formatted_variables: usize,
+) {
     let num_constraints = cs.num_constraints();
     let matrix_padding = ((num_formatted_variables as isize) - (num_constraints as isize)).abs();
 
@@ -85,7 +81,9 @@ pub(crate) fn make_matrices_square<F: Field, CS: ConstraintSystem<F>>(cs: &mut C
     } else {
         // Add dummy unconstrained variables
         for i in 0..matrix_padding {
-            let _ = cs.alloc(|| format!("pad_variable_{}", i), || Ok(F::one())).expect("alloc failed");
+            let _ = cs
+                .alloc(|| format!("pad_variable_{}", i), || Ok(F::one()))
+                .expect("alloc failed");
         }
     }
 }
@@ -105,10 +103,14 @@ pub struct MatrixEvals<F: PrimeField> {
 impl<F: PrimeField> MatrixEvals<F> {
     pub(crate) fn evaluate(&self, lagrange_coefficients_at_point: &[F]) -> [F; 4] {
         [
-            self.row.evaluate_with_coeffs(lagrange_coefficients_at_point),
-            self.col.evaluate_with_coeffs(lagrange_coefficients_at_point),
-            self.val.evaluate_with_coeffs(lagrange_coefficients_at_point),
-            self.row_col.evaluate_with_coeffs(lagrange_coefficients_at_point),
+            self.row
+                .evaluate_with_coeffs(lagrange_coefficients_at_point),
+            self.col
+                .evaluate_with_coeffs(lagrange_coefficients_at_point),
+            self.val
+                .evaluate_with_coeffs(lagrange_coefficients_at_point),
+            self.row_col
+                .evaluate_with_coeffs(lagrange_coefficients_at_point),
         ]
     }
 }
@@ -138,7 +140,9 @@ pub(crate) fn precomputation_for_matrix_evals<F: PrimeField>(
     let eq_poly_vals: HashMap<F, F> = elements
         .iter()
         .cloned()
-        .zip_eq(constraint_domain.batch_eval_unnormalized_bivariate_lagrange_poly_with_same_inputs())
+        .zip_eq(
+            constraint_domain.batch_eval_unnormalized_bivariate_lagrange_poly_with_same_inputs(),
+        )
         .collect();
     end_timer!(eq_poly_vals_time);
     (elements, eq_poly_vals)
@@ -182,7 +186,9 @@ pub(crate) fn matrix_evals<F: PrimeField>(
 
     batch_inversion::<F>(&mut inverses);
 
-    cfg_iter_mut!(val_vec).zip_eq(inverses).for_each(|(v, inv)| *v *= inv);
+    cfg_iter_mut!(val_vec)
+        .zip_eq(inverses)
+        .for_each(|(v, inv)| *v *= inv);
     end_timer!(lde_evals_time);
 
     for _ in count..non_zero_domain.size() {
@@ -191,17 +197,30 @@ pub(crate) fn matrix_evals<F: PrimeField>(
         val_vec.push(F::zero());
     }
 
-    let row_col_vec: Vec<_> = row_vec.iter().zip_eq(&col_vec).map(|(row, col)| *row * col).collect();
+    let row_col_vec: Vec<_> = row_vec
+        .iter()
+        .zip_eq(&col_vec)
+        .map(|(row, col)| *row * col)
+        .collect();
 
     let row_evals_on_K = EvaluationsOnDomain::from_vec_and_domain(row_vec, *non_zero_domain);
     let col_evals_on_K = EvaluationsOnDomain::from_vec_and_domain(col_vec, *non_zero_domain);
     let val_evals_on_K = EvaluationsOnDomain::from_vec_and_domain(val_vec, *non_zero_domain);
-    let row_col_evals_on_K = EvaluationsOnDomain::from_vec_and_domain(row_col_vec, *non_zero_domain);
-    MatrixEvals { row: row_evals_on_K, col: col_evals_on_K, row_col: row_col_evals_on_K, val: val_evals_on_K }
+    let row_col_evals_on_K =
+        EvaluationsOnDomain::from_vec_and_domain(row_col_vec, *non_zero_domain);
+    MatrixEvals {
+        row: row_evals_on_K,
+        col: col_evals_on_K,
+        row_col: row_col_evals_on_K,
+        val: val_evals_on_K,
+    }
 }
 
 // TODO for debugging: add test that checks result of arithmetize_matrix(M).
-pub(crate) fn arithmetize_matrix<F: PrimeField>(label: &str, matrix_evals: MatrixEvals<F>) -> MatrixArithmetization<F> {
+pub(crate) fn arithmetize_matrix<F: PrimeField>(
+    label: &str,
+    matrix_evals: MatrixEvals<F>,
+) -> MatrixArithmetization<F> {
     let matrix_time = start_timer!(|| "Computing row, col, and val LDEs");
 
     let interpolate_time = start_timer!(|| "Interpolating on K");
@@ -230,7 +249,10 @@ mod tests {
     use snarkvm_fields::{One, Zero};
 
     fn entry(matrix: &Matrix<F>, row: usize, col: usize) -> F {
-        matrix[row].iter().find_map(|(f, i)| (i == &col).then_some(*f)).unwrap_or_else(F::zero)
+        matrix[row]
+            .iter()
+            .find_map(|(f, i)| (i == &col).then_some(*f))
+            .unwrap_or_else(F::zero)
     }
 
     #[test]
@@ -257,11 +279,24 @@ mod tests {
             vec![(F::one(), 6)],
         ];
 
-        let c = vec![vec![], vec![(F::one(), 7)], vec![], vec![], vec![], vec![(F::one(), 3)], vec![], vec![]];
+        let c = vec![
+            vec![],
+            vec![(F::one(), 7)],
+            vec![],
+            vec![],
+            vec![],
+            vec![(F::one(), 3)],
+            vec![],
+            vec![],
+        ];
 
         let constraint_domain = EvaluationDomain::new(2 + 6).unwrap();
         let input_domain = EvaluationDomain::new(2).unwrap();
-        let inverse_map = constraint_domain.elements().enumerate().map(|(i, e)| (e, i)).collect::<HashMap<_, _>>();
+        let inverse_map = constraint_domain
+            .elements()
+            .enumerate()
+            .map(|(i, e)| (e, i))
+            .collect::<HashMap<_, _>>();
         let elements = constraint_domain.elements().collect::<Vec<_>>();
         let reindexed_inverse_map = (0..constraint_domain.size())
             .map(|i| {
@@ -271,7 +306,10 @@ mod tests {
             .collect::<HashMap<_, _>>();
         let eq_poly_vals: HashMap<F, F> = constraint_domain
             .elements()
-            .zip_eq(constraint_domain.batch_eval_unnormalized_bivariate_lagrange_poly_with_same_inputs())
+            .zip_eq(
+                constraint_domain
+                    .batch_eval_unnormalized_bivariate_lagrange_poly_with_same_inputs(),
+            )
             .collect();
 
         let (constraint_domain_elements, constraint_domain_eq_poly_vals) =
