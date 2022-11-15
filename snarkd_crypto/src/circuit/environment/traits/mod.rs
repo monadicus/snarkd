@@ -1,3 +1,5 @@
+mod bitwise;
+pub use bitwise::*;
 mod eject;
 pub use eject::*;
 mod inject;
