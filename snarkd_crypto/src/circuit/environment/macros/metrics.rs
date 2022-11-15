@@ -21,8 +21,6 @@ macro_rules! output_mode {
 #[macro_export]
 macro_rules! assert_count {
     ($type_:ty, $operation:path, $case:expr) => {{
-        // $crate::print_scope!();
-
         let $crate::circuit::helpers::Count(num_constants, num_public, num_private, num_constraints) = $crate::count!($type_, $operation, $case);
         assert!(num_constants.matches(Circuit::num_constants_in_scope()), "(num_constants)");
         assert!(num_public.matches(Circuit::num_public_in_scope()), "(num_public)");
@@ -93,8 +91,6 @@ macro_rules! assert_count {
 #[macro_export]
 macro_rules! assert_count_fails {
     ($type_:ty, $operation:path, $case:expr) => {{
-        // $crate::print_scope!();
-
         let Count(num_constants, num_public, num_private, num_constraints) = count!($type_, $operation, $case);
         assert!(num_constants.matches(Circuit::num_constants_in_scope()), "(num_constants)");
         assert!(num_public.matches(Circuit::num_public_in_scope()), "(num_public)");

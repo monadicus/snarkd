@@ -1,5 +1,6 @@
 use std::ops::{Sub, SubAssign};
 
+#[cfg(test)]
 use crate::{
     bls12_377::Field as FieldTrait,
     circuit::{
@@ -60,6 +61,7 @@ impl SubAssign<&Field> for Field {
     }
 }
 
+#[cfg(test)]
 impl Metrics<dyn Sub<Field, Output = Field>> for Field {
     type Case = (Mode, Mode);
 
@@ -68,6 +70,7 @@ impl Metrics<dyn Sub<Field, Output = Field>> for Field {
     }
 }
 
+#[cfg(test)]
 impl OutputMode<dyn Sub<Field, Output = Field>> for Field {
     type Case = (CircuitType<Field>, CircuitType<Field>);
 

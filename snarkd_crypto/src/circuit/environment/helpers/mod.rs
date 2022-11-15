@@ -4,8 +4,10 @@ mod circuit_type;
 pub use circuit_type::*;
 mod constraint;
 pub(crate) use constraint::*;
+#[cfg(test)]
 mod count;
-pub(crate) use count::*;
+#[cfg(test)]
+pub use count::*;
 mod counter;
 pub(crate) use counter::*;
 mod linear_combination;

@@ -1,5 +1,6 @@
 use std::ops::Neg;
 
+#[cfg(test)]
 use crate::circuit::{
     helpers::{Count, Mode},
     traits::{Metrics, OutputMode},
@@ -25,6 +26,7 @@ impl Neg for &Field {
     }
 }
 
+#[cfg(test)]
 impl Metrics<dyn Neg<Output = Field>> for Field {
     type Case = Mode;
 
@@ -33,6 +35,7 @@ impl Metrics<dyn Neg<Output = Field>> for Field {
     }
 }
 
+#[cfg(test)]
 impl OutputMode<dyn Neg<Output = Field>> for Field {
     type Case = Mode;
 

@@ -1,12 +1,13 @@
 use std::ops::{Mul, MulAssign};
 
+use crate::circuit::{circuit::Circuit, helpers::Mode, traits::Eject, Environment};
+
+#[cfg(test)]
 use crate::{
     bls12_377::Field as FieldTrait,
     circuit::{
-        circuit::Circuit,
-        helpers::{CircuitType, Count, Mode},
-        traits::{Eject, Metrics, OutputMode},
-        Environment,
+        helpers::{CircuitType, Count},
+        traits::{Metrics, OutputMode},
     },
 };
 
@@ -80,6 +81,7 @@ impl MulAssign<&Field> for Field {
     }
 }
 
+#[cfg(test)]
 impl Metrics<dyn Mul<Field, Output = Field>> for Field {
     type Case = (Mode, Mode);
 
@@ -91,6 +93,7 @@ impl Metrics<dyn Mul<Field, Output = Field>> for Field {
     }
 }
 
+#[cfg(test)]
 impl OutputMode<dyn Mul<Field, Output = Field>> for Field {
     type Case = (CircuitType<Field>, CircuitType<Field>);
 
