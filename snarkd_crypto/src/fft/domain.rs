@@ -966,7 +966,7 @@ mod tests {
 
     #[test]
     fn vanishing_polynomial_vanishes_on_domain() {
-        (0..1000).into_par_iter().for_each(|coeffs| {
+        (0..100).into_par_iter().for_each(|coeffs| {
             let domain = EvaluationDomain::new(coeffs).unwrap();
             let z = domain.vanishing_polynomial();
             for point in domain.elements() {

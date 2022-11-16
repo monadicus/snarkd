@@ -750,7 +750,7 @@ fn test_fp_sum_of_products() {
 fn test_fp_add_assign() {
     // Test associativity
 
-    (0..1000).into_par_iter().for_each(|_| {
+    (0..100).into_par_iter().for_each(|_| {
         // Generate a, b, c and ensure (a + b) + c == a + (b + c).
         let a = Fp::rand();
         let b = Fp::rand();
@@ -772,7 +772,7 @@ fn test_fp_add_assign() {
 
 #[test]
 fn test_fp_sub_assign() {
-    (0..1000).into_par_iter().for_each(|_| {
+    (0..100).into_par_iter().for_each(|_| {
         // Ensure that (a - b) + (b - a) = 0.
         let a = Fp::rand();
         let b = Fp::rand();
@@ -790,7 +790,7 @@ fn test_fp_sub_assign() {
 
 #[test]
 fn test_fp_mul_assign() {
-    (0..1000).into_par_iter().for_each(|_| {
+    (0..100).into_par_iter().for_each(|_| {
         // Ensure that (a * b) * c = a * (b * c)
         let a = Fp::rand();
         let b = Fp::rand();
@@ -807,7 +807,7 @@ fn test_fp_mul_assign() {
         assert_eq!(tmp1, tmp2);
     });
 
-    (0..1000).into_par_iter().for_each(|_| {
+    (0..100).into_par_iter().for_each(|_| {
         // Ensure that r * (a + b + c) = r*a + r*b + r*c
 
         let r = Fp::rand();
@@ -833,7 +833,7 @@ fn test_fp_mul_assign() {
 
 #[test]
 fn test_fp_squaring() {
-    (0..1000).into_par_iter().for_each(|_| {
+    (0..100).into_par_iter().for_each(|_| {
         // Ensure that (a * a) = a^2
         let a = Fp::rand();
 
@@ -853,7 +853,7 @@ fn test_fp_inverse() {
 
     let one = Fp::ONE;
 
-    (0..1000).into_par_iter().for_each(|_| {
+    (0..100).into_par_iter().for_each(|_| {
         // Ensure that a * a^-1 = 1
         let mut a = Fp::rand();
         let ainv = a.inverse().unwrap();
@@ -864,7 +864,7 @@ fn test_fp_inverse() {
 
 #[test]
 fn test_fp_double_in_place() {
-    (0..1000).into_par_iter().for_each(|_| {
+    (0..100).into_par_iter().for_each(|_| {
         // Ensure doubling a is equivalent to adding a to itself.
         let mut a = Fp::rand();
         let mut b = a;
@@ -882,7 +882,7 @@ fn test_fp_negate() {
         assert!(a.is_zero());
     }
 
-    (0..1000).into_par_iter().for_each(|_| {
+    (0..100).into_par_iter().for_each(|_| {
         // Ensure (a - (-a)) = 0.
         let mut a = Fp::rand();
         let b = -a;
@@ -894,7 +894,7 @@ fn test_fp_negate() {
 
 #[test]
 fn test_fp_pow() {
-    (0..1000).into_par_iter().for_each(|i| {
+    (0..100).into_par_iter().for_each(|i| {
         // Exponentiate by various small numbers and ensure it consists with repeated
         // multiplication.
         let a = Fp::rand();
@@ -918,7 +918,7 @@ fn test_fp_pow() {
 fn test_fp_sqrt() {
     assert_eq!(Fp::ZERO.sqrt().unwrap(), Fp::ZERO);
 
-    (0..1000).into_par_iter().for_each(|_| {
+    (0..100).into_par_iter().for_each(|_| {
         // Ensure sqrt(a^2) = a or -a
         let a = Fp::rand();
         let nega = -a;
@@ -1025,7 +1025,7 @@ fn test_fp2_mul_nonresidue() {
     let nqr = Fp2::new(Fp::ZERO, Fp::ONE);
 
     let quadratic_non_residue = Fp2::new(fp2::QUADRATIC_NONRESIDUE.0, fp2::QUADRATIC_NONRESIDUE.1);
-    (0..1000).into_par_iter().for_each(|_| {
+    (0..100).into_par_iter().for_each(|_| {
         let mut a = Fp2::rand();
         let mut b = a;
         a = quadratic_non_residue * a;
@@ -1037,7 +1037,7 @@ fn test_fp2_mul_nonresidue() {
 
 #[test]
 fn test_fp6_mul_by_1() {
-    (0..1000).into_par_iter().for_each(|_| {
+    (0..100).into_par_iter().for_each(|_| {
         let c1 = Fp2::rand();
         let mut a = Fp6::rand();
         let mut b = a;
@@ -1051,7 +1051,7 @@ fn test_fp6_mul_by_1() {
 
 #[test]
 fn test_fp6_mul_by_01() {
-    (0..1000).into_par_iter().for_each(|_| {
+    (0..100).into_par_iter().for_each(|_| {
         let c0 = Fp2::rand();
         let c1 = Fp2::rand();
         let mut a = Fp6::rand();
@@ -1066,7 +1066,7 @@ fn test_fp6_mul_by_01() {
 
 #[test]
 fn test_fp12_mul_by_014() {
-    (0..1000).into_par_iter().for_each(|_| {
+    (0..100).into_par_iter().for_each(|_| {
         let c0 = Fp2::rand();
         let c1 = Fp2::rand();
         let c5 = Fp2::rand();
@@ -1085,7 +1085,7 @@ fn test_fp12_mul_by_014() {
 
 #[test]
 fn test_fp12_mul_by_034() {
-    (0..1000).into_par_iter().for_each(|_| {
+    (0..100).into_par_iter().for_each(|_| {
         let c0 = Fp2::rand();
         let c3 = Fp2::rand();
         let c4 = Fp2::rand();

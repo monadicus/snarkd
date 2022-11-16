@@ -533,7 +533,7 @@ mod test {
         let nqr = Fp2::new(Fp::ZERO, Fp::ONE);
         println!("One: {:?}", Fp::ONE);
 
-        (0..1000).into_par_iter().for_each(|_| {
+        (0..100).into_par_iter().for_each(|_| {
             let mut a = Fp2::rand();
             let mut b = a;
             a *= &NONRESIDUE;
