@@ -90,6 +90,7 @@ impl VariableBase {
 mod tests {
     use super::*;
     use crate::bls12_377::{Field, Fp, G1Affine, Projective, Scalar};
+    use rayon::prelude::{IntoParallelIterator, ParallelIterator};
     use ruint::uint;
 
     fn create_scalar_bases(size: usize) -> (Vec<G1Affine>, Vec<Uint<256, 4>>) {
@@ -100,7 +101,7 @@ mod tests {
 
     #[test]
     fn test_msm() {
-        for msm_size in [1, 5, 10, 50, 100, 500, 1000] {
+        [1, 5, 10, 50, 100, 500, 1000].into_par_iter().for_each(|msm_size| {
             let (bases, scalars) = create_scalar_bases(msm_size);
 
             let naive_a = VariableBase::msm_naive(bases.as_slice(), scalars.as_slice()).to_affine();
@@ -113,7 +114,7 @@ mod tests {
 
             let candidate = batched::msm(bases.as_slice(), scalars.as_slice()).to_affine();
             assert_eq!(naive_a, candidate, "MSM size: {msm_size}");
-        }
+        });
     }
 
     #[cfg(all(feature = "cuda", target_arch = "x86_64"))]

@@ -160,7 +160,7 @@ fn random_negation_test<G: Projective>() {
 
         let mut t3 = t1;
         t3.add_assign(t2);
-        println!("t3 = {}", t3);
+        // println!("t3 = {}", t3);
         assert!(t3.is_zero());
 
         let mut t4 = t1;
@@ -175,12 +175,12 @@ fn random_negation_test<G: Projective>() {
 fn random_transformation_test<G: Projective>() {
     let mut rng = rand::thread_rng();
 
-    for _ in 0..ITERATIONS {
+    (0..ITERATIONS).into_par_iter().for_each(|_| {
         let g = G::rand();
         let g_affine = g.to_affine();
         let g_projective = g_affine.to_projective();
         assert_eq!(g, g_projective);
-    }
+    });
 
     // Batch normalization
     for _ in 0..10 {
@@ -216,17 +216,17 @@ fn random_transformation_test<G: Projective>() {
 }
 
 fn random_negation_tests<F: Field>() {
-    for _ in 0..ITERATIONS {
+    (0..ITERATIONS).into_par_iter().for_each(|_| {
         let a = F::rand();
         let mut b = -a;
         b += &a;
 
         assert!(b.is_zero());
-    }
+    });
 }
 
 fn random_addition_tests<F: Field>() {
-    for _ in 0..ITERATIONS {
+    (0..ITERATIONS).into_par_iter().for_each(|_| {
         let a = F::rand();
         let b = F::rand();
         let c = F::rand();
@@ -239,11 +239,11 @@ fn random_addition_tests<F: Field>() {
 
         assert_eq!(t0, t1);
         assert_eq!(t1, t2);
-    }
+    });
 }
 
 fn random_subtraction_tests<F: Field>() {
-    for _ in 0..ITERATIONS {
+    (0..ITERATIONS).into_par_iter().for_each(|_| {
         let a = F::rand();
         let b = F::rand();
 
@@ -256,11 +256,11 @@ fn random_subtraction_tests<F: Field>() {
         t2 += &t1;
 
         assert!(t2.is_zero());
-    }
+    });
 }
 
 fn random_multiplication_tests<F: Field>() {
-    for _ in 0..ITERATIONS {
+    (0..ITERATIONS).into_par_iter().for_each(|_| {
         let a = F::rand();
         let b = F::rand();
         let c = F::rand();
@@ -279,45 +279,45 @@ fn random_multiplication_tests<F: Field>() {
 
         assert_eq!(t0, t1);
         assert_eq!(t1, t2);
-    }
+    });
 }
 
 fn random_inversion_tests<F: Field>() {
     assert!(F::ZERO.inverse().is_none());
 
-    for _ in 0..ITERATIONS {
+    (0..ITERATIONS).into_par_iter().for_each(|_| {
         let mut a = F::rand();
         let b = a.inverse().unwrap(); // probablistically nonzero
         a *= &b;
 
         assert_eq!(a, F::ONE);
-    }
+    });
 }
 
 fn random_doubling_tests<F: Field>() {
-    for _ in 0..ITERATIONS {
+    (0..ITERATIONS).into_par_iter().for_each(|_| {
         let mut a = F::rand();
         let mut b = a;
         a += &b;
         b.double_in_place();
 
         assert_eq!(a, b);
-    }
+    });
 }
 
 fn random_squaring_tests<F: Field>() {
-    for _ in 0..ITERATIONS {
+    (0..ITERATIONS).into_par_iter().for_each(|_| {
         let mut a = F::rand();
         let mut b = a;
         a *= &b;
         b.square_in_place();
 
         assert_eq!(a, b);
-    }
+    });
 }
 
 fn random_expansion_tests<F: Field>() {
-    for _ in 0..ITERATIONS {
+    (0..ITERATIONS).into_par_iter().for_each(|_| {
         // Compare (a + b)(c + d) and (a*c + b*c + a*d + b*d)
 
         let a = F::rand();
@@ -345,9 +345,9 @@ fn random_expansion_tests<F: Field>() {
         t2 += &t5;
 
         assert_eq!(t0, t2);
-    }
+    });
 
-    for _ in 0..ITERATIONS {
+    (0..ITERATIONS).into_par_iter().for_each(|_| {
         // Compare (a + b)c and (a*c + b*c)
 
         let a = F::rand();
@@ -358,14 +358,14 @@ fn random_expansion_tests<F: Field>() {
         let t2 = a * c + (b * c);
 
         assert_eq!(t0, t2);
-    }
+    });
 }
 
 macro_rules! frobenius_test {
     ($name:ident, $field:ty) => {
         #[test]
         fn $name() {
-            for _ in 0..ITERATIONS {
+            (0..ITERATIONS).into_par_iter().for_each(|_| {
                 let a = <$field>::rand();
 
                 let mut a_0 = a;
@@ -380,7 +380,7 @@ macro_rules! frobenius_test {
 
                     a_q = a_q.pow(&<$field>::characteristic());
                 }
-            }
+            });
         }
     };
 }
@@ -467,7 +467,7 @@ pub fn field_test<F: Field>(a: F, b: F) {
 
     assert_eq!(a / a, one);
 
-    for len in 0..10 {
+    (0..10).into_par_iter().for_each(|len| {
         let mut a = Vec::new();
         let mut b = Vec::new();
         for _ in 0..len {
@@ -478,7 +478,7 @@ pub fn field_test<F: Field>(a: F, b: F) {
                 a.iter().zip(b.iter()).map(|(x, y)| *x * y).sum()
             );
         }
-    }
+    });
 
     random_negation_tests::<F>();
     random_addition_tests::<F>();
@@ -513,14 +513,14 @@ pub fn field_test<F: Field>(a: F, b: F) {
 }
 
 fn random_sqrt_tests<F: Field>() {
-    for _ in 0..ITERATIONS {
+    (0..ITERATIONS).into_par_iter().for_each(|_| {
         let a = F::rand();
         let b = a.square();
         // assert_eq!(b.legendre(), LegendreSymbol::QuadraticResidue);
 
         let b = b.sqrt().unwrap();
         assert!(a == b || a == -b);
-    }
+    });
 
     let mut c = F::ONE;
     for _ in 0..ITERATIONS {
@@ -665,54 +665,54 @@ pub fn projective_test<G: Projective>(a: G, mut b: G) {
 
 #[test]
 fn test_bls12_377_fr() {
-    for _ in 0..ITERATIONS {
+    (0..ITERATIONS).into_par_iter().for_each(|_| {
         let a = Scalar::rand();
         let b = Scalar::rand();
         field_test(a, b);
         sqrt_field_test(b);
-    }
+    });
 }
 
 #[test]
 fn test_bls12_377_fp() {
-    for _ in 0..ITERATIONS {
+    (0..ITERATIONS).into_par_iter().for_each(|_| {
         let a = Fp::rand();
         let b = Fp::rand();
         field_test(a, b);
         sqrt_field_test(a);
-    }
+    });
 }
 
 #[test]
 fn test_bls12_377_fp2() {
-    for _ in 0..ITERATIONS {
+    (0..ITERATIONS).into_par_iter().for_each(|_| {
         let a = Fp2::rand();
         let b = Fp2::rand();
         field_test(a, b);
         sqrt_field_test(a);
-    }
+    });
 }
 
 frobenius_test!(fp2_frobenius_test, Fp2);
 
 #[test]
 fn test_bls12_377_fp6() {
-    for _ in 0..ITERATIONS {
+    (0..ITERATIONS).into_par_iter().for_each(|_| {
         let g = Fp6::rand();
         let h = Fp6::rand();
         field_test(g, h);
-    }
+    });
 }
 
 frobenius_test!(fp6_frobenius_test, Fp6);
 
 #[test]
 fn test_bls12_377_fp12() {
-    for _ in 0..ITERATIONS {
+    (0..ITERATIONS).into_par_iter().for_each(|_| {
         let g = Fp12::rand();
         let h = Fp12::rand();
         field_test(g, h);
-    }
+    });
 }
 
 frobenius_test!(fp12_frobenius_test, Fp12);
@@ -724,33 +724,33 @@ fn test_fp_is_half() {
 
 #[test]
 fn test_fr_sum_of_products() {
-    for i in [2, 4, 8, 16, 32] {
+    [2, 4, 8, 16, 32].into_par_iter().for_each(|i| {
         let a = (0..i).map(|_| Scalar::rand()).collect::<Vec<_>>();
         let b = (0..i).map(|_| Scalar::rand()).collect::<Vec<_>>();
         assert_eq!(
             Scalar::sum_of_products(a.clone().into_iter(), b.clone().into_iter()),
             a.into_iter().zip(b).map(|(a, b)| a * b).sum()
         );
-    }
+    });
 }
 
 #[test]
 fn test_fp_sum_of_products() {
-    for i in [2, 4, 8, 16, 32] {
+    [2, 4, 8, 16, 32].into_par_iter().for_each(|i| {
         let a = (0..i).map(|_| Fp::rand()).collect::<Vec<_>>();
         let b = (0..i).map(|_| Fp::rand()).collect::<Vec<_>>();
         assert_eq!(
             Fp::sum_of_products(a.clone().into_iter(), b.clone().into_iter()),
             a.into_iter().zip(b).map(|(a, b)| a * b).sum()
         );
-    }
+    });
 }
 
 #[test]
 fn test_fp_add_assign() {
     // Test associativity
 
-    for _ in 0..1000 {
+    (0..1000).into_par_iter().for_each(|_| {
         // Generate a, b, c and ensure (a + b) + c == a + (b + c).
         let a = Fp::rand();
         let b = Fp::rand();
@@ -767,12 +767,12 @@ fn test_fp_add_assign() {
         assert!(tmp1.is_valid());
         assert!(tmp2.is_valid());
         assert_eq!(tmp1, tmp2);
-    }
+    });
 }
 
 #[test]
 fn test_fp_sub_assign() {
-    for _ in 0..1000 {
+    (0..1000).into_par_iter().for_each(|_| {
         // Ensure that (a - b) + (b - a) = 0.
         let a = Fp::rand();
         let b = Fp::rand();
@@ -785,7 +785,7 @@ fn test_fp_sub_assign() {
 
         tmp1.add_assign(tmp2);
         assert!(tmp1.is_zero());
-    }
+    });
 }
 
 #[test]
@@ -853,25 +853,25 @@ fn test_fp_inverse() {
 
     let one = Fp::ONE;
 
-    for _ in 0..1000 {
+    (0..1000).into_par_iter().for_each(|_| {
         // Ensure that a * a^-1 = 1
         let mut a = Fp::rand();
         let ainv = a.inverse().unwrap();
         a.mul_assign(&ainv);
         assert_eq!(a, one);
-    }
+    });
 }
 
 #[test]
 fn test_fp_double_in_place() {
-    for _ in 0..1000 {
+    (0..1000).into_par_iter().for_each(|_| {
         // Ensure doubling a is equivalent to adding a to itself.
         let mut a = Fp::rand();
         let mut b = a;
         b.add_assign(a);
         a.double_in_place();
         assert_eq!(a, b);
-    }
+    });
 }
 
 #[test]
@@ -882,19 +882,19 @@ fn test_fp_negate() {
         assert!(a.is_zero());
     }
 
-    for _ in 0..1000 {
+    (0..1000).into_par_iter().for_each(|_| {
         // Ensure (a - (-a)) = 0.
         let mut a = Fp::rand();
         let b = -a;
         a.add_assign(b);
 
         assert!(a.is_zero());
-    }
+    });
 }
 
 #[test]
 fn test_fp_pow() {
-    for i in 0..1000 {
+    (0..1000).into_par_iter().for_each(|i| {
         // Exponentiate by various small numbers and ensure it consists with repeated
         // multiplication.
         let a = Fp::rand();
@@ -904,14 +904,14 @@ fn test_fp_pow() {
             c.mul_assign(&a);
         }
         assert_eq!(c, target);
-    }
+    });
 
-    for _ in 0..1000 {
+    (0..ITERATIONS).into_par_iter().for_each(|_| {
         // Exponentiating by the modulus should have no effect in a prime field.
         let a = Fp::rand();
 
         assert_eq!(a, a.pow(&Fp::characteristic()));
-    }
+    });
 }
 
 #[test]
@@ -1025,19 +1025,19 @@ fn test_fp2_mul_nonresidue() {
     let nqr = Fp2::new(Fp::ZERO, Fp::ONE);
 
     let quadratic_non_residue = Fp2::new(fp2::QUADRATIC_NONRESIDUE.0, fp2::QUADRATIC_NONRESIDUE.1);
-    for _ in 0..1000 {
+    (0..1000).into_par_iter().for_each(|_| {
         let mut a = Fp2::rand();
         let mut b = a;
         a = quadratic_non_residue * a;
         b.mul_assign(&nqr);
 
         assert_eq!(a, b);
-    }
+    });
 }
 
 #[test]
 fn test_fp6_mul_by_1() {
-    for _ in 0..1000 {
+    (0..1000).into_par_iter().for_each(|_| {
         let c1 = Fp2::rand();
         let mut a = Fp6::rand();
         let mut b = a;
@@ -1046,12 +1046,12 @@ fn test_fp6_mul_by_1() {
         b.mul_assign(&Fp6::new(Fp2::ZERO, c1, Fp2::ZERO));
 
         assert_eq!(a, b);
-    }
+    });
 }
 
 #[test]
 fn test_fp6_mul_by_01() {
-    for _ in 0..1000 {
+    (0..1000).into_par_iter().for_each(|_| {
         let c0 = Fp2::rand();
         let c1 = Fp2::rand();
         let mut a = Fp6::rand();
@@ -1061,12 +1061,12 @@ fn test_fp6_mul_by_01() {
         b.mul_assign(&Fp6::new(c0, c1, Fp2::ZERO));
 
         assert_eq!(a, b);
-    }
+    });
 }
 
 #[test]
 fn test_fp12_mul_by_014() {
-    for _ in 0..1000 {
+    (0..1000).into_par_iter().for_each(|_| {
         let c0 = Fp2::rand();
         let c1 = Fp2::rand();
         let c5 = Fp2::rand();
@@ -1080,12 +1080,12 @@ fn test_fp12_mul_by_014() {
         ));
 
         assert_eq!(a, b);
-    }
+    });
 }
 
 #[test]
 fn test_fp12_mul_by_034() {
-    for _ in 0..1000 {
+    (0..1000).into_par_iter().for_each(|_| {
         let c0 = Fp2::rand();
         let c3 = Fp2::rand();
         let c4 = Fp2::rand();
@@ -1099,7 +1099,7 @@ fn test_fp12_mul_by_034() {
         ));
 
         assert_eq!(a, b);
-    }
+    });
 }
 
 #[test]
