@@ -9,7 +9,6 @@ pub use utils::*;
 pub mod bls12_377;
 pub mod fft;
 mod msm;
-mod objects;
 pub mod polycommit;
 pub use polycommit::*;
 mod r1cs;
