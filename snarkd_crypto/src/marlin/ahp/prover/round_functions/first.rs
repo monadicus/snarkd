@@ -1,6 +1,7 @@
 use std::{collections::BTreeMap, sync::Arc};
 
 use crate::{
+    bls12_377::Scalar,
     fft::{
         DensePolynomial, EvaluationDomain, Evaluations as EvaluationsOnDomain, SparsePolynomial,
     },
@@ -22,14 +23,15 @@ use rand_core::RngCore;
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
 
-impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
+impl AHPForR1CS {
     /// Output the number of oracles sent by the prover in the first round.
-    pub fn num_first_round_oracles(batch_size: usize) -> usize {
-        3 * batch_size + (MM::ZK as usize)
+    pub fn num_first_round_oracles(&self, batch_size: usize) -> usize {
+        3 * batch_size + (self.mode as usize)
     }
 
     /// Output the degree bounds of oracles in the first round.
     pub fn first_round_polynomial_info(
+        &self,
         batch_size: usize,
     ) -> BTreeMap<PolynomialLabel, PolynomialInfo> {
         let mut polynomials = Vec::new();
@@ -51,7 +53,7 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
                 Self::zk_bound(),
             ));
         }
-        if MM::ZK {
+        if self.mode {
             polynomials.push(PolynomialInfo::new("mask_poly".to_string(), None, None));
         }
         polynomials
@@ -63,10 +65,10 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
     /// Output the first round message and the next state.
     #[allow(clippy::type_complexity)]
     pub fn prover_first_round<'a, R: RngCore>(
-        mut state: prover::State<'a, F, MM>,
+        &self,
+        mut state: prover::State<'a>,
         rng: &mut R,
-    ) -> Result<prover::State<'a, F, MM>, AHPError> {
-        let round_time = start_timer!(|| "AHP::Prover::FirstRound");
+    ) -> Result<prover::State<'a>, AHPError> {
         let constraint_domain = state.constraint_domain;
         let batch_size = state.batch_size;
 
@@ -84,16 +86,16 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
             itertools::izip!(z_a, z_b, private_variables, &state.x_poly).enumerate()
         {
             job_pool.add_job(move || {
-                Self::calculate_w(witness_label("w", i), private_variables, x_poly, state_ref)
+                self.calculate_w(witness_label("w", i), private_variables, x_poly, state_ref)
             });
             job_pool.add_job(move || {
-                Self::calculate_z_m(witness_label("z_a", i), z_a, false, state_ref, None)
+                self.calculate_z_m(witness_label("z_a", i), z_a, false, state_ref, None)
             });
-            let r_b = F::rand(rng);
+            let r_b = Scalar::rand(rng);
             job_pool.add_job(move || {
-                Self::calculate_z_m(witness_label("z_b", i), z_b, true, state_ref, Some(r_b))
+                self.calculate_z_m(witness_label("z_b", i), z_b, true, state_ref, Some(r_b))
             });
-            if MM::ZK {
+            if self.mode {
                 r_b_s.push(r_b);
             }
         }
@@ -118,24 +120,23 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
             .collect::<Vec<_>>();
         assert_eq!(batches.len(), batch_size);
 
-        let mask_poly = Self::calculate_mask_poly(constraint_domain, rng);
+        let mask_poly = self.calculate_mask_poly(constraint_domain, rng);
 
         let oracles = prover::FirstOracles { batches, mask_poly };
-        assert!(oracles.matches_info(&Self::first_round_polynomial_info(batch_size)));
+        assert!(oracles.matches_info(&self.first_round_polynomial_info(batch_size)));
         state.first_round_oracles = Some(Arc::new(oracles));
-        state.mz_poly_randomizer = MM::ZK.then_some(r_b_s);
-        end_timer!(round_time);
+        state.mz_poly_randomizer = self.mode.then_some(r_b_s);
 
         Ok(state)
     }
 
     fn calculate_mask_poly<R: RngCore>(
-        constraint_domain: EvaluationDomain<F>,
+        &self,
+        constraint_domain: EvaluationDomain,
         rng: &mut R,
-    ) -> Option<LabeledPolynomial<F>> {
-        MM::ZK
+    ) -> Option<LabeledPolynomial> {
+        self.mode
             .then(|| {
-                let mask_poly_time = start_timer!(|| "Computing mask polynomial");
                 // We'll use the masking technique from Lunar (https://eprint.iacr.org/2020/1069.pdf, pgs 20-22).
                 let h_1_mask = DensePolynomial::rand(3, rng).coeffs; // selected arbitrarily.
                 let h_1_mask =
@@ -144,7 +145,7 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
                 assert_eq!(h_1_mask.degree(), constraint_domain.size() + 3);
                 // multiply g_1_mask by X
                 let mut g_1_mask = DensePolynomial::rand(5, rng);
-                g_1_mask.coeffs[0] = F::zero();
+                g_1_mask.coeffs[0] = Scalar::ZERO;
                 let g_1_mask = SparsePolynomial::from_coefficients(
                     g_1_mask
                         .coeffs
@@ -158,7 +159,7 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
                 debug_assert!(constraint_domain
                     .elements()
                     .map(|z| mask_poly.evaluate(z))
-                    .sum::<F>()
+                    .sum::<Scalar>()
                     .is_zero());
                 assert_eq!(mask_poly.degree(), constraint_domain.size() + 3);
                 assert!(
@@ -166,37 +167,36 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
                         <= 3 * constraint_domain.size() + 2 * Self::zk_bound().unwrap() - 3
                 );
 
-                end_timer!(mask_poly_time);
                 mask_poly
             })
             .map(|mask_poly| LabeledPolynomial::new("mask_poly".to_string(), mask_poly, None, None))
     }
 
     fn calculate_w<'a>(
+        &self,
         label: String,
-        private_variables: Vec<F>,
-        x_poly: &DensePolynomial<F>,
-        state: &prover::State<'a, F, MM>,
-    ) -> PoolResult<'a, F> {
+        private_variables: Vec<Scalar>,
+        x_poly: &DensePolynomial,
+        state: &prover::State<'a>,
+    ) -> PoolResult<'a> {
         let constraint_domain = state.constraint_domain;
         let input_domain = state.input_domain;
 
         let mut w_extended = private_variables;
         let ratio = constraint_domain.size() / input_domain.size();
-        w_extended.resize(constraint_domain.size() - input_domain.size(), F::zero());
+        w_extended.resize(constraint_domain.size() - input_domain.size(), Scalar::ZERO);
 
         let x_evals = {
             let mut coeffs = x_poly.coeffs.clone();
-            coeffs.resize(constraint_domain.size(), F::zero());
+            coeffs.resize(constraint_domain.size(), Scalar::ZERO);
             constraint_domain
                 .in_order_fft_in_place_with_pc(&mut coeffs, state.fft_precomputation());
             coeffs
         };
 
-        let w_poly_time = start_timer!(|| "Computing w polynomial");
         let w_poly_evals = cfg_into_iter!(0..constraint_domain.size())
             .map(|k| match k % ratio {
-                0 => F::zero(),
+                0 => Scalar::ZERO,
                 _ => w_extended[k - (k / ratio) - 1] - x_evals[k],
             })
             .collect();
@@ -206,7 +206,6 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
         assert!(remainder.is_zero());
 
         assert!(w_poly.degree() < constraint_domain.size() - input_domain.size());
-        end_timer!(w_poly_time);
         PoolResult::Witness(LabeledPolynomial::new(
             label,
             w_poly,
@@ -216,17 +215,17 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
     }
 
     fn calculate_z_m<'a>(
+        &self,
         label: impl ToString,
-        evaluations: Vec<F>,
+        evaluations: Vec<Scalar>,
         will_be_evaluated: bool,
-        state: &prover::State<'a, F, MM>,
-        r: Option<F>,
-    ) -> PoolResult<'a, F> {
+        state: &prover::State<'a>,
+        r: Option<Scalar>,
+    ) -> PoolResult<'a> {
         let constraint_domain = state.constraint_domain;
         let v_H = constraint_domain.vanishing_polynomial();
-        let should_randomize = MM::ZK && will_be_evaluated;
+        let should_randomize = self.mode && will_be_evaluated;
         let label = label.to_string();
-        let poly_time = start_timer!(|| format!("Computing {label}"));
 
         let evals = EvaluationsOnDomain::from_vec_and_domain(evaluations, constraint_domain);
 
@@ -259,9 +258,9 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
 
         let poly_for_committing = if should_randomize {
             let poly_terms = vec![
-                (F::one(), PolynomialWithBasis::new_lagrange_basis(evals)),
+                (Scalar::ONE, PolynomialWithBasis::new_lagrange_basis(evals)),
                 (
-                    F::one(),
+                    Scalar::ONE,
                     PolynomialWithBasis::new_sparse_monomial_basis(&v_H * r.unwrap(), None),
                 ),
             ];
@@ -269,27 +268,26 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
         } else {
             LabeledPolynomialWithBasis::new_lagrange_basis(label, evals, Self::zk_bound())
         };
-        end_timer!(poly_time);
 
         PoolResult::MatrixPoly(poly_for_opening, poly_for_committing)
     }
 }
 
 #[derive(Debug)]
-pub enum PoolResult<'a, F: PrimeField> {
-    Witness(LabeledPolynomial<F>),
-    MatrixPoly(LabeledPolynomial<F>, LabeledPolynomialWithBasis<'a, F>),
+pub enum PoolResult<'a> {
+    Witness(LabeledPolynomial),
+    MatrixPoly(LabeledPolynomial, LabeledPolynomialWithBasis<'a),
 }
 
-impl<'a, F: PrimeField> PoolResult<'a, F> {
-    fn witness(self) -> Option<LabeledPolynomial<F>> {
+impl<'a> PoolResult<'a> {
+    fn witness(self) -> Option<LabeledPolynomial> {
         match self {
             Self::Witness(poly) => Some(poly),
             _ => None,
         }
     }
 
-    fn z_m(self) -> Option<(LabeledPolynomial<F>, LabeledPolynomialWithBasis<'a, F>)> {
+    fn z_m(self) -> Option<(LabeledPolynomial, LabeledPolynomialWithBasis<'a>)> {
         match self {
             Self::MatrixPoly(p1, p2) => Some((p1, p2)),
             _ => None,

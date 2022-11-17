@@ -10,7 +10,7 @@ pub enum MarlinError {
     /// There was an error in the underlying holographic IOP.
     AHPError(AHPError),
     /// There was a synthesis error.
-    R1CSError(snarkvm_r1cs::SynthesisError),
+    R1CSError(anyhow::Error),
     /// There was an error in the underlying polynomial commitment.
     PolynomialCommitmentError(crate::polycommit::PCError),
     Terminated,
@@ -22,8 +22,8 @@ impl From<AHPError> for MarlinError {
     }
 }
 
-impl From<snarkvm_r1cs::SynthesisError> for MarlinError {
-    fn from(err: snarkvm_r1cs::SynthesisError) -> Self {
+impl From<anyhow::Error> for MarlinError {
+    fn from(err: anyhow::Error) -> Self {
         MarlinError::R1CSError(err)
     }
 }

@@ -1,4 +1,5 @@
 use crate::{
+    bls12_377::Scalar,
     fft::{
         domain::{FFTPrecomputation, IFFTPrecomputation},
         EvaluationDomain,
@@ -9,31 +10,28 @@ use crate::{
         prover, MarlinMode,
     },
 };
-use itertools::Itertools;
-use snarkvm_fields::{Field, PrimeField};
-
 use core::{borrow::Borrow, marker::PhantomData};
+use itertools::Itertools;
 use std::collections::BTreeMap;
 
 /// The algebraic holographic proof defined in [CHMMVW19](https://eprint.iacr.org/2019/1047).
 /// Currently, this AHP only supports inputs of size one
 /// less than a power of 2 (i.e., of the form 2^n - 1).
-pub struct AHPForR1CS<F: Field, MM: MarlinMode> {
-    field: PhantomData<F>,
-    mode: PhantomData<MM>,
+pub struct AHPForR1CS {
+    mode: bool,
 }
 
 pub(crate) fn witness_label(poly: &str, i: usize) -> String {
     format!("{poly}_{:0>8}", i)
 }
 
-impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
+impl AHPForR1CS {
     /// The linear combinations that are statically known to evaluate to zero.
     #[rustfmt::skip]
     pub const LC_WITH_ZERO_EVAL: [&'static str; 2] = ["matrix_sumcheck", "lincheck_sumcheck"];
 
     pub fn zk_bound() -> Option<usize> {
-        MM::ZK.then_some(1)
+        self.mode.then_some(1)
     }
 
     /// Check that the (formatted) public input is of the form 2^n for some integer n.
@@ -45,7 +43,7 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
     }
 
     /// Check that the (formatted) public input is of the form 2^n for some integer n.
-    pub fn formatted_public_input_is_admissible(input: &[F]) -> Result<(), AHPError> {
+    pub fn formatted_public_input_is_admissible(input: &[Scalar]) -> Result<(), AHPError> {
         Self::num_formatted_public_inputs_is_admissible(input.len())
     }
 
@@ -60,10 +58,9 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
     ) -> Result<usize, AHPError> {
         let padded_matrix_dim = matrices::padded_matrix_dim(num_variables, num_constraints);
         let zk_bound = 1;
-        let constraint_domain_size =
-            EvaluationDomain::<F>::compute_size_of_domain(padded_matrix_dim)
-                .ok_or(AHPError::PolynomialDegreeTooLarge)?;
-        let non_zero_domain_size = EvaluationDomain::<F>::compute_size_of_domain(num_non_zero)
+        let constraint_domain_size = EvaluationDomain::compute_size_of_domain(padded_matrix_dim)
+            .ok_or(AHPError::PolynomialDegreeTooLarge)?;
+        let non_zero_domain_size = EvaluationDomain::compute_size_of_domain(num_non_zero)
             .ok_or(AHPError::PolynomialDegreeTooLarge)?;
 
         Ok(*[
@@ -84,20 +81,20 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
     }
 
     /// Get all the strict degree bounds enforced in the AHP.
-    pub fn get_degree_bounds(info: &CircuitInfo<F>) -> [usize; 4] {
+    pub fn get_degree_bounds(info: &CircuitInfo) -> [usize; 4] {
         let num_constraints = info.num_constraints;
         let num_non_zero_a = info.num_non_zero_a;
         let num_non_zero_b = info.num_non_zero_b;
         let num_non_zero_c = info.num_non_zero_c;
         [
-            EvaluationDomain::<F>::compute_size_of_domain(num_constraints).unwrap() - 2,
-            EvaluationDomain::<F>::compute_size_of_domain(num_non_zero_a).unwrap() - 2,
-            EvaluationDomain::<F>::compute_size_of_domain(num_non_zero_b).unwrap() - 2,
-            EvaluationDomain::<F>::compute_size_of_domain(num_non_zero_c).unwrap() - 2,
+            EvaluationDomain::compute_size_of_domain(num_constraints).unwrap() - 2,
+            EvaluationDomain::compute_size_of_domain(num_non_zero_a).unwrap() - 2,
+            EvaluationDomain::compute_size_of_domain(num_non_zero_b).unwrap() - 2,
+            EvaluationDomain::compute_size_of_domain(num_non_zero_c).unwrap() - 2,
         ]
     }
 
-    pub fn max_non_zero_domain(info: &CircuitInfo<F>) -> EvaluationDomain<F> {
+    pub fn max_non_zero_domain(info: &CircuitInfo) -> EvaluationDomain {
         let non_zero_a_domain = EvaluationDomain::new(info.num_non_zero_a).unwrap();
         let non_zero_b_domain = EvaluationDomain::new(info.num_non_zero_b).unwrap();
         let non_zero_c_domain = EvaluationDomain::new(info.num_non_zero_c).unwrap();
@@ -105,10 +102,10 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
     }
 
     fn max_non_zero_domain_helper(
-        domain_a: EvaluationDomain<F>,
-        domain_b: EvaluationDomain<F>,
-        domain_c: EvaluationDomain<F>,
-    ) -> EvaluationDomain<F> {
+        domain_a: EvaluationDomain,
+        domain_b: EvaluationDomain,
+        domain_c: EvaluationDomain,
+    ) -> EvaluationDomain {
         [domain_a, domain_b, domain_c]
             .into_iter()
             .max_by_key(|d| d.size())
@@ -120,7 +117,7 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
         non_zero_a_domain_size: usize,
         non_zero_b_domain_size: usize,
         non_zero_c_domain_size: usize,
-    ) -> Option<(FFTPrecomputation<F>, IFFTPrecomputation<F>)> {
+    ) -> Option<(FFTPrecomputation, IFFTPrecomputation)> {
         let largest_domain_size = [
             3 * constraint_domain_size,
             non_zero_a_domain_size * 2,
@@ -139,12 +136,12 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
     /// Construct the linear combinations that are checked by the AHP.
     /// Public input should be unformatted.
     #[allow(non_snake_case)]
-    pub fn construct_linear_combinations<E: EvaluationsProvider<F>>(
-        public_inputs: &[Vec<F>],
+    pub fn construct_linear_combinations<E: EvaluationsProvider>(
+        public_inputs: &[Vec<Scalar>],
         evals: &E,
-        prover_third_message: &prover::ThirdMessage<F>,
-        state: &verifier::State<F, MM>,
-    ) -> Result<BTreeMap<String, LinearCombination<F>>, AHPError> {
+        prover_third_message: &prover::ThirdMessage,
+        state: &verifier::State,
+    ) -> Result<BTreeMap<String, LinearCombination<Scalar>>, AHPError> {
         assert!(!public_inputs.is_empty());
         let constraint_domain = state.constraint_domain;
 
@@ -170,7 +167,7 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
 
         let first_round_msg = state.first_round_message.as_ref().unwrap();
         let alpha = first_round_msg.alpha;
-        let eta_a = F::one();
+        let eta_a = Scalar::ONE;
         let eta_b = first_round_msg.eta_b;
         let eta_c = first_round_msg.eta_c;
         let batch_combiners = &first_round_msg.batch_combiners;
@@ -193,38 +190,29 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
 
         let mut linear_combinations = BTreeMap::new();
 
-        let lincheck_time = start_timer!(|| "Lincheck");
         // Lincheck sumcheck:
         let z_b_s = (0..state.batch_size)
             .map(|i| {
                 let z_b_i = witness_label("z_b", i);
-                LinearCombination::new(z_b_i.clone(), [(F::one(), z_b_i)])
+                LinearCombination::new(z_b_i.clone(), [(Scalar::ONE, z_b_i)])
             })
             .collect::<Vec<_>>();
-        let g_1 = LinearCombination::new("g_1", [(F::one(), "g_1")]);
+        let g_1 = LinearCombination::new("g_1", [(Scalar::ONE, "g_1")]);
 
-        let bivariate_poly_time = start_timer!(|| "Bivariate poly");
         let r_alpha_at_beta =
             constraint_domain.eval_unnormalized_bivariate_lagrange_poly(alpha, beta);
-        end_timer!(bivariate_poly_time);
 
-        let v_H_at_alpha_time = start_timer!(|| "v_H_at_alpha");
         let v_H_at_alpha = constraint_domain.evaluate_vanishing_polynomial(alpha);
-        end_timer!(v_H_at_alpha_time);
 
-        let v_H_at_beta_time = start_timer!(|| "v_H_at_beta");
         let v_H_at_beta = constraint_domain.evaluate_vanishing_polynomial(beta);
-        end_timer!(v_H_at_beta_time);
 
-        let v_X_at_beta_time = start_timer!(|| "v_X_at_beta");
         let v_X_at_beta = input_domain.evaluate_vanishing_polynomial(beta);
-        end_timer!(v_X_at_beta_time);
 
         let z_b_s_at_beta = z_b_s
             .iter()
             .map(|z_b| evals.get_lc_eval(z_b, beta))
             .collect::<Result<Vec<_>, _>>()?;
-        let batch_z_b_at_beta: F = z_b_s_at_beta
+        let batch_z_b_at_beta: Scalar = z_b_s_at_beta
             .iter()
             .zip_eq(batch_combiners)
             .map(|(z_b_at_beta, combiner)| *z_b_at_beta * combiner)
@@ -239,16 +227,16 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
                 x.iter()
                     .zip_eq(&lag_at_beta)
                     .map(|(x, l)| *x * l)
-                    .sum::<F>()
+                    .sum::<Scalar>()
                     * c
             })
-            .sum::<F>();
+            .sum::<Scalar>();
 
         #[rustfmt::skip]
         let lincheck_sumcheck = {
             let mut lincheck_sumcheck = LinearCombination::empty("lincheck_sumcheck");
             if MM::ZK {
-                lincheck_sumcheck.add(F::one(), "mask_poly");
+                lincheck_sumcheck.add(Scalar::ONE, "mask_poly");
             }
             for (i, (z_b_i_at_beta, combiner)) in z_b_s_at_beta.iter().zip_eq(batch_combiners).enumerate() {
                 lincheck_sumcheck
@@ -269,12 +257,11 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
         }
         linear_combinations.insert("g_1".into(), g_1);
         linear_combinations.insert("lincheck_sumcheck".into(), lincheck_sumcheck);
-        end_timer!(lincheck_time);
 
         //  Matrix sumcheck:
         let mut matrix_sumcheck = LinearCombination::empty("matrix_sumcheck");
 
-        let g_a = LinearCombination::new("g_a", [(F::one(), "g_a")]);
+        let g_a = LinearCombination::new("g_a", [(Scalar::ONE, "g_a")]);
         let g_a_at_gamma = evals.get_lc_eval(&g_a, gamma)?;
         let selector_a =
             largest_non_zero_domain.evaluate_selector_polynomial(non_zero_a_domain, gamma);
@@ -290,7 +277,7 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
         );
         matrix_sumcheck += &lhs_a;
 
-        let g_b = LinearCombination::new("g_b", [(F::one(), "g_b")]);
+        let g_b = LinearCombination::new("g_b", [(Scalar::ONE, "g_b")]);
         let g_b_at_gamma = evals.get_lc_eval(&g_b, gamma)?;
         let selector_b =
             largest_non_zero_domain.evaluate_selector_polynomial(non_zero_b_domain, gamma);
@@ -306,7 +293,7 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
         );
         matrix_sumcheck += (r_b, &lhs_b);
 
-        let g_c = LinearCombination::new("g_c", [(F::one(), "g_c")]);
+        let g_c = LinearCombination::new("g_c", [(Scalar::ONE, "g_c")]);
         let g_c_at_gamma = evals.get_lc_eval(&g_c, gamma)?;
         let selector_c =
             largest_non_zero_domain.evaluate_selector_polynomial(non_zero_c_domain, gamma);
@@ -342,14 +329,14 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
     #[allow(clippy::too_many_arguments)]
     fn construct_lhs(
         label: &str,
-        alpha: F,
-        beta: F,
-        gamma: F,
-        v_h_at_alpha_beta: F,
-        g_at_gamma: F,
-        sum: F,
-        selector_at_gamma: F,
-    ) -> LinearCombination<F> {
+        alpha: Scalar,
+        beta: Scalar,
+        gamma: Scalar,
+        v_h_at_alpha_beta: Scalar,
+        g_at_gamma: Scalar,
+        sum: Scalar,
+        selector_at_gamma: Scalar,
+    ) -> LinearCombination<Scalar> {
         let a = LinearCombination::new(
             "a_poly_".to_string() + label,
             [(v_h_at_alpha_beta, "val_".to_string() + label)],
@@ -362,7 +349,7 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
                 (alpha_beta, LCTerm::One),
                 (-alpha, ("row_".to_string() + label).into()),
                 (-beta, ("col_".to_string() + label).into()),
-                (F::one(), ("row_col_".to_string() + label).into()),
+                (Scalar::ONE, ("row_col_".to_string() + label).into()),
             ],
         );
         b *= gamma * g_at_gamma + sum;
@@ -378,13 +365,21 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
 ///
 /// Intended to provide a common interface for both the prover and the verifier
 /// when constructing linear combinations via `AHPForR1CS::construct_linear_combinations`.
-pub trait EvaluationsProvider<F: PrimeField>: core::fmt::Debug {
+pub trait EvaluationsProvider: core::fmt::Debug {
     /// Get the evaluation of linear combination `lc` at `point`.
-    fn get_lc_eval(&self, lc: &LinearCombination<F>, point: F) -> Result<F, AHPError>;
+    fn get_lc_eval(
+        &self,
+        lc: &LinearCombination<Scalar>,
+        point: Scalar,
+    ) -> Result<Scalar, AHPError>;
 }
 
-impl<'a, F: PrimeField> EvaluationsProvider<F> for crate::polycommit::sonic_pc::Evaluations<'a, F> {
-    fn get_lc_eval(&self, lc: &LinearCombination<F>, point: F) -> Result<F, AHPError> {
+impl EvaluationsProvider for crate::polycommit::sonic_pc::Evaluations<'a> {
+    fn get_lc_eval(
+        &self,
+        lc: &LinearCombination<Scalar>,
+        point: Scalar,
+    ) -> Result<Scalar, AHPError> {
         let key = (lc.label.clone(), point);
         self.get(&key)
             .copied()
@@ -392,13 +387,16 @@ impl<'a, F: PrimeField> EvaluationsProvider<F> for crate::polycommit::sonic_pc::
     }
 }
 
-impl<F, T> EvaluationsProvider<F> for Vec<T>
+impl<T> EvaluationsProvider for Vec<T>
 where
-    F: PrimeField,
-    T: Borrow<LabeledPolynomial<F>> + core::fmt::Debug,
+    T: Borrow<LabeledPolynomial> + core::fmt::Debug,
 {
-    fn get_lc_eval(&self, lc: &LinearCombination<F>, point: F) -> Result<F, AHPError> {
-        let mut eval = F::zero();
+    fn get_lc_eval(
+        &self,
+        lc: &LinearCombination<Scalar>,
+        point: Scalar,
+    ) -> Result<Scalar, AHPError> {
+        let mut eval = Scalar::ZERO;
         for (coeff, term) in lc.iter() {
             let value = if let LCTerm::PolyLabel(label) = term {
                 self.iter()
@@ -410,7 +408,7 @@ where
                     .evaluate(point)
             } else {
                 assert!(term.is_one());
-                F::one()
+                Scalar::ONE
             };
             eval += &(*coeff * value)
         }
@@ -419,25 +417,28 @@ where
 }
 
 /// The derivative of the vanishing polynomial
-pub trait UnnormalizedBivariateLagrangePoly<F: PrimeField> {
+pub trait UnnormalizedBivariateLagrangePoly {
     /// Evaluate the polynomial
-    fn eval_unnormalized_bivariate_lagrange_poly(&self, x: F, y: F) -> F;
+    fn eval_unnormalized_bivariate_lagrange_poly(&self, x: Scalar, y: Scalar) -> Scalar;
 
     /// Evaluate over a batch of inputs
-    fn batch_eval_unnormalized_bivariate_lagrange_poly_with_diff_inputs(&self, x: F) -> Vec<F>;
+    fn batch_eval_unnormalized_bivariate_lagrange_poly_with_diff_inputs(
+        &self,
+        x: Scalar,
+    ) -> Vec<Scalar>;
 
     fn batch_eval_unnormalized_bivariate_lagrange_poly_with_diff_inputs_over_domain(
         &self,
-        x: F,
-        domain: &EvaluationDomain<F>,
-    ) -> Vec<F>;
+        x: Scalar,
+        domain: &EvaluationDomain,
+    ) -> Vec<Scalar>;
 
     /// Evaluate the magic polynomial over `self`
-    fn batch_eval_unnormalized_bivariate_lagrange_poly_with_same_inputs(&self) -> Vec<F>;
+    fn batch_eval_unnormalized_bivariate_lagrange_poly_with_same_inputs(&self) -> Vec<Scalar>;
 }
 
-impl<F: PrimeField> UnnormalizedBivariateLagrangePoly<F> for EvaluationDomain<F> {
-    fn eval_unnormalized_bivariate_lagrange_poly(&self, x: F, y: F) -> F {
+impl UnnormalizedBivariateLagrangePoly for EvaluationDomain {
+    fn eval_unnormalized_bivariate_lagrange_poly(&self, x: Scalar, y: Scalar) -> Scalar {
         if x != y {
             (self.evaluate_vanishing_polynomial(x) - self.evaluate_vanishing_polynomial(y))
                 / (x - y)
@@ -448,12 +449,10 @@ impl<F: PrimeField> UnnormalizedBivariateLagrangePoly<F> for EvaluationDomain<F>
 
     fn batch_eval_unnormalized_bivariate_lagrange_poly_with_diff_inputs_over_domain(
         &self,
-        x: F,
-        domain: &EvaluationDomain<F>,
-    ) -> Vec<F> {
-        use snarkvm_utilities::{cfg_iter, cfg_iter_mut};
-
-        #[cfg(feature = "parallel")]
+        x: Scalar,
+        domain: &EvaluationDomain,
+    ) -> Vec<Scalar> {
+        use crate::utils::*;
         use rayon::prelude::*;
 
         let vanish_x = self.evaluate_vanishing_polynomial(x);
@@ -481,12 +480,15 @@ impl<F: PrimeField> UnnormalizedBivariateLagrangePoly<F> for EvaluationDomain<F>
         denoms
     }
 
-    fn batch_eval_unnormalized_bivariate_lagrange_poly_with_diff_inputs(&self, x: F) -> Vec<F> {
+    fn batch_eval_unnormalized_bivariate_lagrange_poly_with_diff_inputs(
+        &self,
+        x: Scalar,
+    ) -> Vec<Scalar> {
         self.batch_eval_unnormalized_bivariate_lagrange_poly_with_diff_inputs_over_domain(x, self)
     }
 
-    fn batch_eval_unnormalized_bivariate_lagrange_poly_with_same_inputs(&self) -> Vec<F> {
-        let mut elems: Vec<F> = self
+    fn batch_eval_unnormalized_bivariate_lagrange_poly_with_same_inputs(&self) -> Vec<Scalar> {
+        let mut elems: Vec<Scalar> = self
             .elements()
             .map(|e| e * self.size_as_field_element)
             .collect();
@@ -497,12 +499,12 @@ impl<F: PrimeField> UnnormalizedBivariateLagrangePoly<F> for EvaluationDomain<F>
 
 /// Given two domains H and K such that H \subseteq K,
 /// construct polynomial that outputs 0 on all elements in K \ H, but 1 on all elements of H.
-pub trait SelectorPolynomial<F: PrimeField> {
-    fn evaluate_selector_polynomial(&self, other: EvaluationDomain<F>, point: F) -> F;
+pub trait SelectorPolynomial {
+    fn evaluate_selector_polynomial(&self, other: EvaluationDomain, point: Scalar) -> Scalar;
 }
 
-impl<F: PrimeField> SelectorPolynomial<F> for EvaluationDomain<F> {
-    fn evaluate_selector_polynomial(&self, other: EvaluationDomain<F>, point: F) -> F {
+impl SelectorPolynomial for EvaluationDomain {
+    fn evaluate_selector_polynomial(&self, other: EvaluationDomain, point: Scalar) -> Scalar {
         let numerator = self.evaluate_vanishing_polynomial(point) * other.size_as_field_element;
         let denominator = other.evaluate_vanishing_polynomial(point) * self.size_as_field_element;
         numerator / denominator

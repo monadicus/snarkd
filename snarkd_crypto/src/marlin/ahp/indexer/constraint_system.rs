@@ -1,5 +1,6 @@
-use crate::snark::marlin::ahp::matrices::{
-    make_matrices_square, padded_matrix_dim, to_matrix_helper,
+use crate::{
+    bls12_377::Scalar,
+    marlin::ahp::matrices::{make_matrices_square, padded_matrix_dim, to_matrix_helper},
 };
 use snarkvm_r1cs::{
     errors::SynthesisError, ConstraintSystem as CS, Index as VarIndex, LinearCombination, Variable,
@@ -7,16 +8,16 @@ use snarkvm_r1cs::{
 use snarkvm_utilities::serialize::*;
 
 /// Stores constraints during index generation.
-pub(crate) struct ConstraintSystem<F: Field> {
-    pub(crate) a: Vec<Vec<(F, VarIndex)>>,
-    pub(crate) b: Vec<Vec<(F, VarIndex)>>,
-    pub(crate) c: Vec<Vec<(F, VarIndex)>>,
+pub(crate) struct ConstraintSystem {
+    pub(crate) a: Vec<Vec<(Scalar, VarIndex)>>,
+    pub(crate) b: Vec<Vec<(Scalar, VarIndex)>>,
+    pub(crate) c: Vec<Vec<(Scalar, VarIndex)>>,
     pub(crate) num_public_variables: usize,
     pub(crate) num_private_variables: usize,
     pub(crate) num_constraints: usize,
 }
 
-impl<F: Field> ConstraintSystem<F> {
+impl ConstraintSystem {
     #[inline]
     pub(crate) fn new() -> Self {
         Self {
@@ -30,17 +31,17 @@ impl<F: Field> ConstraintSystem<F> {
     }
 
     #[inline]
-    pub(crate) fn a_matrix(&self) -> Vec<Vec<(F, usize)>> {
+    pub(crate) fn a_matrix(&self) -> Vec<Vec<(Scalar, usize)>> {
         to_matrix_helper(&self.a, self.num_public_variables)
     }
 
     #[inline]
-    pub(crate) fn b_matrix(&self) -> Vec<Vec<(F, usize)>> {
+    pub(crate) fn b_matrix(&self) -> Vec<Vec<(Scalar, usize)>> {
         to_matrix_helper(&self.b, self.num_public_variables)
     }
 
     #[inline]
-    pub(crate) fn c_matrix(&self) -> Vec<Vec<(F, usize)>> {
+    pub(crate) fn c_matrix(&self) -> Vec<Vec<(Scalar, usize)>> {
         to_matrix_helper(&self.c, self.num_public_variables)
     }
 
@@ -62,7 +63,7 @@ impl<F: Field> ConstraintSystem<F> {
     }
 
     #[inline]
-    fn make_row(l: &LinearCombination<F>) -> Vec<(F, VarIndex)> {
+    fn make_row(l: &LinearCombination<Scalar>) -> Vec<(Scalar, VarIndex)> {
         l.as_ref()
             .iter()
             .map(|(var, coeff)| (*coeff, var.get_unchecked()))
@@ -70,13 +71,13 @@ impl<F: Field> ConstraintSystem<F> {
     }
 }
 
-impl<F: Field> CS<F> for ConstraintSystem<F> {
+impl CS for ConstraintSystem {
     type Root = Self;
 
     #[inline]
     fn alloc<Fn, A, AR>(&mut self, _: A, _: Fn) -> Result<Variable, SynthesisError>
     where
-        Fn: FnOnce() -> Result<F, SynthesisError>,
+        Fn: FnOnce() -> Result<Scalar, SynthesisError>,
         A: FnOnce() -> AR,
         AR: AsRef<str>,
     {
@@ -92,7 +93,7 @@ impl<F: Field> CS<F> for ConstraintSystem<F> {
     #[inline]
     fn alloc_input<Fn, A, AR>(&mut self, _: A, _: Fn) -> Result<Variable, SynthesisError>
     where
-        Fn: FnOnce() -> Result<F, SynthesisError>,
+        Fn: FnOnce() -> Result<Scalar, SynthesisError>,
         A: FnOnce() -> AR,
         AR: AsRef<str>,
     {
@@ -109,9 +110,9 @@ impl<F: Field> CS<F> for ConstraintSystem<F> {
     where
         A: FnOnce() -> AR,
         AR: AsRef<str>,
-        LA: FnOnce(LinearCombination<F>) -> LinearCombination<F>,
-        LB: FnOnce(LinearCombination<F>) -> LinearCombination<F>,
-        LC: FnOnce(LinearCombination<F>) -> LinearCombination<F>,
+        LA: FnOnce(LinearCombination<Scalar>) -> LinearCombination<Scalar>,
+        LB: FnOnce(LinearCombination<Scalar>) -> LinearCombination<Scalar>,
+        LC: FnOnce(LinearCombination<Scalar>) -> LinearCombination<Scalar>,
     {
         self.a.push(Self::make_row(&a(LinearCombination::zero())));
         self.b.push(Self::make_row(&b(LinearCombination::zero())));

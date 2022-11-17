@@ -11,13 +11,13 @@ use crate::{
 use rand_core::RngCore;
 use snarkvm_fields::PrimeField;
 
-impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
+impl AHPForR1CS {
     /// Output the fourth round message and the next state.
     pub fn prover_fourth_round<'a, R: RngCore>(
-        verifier_message: &verifier::ThirdMessage<F>,
-        state: prover::State<'a, F, MM>,
+        verifier_message: &verifier::ThirdMessage,
+        state: prover::State<'a>,
         _r: &mut R,
-    ) -> Result<prover::FourthOracles<F>, AHPError> {
+    ) -> Result<prover::FourthOracles, AHPError> {
         let verifier::ThirdMessage { r_b, r_c, .. } = verifier_message;
         let [mut lhs_a, mut lhs_b, mut lhs_c] = state.lhs_polynomials.unwrap();
         lhs_b *= *r_b;

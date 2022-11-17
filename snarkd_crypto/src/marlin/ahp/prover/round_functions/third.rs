@@ -13,9 +13,9 @@ use crate::{
         matrices::MatrixArithmetization,
         prover, MarlinMode,
     },
+    utils::*,
 };
 use snarkvm_fields::{batch_inversion_and_mul, PrimeField};
-use snarkvm_utilities::{cfg_iter, cfg_iter_mut, ExecutionPool};
 
 use rand_core::RngCore;
 
@@ -64,8 +64,6 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
         ),
         AHPError,
     > {
-        let round_time = start_timer!(|| "AHP::Prover::ThirdRound");
-
         let verifier::FirstMessage { alpha, .. } = state.verifier_first_message.as_ref().expect(
             "prover::State should include verifier_first_msg when prover_third_round is called",
         );
@@ -137,8 +135,6 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
         state.sums = Some([sum_a, sum_b, sum_c]);
         assert!(oracles.matches_info(&Self::third_round_polynomial_info(&state.index.index_info)));
 
-        end_timer!(round_time);
-
         Ok((msg, oracles, state))
     }
 
@@ -154,16 +150,14 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
         fft_precomputation: &FFTPrecomputation<F>,
         ifft_precomputation: &IFFTPrecomputation<F>,
     ) -> (F, DensePolynomial<F>, LabeledPolynomial<F>) {
-        let mut job_pool = snarkvm_utilities::ExecutionPool::with_capacity(2);
+        let mut job_pool = crate::utils::ExecutionPool::with_capacity(2);
         job_pool.add_job(|| {
-            let a_poly_time = start_timer!(|| "Computing a poly");
             let a_poly = {
                 let coeffs = cfg_iter!(arithmetization.val.as_dense().unwrap().coeffs())
                     .map(|a| v_H_alpha_v_H_beta * a)
                     .collect();
                 DensePolynomial::from_coefficients_vec(coeffs)
             };
-            end_timer!(a_poly_time);
             a_poly
         });
 
@@ -174,7 +168,6 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
         );
 
         job_pool.add_job(|| {
-            let b_poly_time = start_timer!(|| "Computing b poly");
             let alpha_beta = alpha * beta;
             let b_poly = {
                 let evals: Vec<F> = cfg_iter!(row_on_K.evaluations)
@@ -185,12 +178,10 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
                 EvaluationsOnDomain::from_vec_and_domain(evals, non_zero_domain)
                     .interpolate_with_pc(ifft_precomputation)
             };
-            end_timer!(b_poly_time);
             b_poly
         });
         let [a_poly, b_poly]: [_; 2] = job_pool.execute_all().try_into().unwrap();
 
-        let f_evals_time = start_timer!(|| "Computing f evals on K");
         let mut inverses: Vec<_> = cfg_iter!(row_on_K.evaluations)
             .zip_eq(&col_on_K.evaluations)
             .map(|(r, c)| (beta - r) * (alpha - c))
@@ -201,12 +192,9 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
             .zip_eq(&arithmetization.evals_on_K.val.evaluations)
             .for_each(|(inv, a)| *inv *= a);
         let f_evals_on_K = inverses;
-        end_timer!(f_evals_time);
 
-        let f_poly_time = start_timer!(|| "Computing f poly");
         let f = EvaluationsOnDomain::from_vec_and_domain(f_evals_on_K, non_zero_domain)
             .interpolate_with_pc(ifft_precomputation);
-        end_timer!(f_poly_time);
         let g = DensePolynomial::from_coefficients_slice(&f.coeffs[1..]);
         let h = &a_poly
             - &{

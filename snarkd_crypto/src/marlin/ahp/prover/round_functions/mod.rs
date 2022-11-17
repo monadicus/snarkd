@@ -1,16 +1,14 @@
 use crate::snark::marlin::{
+    bls12_377::Scalar,
     ahp::{indexer::Circuit, AHPError, AHPForR1CS},
-    prover, MarlinMode,
+    prover,
+    utils::*,
+    MarlinMode,
 };
 use itertools::Itertools;
 use snarkvm_fields::PrimeField;
 use snarkvm_r1cs::ConstraintSynthesizer;
 
-use snarkvm_utilities::cfg_iter;
-#[cfg(not(feature = "std"))]
-use snarkvm_utilities::println;
-
-#[cfg(feature = "parallel")]
 use rayon::prelude::*;
 
 mod first;
@@ -18,12 +16,12 @@ mod fourth;
 mod second;
 mod third;
 
-impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
+impl AHPForR1CS {
     /// Initialize the AHP prover.
-    pub fn init_prover<'a, C: ConstraintSynthesizer<F>>(
-        index: &'a Circuit<F, MM>,
+    pub fn init_prover<'a, C: ConstraintSynthesizer>(
+        index: &'a Circuit,
         circuits: &[C],
-    ) -> Result<prover::State<'a, F, MM>, AHPError> {
+    ) -> Result<prover::State<'a, AHPError> {
         let init_time = start_timer!(|| "AHP::Prover::Init");
 
         // Perform matrix multiplications.
@@ -118,13 +116,13 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
     }
 }
 
-fn inner_product<F: PrimeField>(
-    public_variables: &[F],
-    private_variables: &[F],
-    row: &[(F, usize)],
+fn inner_product(
+    public_variables: &[Scalar],
+    private_variables: &[Scalar],
+    row: &[(Scalar, usize)],
     num_public_variables: usize,
-) -> F {
-    let mut result = F::zero();
+) -> Scalar {
+    let mut result = Scalar::ZERO;
 
     for &(ref coefficient, i) in row {
         // Fetch the variable.

@@ -26,44 +26,30 @@ impl<TargetField: PrimeField, MM: MarlinMode> AHPForR1CS<TargetField, MM> {
             return Err(AHPError::NonSquareMatrix);
         }
 
-        let constraint_domain_time = start_timer!(|| "Constructing constraint domain");
         let constraint_domain = EvaluationDomain::new(index_info.num_constraints)
             .ok_or(AHPError::PolynomialDegreeTooLarge)?;
-        end_timer!(constraint_domain_time);
 
-        let non_zero_a_time = start_timer!(|| "Constructing non-zero-a domain");
         let non_zero_a_domain = EvaluationDomain::new(index_info.num_non_zero_a)
             .ok_or(AHPError::PolynomialDegreeTooLarge)?;
-        end_timer!(non_zero_a_time);
 
-        let non_zero_b_time = start_timer!(|| "Constructing non-zero-b domain");
         let non_zero_b_domain = EvaluationDomain::new(index_info.num_non_zero_b)
             .ok_or(AHPError::PolynomialDegreeTooLarge)?;
-        end_timer!(non_zero_b_time);
 
-        let non_zero_c_time = start_timer!(|| "Constructing non-zero-c domain");
         let non_zero_c_domain = EvaluationDomain::new(index_info.num_non_zero_c)
             .ok_or(AHPError::PolynomialDegreeTooLarge)?;
-        end_timer!(non_zero_c_time);
 
-        let input_domain_time = start_timer!(|| "Constructing input domain");
         let input_domain = EvaluationDomain::new(index_info.num_public_inputs)
             .ok_or(AHPError::PolynomialDegreeTooLarge)?;
-        end_timer!(input_domain_time);
 
-        let squeeze_time = start_timer!(|| "Squeezing challenges");
         let elems = fs_rng.squeeze_nonnative_field_elements(3 + batch_size - 1);
         let (first, rest) = elems.split_at(3);
         let [alpha, eta_b, eta_c]: [_; 3] = first.try_into().unwrap();
         let mut batch_combiners = vec![TargetField::one()];
         batch_combiners.extend_from_slice(rest);
-        end_timer!(squeeze_time);
 
-        let check_vanish_poly_time = start_timer!(|| "Evaluating vanishing polynomial");
         assert!(!constraint_domain
             .evaluate_vanishing_polynomial(alpha)
             .is_zero());
-        end_timer!(check_vanish_poly_time);
 
         let message = FirstMessage {
             alpha,

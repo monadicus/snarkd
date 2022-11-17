@@ -8,7 +8,7 @@ use snarkvm_utilities::{
 };
 
 /// A certificate for the verifying key.
-#[derive(Clone, Debug, PartialEq, Eq, CanonicalSerialize, CanonicalDeserialize)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Certificate<E: PairingEngine> {
     /// An evaluation proof from the polynomial commitment.
     pub pc_proof: sonic_pc::BatchLCProof<E>,

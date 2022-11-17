@@ -1,52 +1,50 @@
-use snarkvm_fields::PrimeField;
-
-use crate::snark::marlin::{witness_label, MarlinMode};
+use crate::bls12_377::Scalar;
 
 /// First message of the verifier.
 #[derive(Clone, Debug)]
-pub struct FirstMessage<F> {
+pub struct FirstMessage {
     /// Query for the random polynomial.
-    pub alpha: F,
+    pub alpha: Scalar,
     /// Randomizer for the lincheck for `B`.
-    pub eta_b: F,
+    pub eta_b: Scalar,
     /// Randomizer for the lincheck for `C`.
-    pub eta_c: F,
+    pub eta_c: Scalar,
     /// Randomizers for combining vectors from the batch.
-    pub batch_combiners: Vec<F>,
+    pub batch_combiners: Vec<Scalar>,
 }
 
 /// Second verifier message.
 #[derive(Copy, Clone, Debug)]
-pub struct SecondMessage<F> {
+pub struct SecondMessage {
     /// Query for the second round of polynomials.
-    pub beta: F,
+    pub beta: Scalar,
 }
 
 /// Third message of the verifier.
 #[derive(Copy, Clone, Debug)]
-pub struct ThirdMessage<F> {
+pub struct ThirdMessage {
     /// Randomizer for the h-polynomial for `B`.
-    pub r_b: F,
+    pub r_b: Scalar,
     /// Randomizer for the h-polynomial for `C`.
-    pub r_c: F,
+    pub r_c: Scalar,
 }
 
 /// Query set of the verifier.
 #[derive(Clone, Debug)]
-pub struct QuerySet<F> {
+pub struct QuerySet {
     pub batch_size: usize,
-    pub g_1_query: (String, F),
-    pub z_b_query: (String, F),
-    pub lincheck_sumcheck_query: (String, F),
+    pub g_1_query: (String, Scalar),
+    pub z_b_query: (String, Scalar),
+    pub lincheck_sumcheck_query: (String, Scalar),
 
-    pub g_a_query: (String, F),
-    pub g_b_query: (String, F),
-    pub g_c_query: (String, F),
-    pub matrix_sumcheck_query: (String, F),
+    pub g_a_query: (String, Scalar),
+    pub g_b_query: (String, Scalar),
+    pub g_c_query: (String, Scalar),
+    pub matrix_sumcheck_query: (String, Scalar),
 }
 
-impl<F: PrimeField> QuerySet<F> {
-    pub fn new<MM: MarlinMode>(state: &super::State<F, MM>) -> Self {
+impl QuerySe> {
+    pub fn new(state: &super::State) -> Self {
         let beta = state.second_round_message.unwrap().beta;
         let gamma = state.gamma.unwrap();
         // For the first linear combination
@@ -72,7 +70,7 @@ impl<F: PrimeField> QuerySet<F> {
 
     /// Returns a `BTreeSet` containing elements of the form
     /// `(polynomial_label, (query_label, query))`.
-    pub fn to_set(&self) -> crate::polycommit::sonic_pc::QuerySet<'_, F> {
+    pub fn to_set(&self) -> crate::polycommit::sonic_pc::QuerySet<'_> {
         let mut query_set = crate::polycommit::sonic_pc::QuerySet::new();
         for i in 0..self.batch_size {
             query_set.insert((witness_label("z_b", i), self.z_b_query.clone()));

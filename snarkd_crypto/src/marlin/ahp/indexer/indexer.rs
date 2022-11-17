@@ -1,7 +1,7 @@
 use crate::{
+    bls12_377::Scalar,
     fft::EvaluationDomain,
-    polycommit::sonic_pc::{PolynomialInfo, PolynomialLabel},
-    snark::marlin::{
+    marlin::{
         ahp::{
             indexer::{Circuit, CircuitInfo, ConstraintSystem as IndexerConstraintSystem},
             matrices::arithmetize_matrix,
@@ -10,24 +10,20 @@ use crate::{
         matrices::{matrix_evals, precomputation_for_matrix_evals, MatrixEvals},
         num_non_zero, MarlinMode,
     },
+    polycommit::sonic_pc::{PolynomialInfo, PolynomialLabel},
 };
-use snarkvm_fields::PrimeField;
-use snarkvm_r1cs::{errors::SynthesisError, ConstraintSynthesizer, ConstraintSystem};
-use snarkvm_utilities::cfg_into_iter;
+use anyhow::anyhow;
 
 use core::marker::PhantomData;
 use std::collections::BTreeMap;
 
-#[cfg(feature = "parallel")]
 use rayon::prelude::*;
-#[cfg(not(feature = "std"))]
-use snarkvm_utilities::println;
 
 use super::Matrix;
 
-impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
+impl AHPForR1CS {
     /// Generate the index for this constraint system.
-    pub fn index<C: ConstraintSynthesizer<F>>(c: &C) -> Result<Circuit<F, MM>, AHPError> {
+    pub fn index<C: ConstraintSynthesizer>(c: &C) -> Result<Circuit, AHPError> {
         let IndexerState {
             constraint_domain,
 
@@ -45,7 +41,6 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
 
             index_info,
         } = Self::index_helper(c)?;
-        let joint_arithmetization_time = start_timer!(|| "Arithmetizing A");
 
         let [a_arith, b_arith, c_arith]: [_; 3] = [("a", a_evals), ("b", b_evals), ("c", c_evals)]
             .into_iter()
@@ -54,18 +49,13 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
             .try_into()
             .unwrap();
 
-        end_timer!(joint_arithmetization_time);
-
-        let fft_precomp_time = start_timer!(|| "Precomputing roots of unity");
-
         let (fft_precomputation, ifft_precomputation) = Self::fft_precomputation(
             constraint_domain.size(),
             non_zero_a_domain.size(),
             non_zero_b_domain.size(),
             non_zero_c_domain.size(),
         )
-        .ok_or(SynthesisError::PolynomialDegreeTooLarge)?;
-        end_timer!(fft_precomp_time);
+        .ok_or(anyhow!("polynomial degree too large"))?;
 
         Ok(Circuit {
             index_info,
@@ -115,15 +105,10 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
         })
     }
 
-    fn index_helper<C: ConstraintSynthesizer<F>>(c: &C) -> Result<IndexerState<F>, AHPError> {
-        let index_time = start_timer!(|| "AHP::Index");
-
-        let constraint_time = start_timer!(|| "Generating constraints");
+    fn index_helper<C: ConstraintSynthesizer>(c: &C) -> Result<IndexerState, AHPError> {
         let mut ics = IndexerConstraintSystem::new();
         c.generate_constraints(&mut ics)?;
-        end_timer!(constraint_time);
 
-        let padding_time = start_timer!(|| "Padding matrices to make them square");
         crate::snark::marlin::ahp::matrices::pad_input_for_indexer_and_prover(&mut ics);
         ics.make_matrices_square();
 
@@ -132,7 +117,6 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
         let c = ics.c_matrix();
 
         // balance_matrices(&mut a, &mut b);
-        end_timer!(padding_time);
 
         let num_padded_public_variables = ics.num_public_variables();
         let num_private_variables = ics.num_private_variables();
@@ -179,17 +163,17 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
             f: PhantomData,
         };
 
-        let constraint_domain = EvaluationDomain::new(num_constraints)
-            .ok_or(SynthesisError::PolynomialDegreeTooLarge)?;
+        let constraint_domain =
+            EvaluationDomain::new(num_constraints).ok_or(anyhow!("polynomial degree too large"))?;
         let input_domain = EvaluationDomain::new(num_padded_public_variables)
-            .ok_or(SynthesisError::PolynomialDegreeTooLarge)?;
+            .ok_or(anyhow!("polynomial degree too large"))?;
 
-        let non_zero_a_domain = EvaluationDomain::new(num_non_zero_a)
-            .ok_or(SynthesisError::PolynomialDegreeTooLarge)?;
-        let non_zero_b_domain = EvaluationDomain::new(num_non_zero_b)
-            .ok_or(SynthesisError::PolynomialDegreeTooLarge)?;
-        let non_zero_c_domain = EvaluationDomain::new(num_non_zero_c)
-            .ok_or(SynthesisError::PolynomialDegreeTooLarge)?;
+        let non_zero_a_domain =
+            EvaluationDomain::new(num_non_zero_a).ok_or(anyhow!("polynomial degree too large"))?;
+        let non_zero_b_domain =
+            EvaluationDomain::new(num_non_zero_b).ok_or(anyhow!("polynomial degree too large"))?;
+        let non_zero_c_domain =
+            EvaluationDomain::new(num_non_zero_c).ok_or(anyhow!("polynomial degree too large"))?;
 
         let (constraint_domain_elements, constraint_domain_eq_poly_vals) =
             precomputation_for_matrix_evals(&constraint_domain);
@@ -230,14 +214,13 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
 
             index_info,
         });
-        end_timer!(index_time);
         result
     }
 
-    pub fn evaluate_index_polynomials<C: ConstraintSynthesizer<F>>(
+    pub fn evaluate_index_polynomials<C: ConstraintSynthesizer>(
         c: &C,
-        point: F,
-    ) -> Result<impl Iterator<Item = F>, AHPError> {
+        point: Scalar,
+    ) -> Result<impl Iterator<Item = Scalar>, AHPError> {
         let state = Self::index_helper(c)?;
         let mut evals = [
             ("a", state.a_evals, state.non_zero_a_domain),
@@ -263,20 +246,20 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
     }
 }
 
-struct IndexerState<F: PrimeField> {
-    constraint_domain: EvaluationDomain<F>,
+struct IndexerState {
+    constraint_domain: EvaluationDomain,
 
-    a: Matrix<F>,
-    non_zero_a_domain: EvaluationDomain<F>,
-    a_evals: MatrixEvals<F>,
+    a: Matrix,
+    non_zero_a_domain: EvaluationDomain,
+    a_evals: MatrixEvals,
 
-    b: Matrix<F>,
-    non_zero_b_domain: EvaluationDomain<F>,
-    b_evals: MatrixEvals<F>,
+    b: Matrix,
+    non_zero_b_domain: EvaluationDomain,
+    b_evals: MatrixEvals,
 
-    c: Matrix<F>,
-    non_zero_c_domain: EvaluationDomain<F>,
-    c_evals: MatrixEvals<F>,
+    c: Matrix,
+    non_zero_c_domain: EvaluationDomain,
+    c_evals: MatrixEvals,
 
-    index_info: CircuitInfo<F>,
+    index_info: CircuitInfo,
 }

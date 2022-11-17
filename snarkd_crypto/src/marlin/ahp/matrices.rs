@@ -1,14 +1,14 @@
 #![allow(non_snake_case)]
 
 use crate::{
+    bls12_377::Scalar,
     fft::{EvaluationDomain, Evaluations as EvaluationsOnDomain},
     polycommit::sonic_pc::LabeledPolynomial,
     snark::marlin::ahp::{indexer::Matrix, UnnormalizedBivariateLagrangePoly},
+    utils::*,
 };
 use itertools::Itertools;
-use snarkvm_fields::{batch_inversion, Field, PrimeField};
 use snarkvm_r1cs::{ConstraintSystem, Index as VarIndex};
-use snarkvm_utilities::{cfg_iter, cfg_iter_mut, serialize::*};
 
 use hashbrown::HashMap;
 
@@ -19,10 +19,10 @@ use rayon::prelude::*;
 
 // This function converts a matrix output by Zexe's constraint infrastructure
 // to the one used in this crate.
-pub(crate) fn to_matrix_helper<F: Field>(
-    matrix: &[Vec<(F, VarIndex)>],
+pub(crate) fn to_matrix_helper(
+    matrix: &[Vec<(Scalar, VarIndex)>],
     num_input_variables: usize,
-) -> Matrix<F> {
+) -> Matrix {
     cfg_iter!(matrix)
         .map(|row| {
             let mut row_map = BTreeMap::new();
@@ -31,7 +31,7 @@ pub(crate) fn to_matrix_helper<F: Field>(
                     VarIndex::Public(i) => *i,
                     VarIndex::Private(i) => num_input_variables + i,
                 };
-                *row_map.entry(column).or_insert_with(F::zero) += *fe;
+                *row_map.entry(column).or_insert_with(Scalar::ZERO) += *fe;
             });
             row_map
                 .into_iter()
@@ -47,25 +47,23 @@ pub(crate) fn padded_matrix_dim(num_formatted_variables: usize, num_constraints:
 }
 
 /// Pads the public variables up to the closest power of two.
-pub(crate) fn pad_input_for_indexer_and_prover<F: PrimeField, CS: ConstraintSystem<F>>(
-    cs: &mut CS,
-) {
+pub(crate) fn pad_input_for_indexer_and_prover<CS: ConstraintSystem>(cs: &mut CS) {
     let num_public_variables = cs.num_public_variables();
 
-    let power_of_two = EvaluationDomain::<F>::new(num_public_variables);
+    let power_of_two = EvaluationDomain::new(num_public_variables);
     assert!(power_of_two.is_some());
 
     // Allocated `zero` variables to pad the public input up to the next power of two.
     let padded_size = power_of_two.unwrap().size();
     if padded_size > num_public_variables {
         for i in 0..(padded_size - num_public_variables) {
-            cs.alloc_input(|| format!("pad_input_{}", i), || Ok(F::zero()))
+            cs.alloc_input(|| format!("pad_input_{}", i), || Ok(Scalar::ZERO))
                 .unwrap();
         }
     }
 }
 
-pub(crate) fn make_matrices_square<F: Field, CS: ConstraintSystem<F>>(
+pub(crate) fn make_matrices_square<CS: ConstraintSystem>(
     cs: &mut CS,
     num_formatted_variables: usize,
 ) {
@@ -88,20 +86,20 @@ pub(crate) fn make_matrices_square<F: Field, CS: ConstraintSystem<F>>(
     }
 }
 
-#[derive(Clone, Debug, CanonicalSerialize, CanonicalDeserialize)]
-pub struct MatrixEvals<F: PrimeField> {
+#[derive(Clone, Debug)]
+pub struct MatrixEvals {
     /// Evaluations of the `row` polynomial.
-    pub row: EvaluationsOnDomain<F>,
+    pub row: EvaluationsOnDomain,
     /// Evaluations of the `col` polynomial.
-    pub col: EvaluationsOnDomain<F>,
+    pub col: EvaluationsOnDomain,
     /// Evaluations of the `val` polynomial.
-    pub val: EvaluationsOnDomain<F>,
+    pub val: EvaluationsOnDomain,
     /// Evaluations of the `row_col` polynomial.
-    pub row_col: EvaluationsOnDomain<F>,
+    pub row_col: EvaluationsOnDomain,
 }
 
-impl<F: PrimeField> MatrixEvals<F> {
-    pub(crate) fn evaluate(&self, lagrange_coefficients_at_point: &[F]) -> [F; 4] {
+impl MatrixEvals {
+    pub(crate) fn evaluate(&self, lagrange_coefficients_at_point: &[Scalar]) -> [Scalar; 4] {
         [
             self.row
                 .evaluate_with_coeffs(lagrange_coefficients_at_point),
@@ -117,47 +115,43 @@ impl<F: PrimeField> MatrixEvals<F> {
 
 /// Contains information about the arithmetization of the matrix M^*.
 /// Here `M^*(i, j) := M(j, i) * u_H(j, j)`. For more details, see [\[COS20\]](https://eprint.iacr.org/2019/1076).
-#[derive(Clone, Debug, CanonicalSerialize, CanonicalDeserialize)]
-pub struct MatrixArithmetization<F: PrimeField> {
+#[derive(Clone, Debug)]
+pub struct MatrixArithmetization {
     /// LDE of the row indices of M^*.
-    pub row: LabeledPolynomial<F>,
+    pub row: LabeledPolynomial,
     /// LDE of the column indices of M^*.
-    pub col: LabeledPolynomial<F>,
+    pub col: LabeledPolynomial,
     /// LDE of the vector containing entry-wise products of `row` and `col`.
-    pub row_col: LabeledPolynomial<F>,
+    pub row_col: LabeledPolynomial,
     /// LDE of the non-zero entries of M^*.
-    pub val: LabeledPolynomial<F>,
+    pub val: LabeledPolynomial,
 
     /// Evaluation of `self.row_a`, `self.col_a`, and `self.val_a` on the domain `K`.
-    pub evals_on_K: MatrixEvals<F>,
+    pub evals_on_K: MatrixEvals,
 }
 
-pub(crate) fn precomputation_for_matrix_evals<F: PrimeField>(
-    constraint_domain: &EvaluationDomain<F>,
-) -> (Vec<F>, HashMap<F, F>) {
+pub(crate) fn precomputation_for_matrix_evals(
+    constraint_domain: &EvaluationDomain,
+) -> (Vec<Scalar>, HashMap<Scalar, Scalar>) {
     let elements = constraint_domain.elements().collect::<Vec<_>>();
-    let eq_poly_vals_time = start_timer!(|| "Precomputing eq_poly_vals");
-    let eq_poly_vals: HashMap<F, F> = elements
+    let eq_poly_vals: HashMap<Scalar, Scalar> = elements
         .iter()
         .cloned()
         .zip_eq(
             constraint_domain.batch_eval_unnormalized_bivariate_lagrange_poly_with_same_inputs(),
         )
         .collect();
-    end_timer!(eq_poly_vals_time);
     (elements, eq_poly_vals)
 }
 
-pub(crate) fn matrix_evals<F: PrimeField>(
-    matrix: &Matrix<F>,
-    non_zero_domain: &EvaluationDomain<F>,
-    constraint_domain: &EvaluationDomain<F>,
-    input_domain: &EvaluationDomain<F>,
-    elems: &[F],
-    eq_poly_vals: &HashMap<F, F>,
-) -> MatrixEvals<F> {
-    let lde_evals_time = start_timer!(|| "Computing row, col and val evals");
-
+pub(crate) fn matrix_evals(
+    matrix: &Matrix,
+    non_zero_domain: &EvaluationDomain,
+    constraint_domain: &EvaluationDomain,
+    input_domain: &EvaluationDomain,
+    elems: &[Scalar],
+    eq_poly_vals: &HashMap<Scalar, Scalar>,
+) -> MatrixEvals {
     // Recall that we are computing the arithmetization of M^*,
     // where `M^*(i, j) := M(j, i) * u_H(j, j)`.
 
@@ -184,17 +178,16 @@ pub(crate) fn matrix_evals<F: PrimeField>(
         }
     }
 
-    batch_inversion::<F>(&mut inverses);
+    batch_inversion::<Scalar>(&mut inverses);
 
     cfg_iter_mut!(val_vec)
         .zip_eq(inverses)
         .for_each(|(v, inv)| *v *= inv);
-    end_timer!(lde_evals_time);
 
     for _ in count..non_zero_domain.size() {
         col_vec.push(elems[0]);
         row_vec.push(elems[0]);
-        val_vec.push(F::zero());
+        val_vec.push(Scalar::ZERO);
     }
 
     let row_col_vec: Vec<_> = row_vec
@@ -217,20 +210,14 @@ pub(crate) fn matrix_evals<F: PrimeField>(
 }
 
 // TODO for debugging: add test that checks result of arithmetize_matrix(M).
-pub(crate) fn arithmetize_matrix<F: PrimeField>(
+pub(crate) fn arithmetize_matrix(
     label: &str,
-    matrix_evals: MatrixEvals<F>,
-) -> MatrixArithmetization<F> {
-    let matrix_time = start_timer!(|| "Computing row, col, and val LDEs");
-
-    let interpolate_time = start_timer!(|| "Interpolating on K");
+    matrix_evals: MatrixEval>,
+) -> MatrixArithmetization {
     let row = matrix_evals.row.clone().interpolate();
     let col = matrix_evals.col.clone().interpolate();
     let val = matrix_evals.val.clone().interpolate();
     let row_col = matrix_evals.row_col.clone().interpolate();
-    end_timer!(interpolate_time);
-
-    end_timer!(matrix_time);
 
     MatrixArithmetization {
         row: LabeledPolynomial::new("row_".to_string() + label, row, None, None),

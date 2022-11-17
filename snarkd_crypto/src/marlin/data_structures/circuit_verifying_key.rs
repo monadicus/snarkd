@@ -12,7 +12,6 @@ use snarkvm_utilities::{
     io::{self, Read, Write},
     serialize::*,
     string::String,
-    FromBytes, FromBytesDeserializer, ToBytes, ToBytesSerializer, ToMinimalBits,
 };
 
 use anyhow::Result;
@@ -20,35 +19,33 @@ use core::{fmt, marker::PhantomData, str::FromStr};
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 
 /// Verification key for a specific index (i.e., R1CS matrices).
-#[derive(Debug, Clone, PartialEq, Eq, CanonicalSerialize, CanonicalDeserialize)]
-pub struct CircuitVerifyingKey<E: PairingEngine, MM: MarlinMode> {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CircuitVerifyingKey {
     /// Stores information about the size of the circuit, as well as its defined field.
-    pub circuit_info: CircuitInfo<E::Fr>,
+    pub circuit_info: CircuitInfo,
     /// Commitments to the indexed polynomials.
-    pub circuit_commitments: Vec<sonic_pc::Commitment<E>>,
+    pub circuit_commitments: Vec<sonic_pc::Commitment>,
     /// The verifier key for this index, trimmed from the universal SRS.
-    pub verifier_key: sonic_pc::VerifierKey<E>,
-    #[doc(hidden)]
-    pub mode: PhantomData<MM>,
+    pub verifier_key: sonic_pc::VerifierKey,
 }
 
-impl<E: PairingEngine, MM: MarlinMode> Prepare for CircuitVerifyingKey<E, MM> {
-    type Prepared = PreparedCircuitVerifyingKey<E, MM>;
+impl Prepare for CircuitVerifyingKey {
+    type Prepared = PreparedCircuitVerifyingKey;
 
     /// Prepare the circuit verifying key.
     fn prepare(&self) -> Self::Prepared {
         let constraint_domain_size =
-            EvaluationDomain::<E::Fr>::compute_size_of_domain(self.circuit_info.num_constraints)
-                .unwrap() as u64;
+            EvaluationDomain::compute_size_of_domain(self.circuit_info.num_constraints).unwrap()
+                as u64;
         let non_zero_a_domain_size =
-            EvaluationDomain::<E::Fr>::compute_size_of_domain(self.circuit_info.num_non_zero_a)
-                .unwrap() as u64;
+            EvaluationDomain::compute_size_of_domain(self.circuit_info.num_non_zero_a).unwrap()
+                as u64;
         let non_zero_b_domain_size =
-            EvaluationDomain::<E::Fr>::compute_size_of_domain(self.circuit_info.num_non_zero_b)
-                .unwrap() as u64;
+            EvaluationDomain::compute_size_of_domain(self.circuit_info.num_non_zero_b).unwrap()
+                as u64;
         let non_zero_c_domain_size =
-            EvaluationDomain::<E::Fr>::compute_size_of_domain(self.circuit_info.num_non_zero_b)
-                .unwrap() as u64;
+            EvaluationDomain::compute_size_of_domain(self.circuit_info.num_non_zero_b).unwrap()
+                as u64;
 
         PreparedCircuitVerifyingKey {
             constraint_domain_size,
@@ -60,111 +57,32 @@ impl<E: PairingEngine, MM: MarlinMode> Prepare for CircuitVerifyingKey<E, MM> {
     }
 }
 
-impl<E: PairingEngine, MM: MarlinMode> From<CircuitProvingKey<E, MM>>
-    for CircuitVerifyingKey<E, MM>
-{
-    fn from(other: CircuitProvingKey<E, MM>) -> Self {
+impl From<CircuitProvingKey> for CircuitVerifyingKey {
+    fn from(other: CircuitProvingKey) -> Self {
         other.circuit_verifying_key
     }
 }
 
-impl<'a, E: PairingEngine, MM: MarlinMode> From<&'a CircuitProvingKey<E, MM>>
-    for CircuitVerifyingKey<E, MM>
-{
-    fn from(other: &'a CircuitProvingKey<E, MM>) -> Self {
+impl From<&'a CircuitProvingKey> for CircuitVerifyingKey {
+    fn from(other: &'a CircuitProvingKey) -> Self {
         other.circuit_verifying_key.clone()
     }
 }
 
-impl<E: PairingEngine, MM: MarlinMode> From<PreparedCircuitVerifyingKey<E, MM>>
-    for CircuitVerifyingKey<E, MM>
-{
-    fn from(other: PreparedCircuitVerifyingKey<E, MM>) -> Self {
+impl From<PreparedCircuitVerifyingKey> for CircuitVerifyingKey {
+    fn from(other: PreparedCircuitVerifyingKey) -> Self {
         other.orig_vk
     }
 }
 
-impl<E: PairingEngine, MM: MarlinMode> ToMinimalBits for CircuitVerifyingKey<E, MM> {
-    fn to_minimal_bits(&self) -> Vec<bool> {
-        let constraint_domain = EvaluationDomain::<E::Fr>::new(self.circuit_info.num_constraints)
-            .ok_or(SynthesisError::PolynomialDegreeTooLarge)
-            .unwrap();
-        let non_zero_domain_a = EvaluationDomain::<E::Fr>::new(self.circuit_info.num_non_zero_a)
-            .ok_or(SynthesisError::PolynomialDegreeTooLarge)
-            .unwrap();
-        let non_zero_domain_b = EvaluationDomain::<E::Fr>::new(self.circuit_info.num_non_zero_b)
-            .ok_or(SynthesisError::PolynomialDegreeTooLarge)
-            .unwrap();
-        let non_zero_domain_c = EvaluationDomain::<E::Fr>::new(self.circuit_info.num_non_zero_c)
-            .ok_or(SynthesisError::PolynomialDegreeTooLarge)
-            .unwrap();
-
-        assert!(constraint_domain.size() < u64::MAX as usize);
-        assert!(non_zero_domain_a.size() < u64::MAX as usize);
-        assert!(non_zero_domain_b.size() < u64::MAX as usize);
-        assert!(non_zero_domain_c.size() < u64::MAX as usize);
-
-        let constraint_domain_size = constraint_domain.size() as u64;
-        let non_zero_domain_a_size = non_zero_domain_a.size() as u64;
-        let non_zero_domain_b_size = non_zero_domain_b.size() as u64;
-        let non_zero_domain_c_size = non_zero_domain_c.size() as u64;
-
-        let constraint_domain_size_bits = constraint_domain_size
-            .to_le_bytes()
-            .iter()
-            .flat_map(|&byte| (0..8).map(move |i| (byte >> i) & 1u8 == 1u8))
-            .collect::<Vec<bool>>();
-        let non_zero_domain_size_a_bits = non_zero_domain_a_size
-            .to_le_bytes()
-            .iter()
-            .flat_map(|&byte| (0..8).map(move |i| (byte >> i) & 1u8 == 1u8))
-            .collect::<Vec<bool>>();
-        let non_zero_domain_size_b_bits = non_zero_domain_b_size
-            .to_le_bytes()
-            .iter()
-            .flat_map(|&byte| (0..8).map(move |i| (byte >> i) & 1u8 == 1u8))
-            .collect::<Vec<bool>>();
-        let non_zero_domain_size_c_bits = non_zero_domain_c_size
-            .to_le_bytes()
-            .iter()
-            .flat_map(|&byte| (0..8).map(move |i| (byte >> i) & 1u8 == 1u8))
-            .collect::<Vec<bool>>();
-
-        let circuit_commitments_bits = self.circuit_commitments.to_minimal_bits();
-
-        [
-            constraint_domain_size_bits,
-            non_zero_domain_size_a_bits,
-            non_zero_domain_size_b_bits,
-            non_zero_domain_size_c_bits,
-            circuit_commitments_bits,
-        ]
-        .concat()
-    }
-}
-
-impl<E: PairingEngine, MM: MarlinMode> FromBytes for CircuitVerifyingKey<E, MM> {
-    fn read_le<R: Read>(r: R) -> io::Result<Self> {
-        Self::deserialize_compressed(r)
-            .map_err(|_| error("could not deserialize CircuitVerifyingKey"))
-    }
-}
-
-impl<E: PairingEngine, MM: MarlinMode> ToBytes for CircuitVerifyingKey<E, MM> {
-    fn write_le<W: Write>(&self, w: W) -> io::Result<()> {
-        self.serialize_compressed(w)
-            .map_err(|_| error("could not serialize CircuitVerifyingKey"))
-    }
-}
-
-impl<E: PairingEngine, MM: MarlinMode> CircuitVerifyingKey<E, MM> {
+impl CircuitVerifyingKey {
     /// Iterate over the commitments to indexed polynomials in `self`.
-    pub fn iter(&self) -> impl Iterator<Item = &sonic_pc::Commitment<E>> {
+    pub fn iter(&self) -> impl Iterator<Item = &sonic_pc::Commitment> {
         self.circuit_commitments.iter()
     }
 }
 
-impl<E: PairingEngine, MM: MarlinMode> ToConstraintField<E::Fq> for CircuitVerifyingKey<E, MM> {
+impl CircuitVerifyingKey {
     fn to_field_elements(&self) -> Result<Vec<E::Fq>, ConstraintFieldError> {
         let constraint_domain_size =
             EvaluationDomain::<E::Fr>::compute_size_of_domain(self.circuit_info.num_constraints)
@@ -194,7 +112,7 @@ impl<E: PairingEngine, MM: MarlinMode> ToConstraintField<E::Fq> for CircuitVerif
     }
 }
 
-impl<E: PairingEngine, MM: MarlinMode> FromStr for CircuitVerifyingKey<E, MM> {
+impl FromStr for CircuitVerifyingKe> {
     type Err = anyhow::Error;
 
     #[inline]
@@ -203,7 +121,7 @@ impl<E: PairingEngine, MM: MarlinMode> FromStr for CircuitVerifyingKey<E, MM> {
     }
 }
 
-impl<E: PairingEngine, MM: MarlinMode> fmt::Display for CircuitVerifyingKey<E, MM> {
+impl fmt::Display for CircuitVerifyingKey {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let vk_hex = hex::encode(
@@ -214,7 +132,7 @@ impl<E: PairingEngine, MM: MarlinMode> fmt::Display for CircuitVerifyingKey<E, M
     }
 }
 
-impl<E: PairingEngine, MM: MarlinMode> Serialize for CircuitVerifyingKey<E, MM> {
+impl Serialize for CircuitVerifyingKey {
     #[inline]
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         match serializer.is_human_readable() {
@@ -224,7 +142,7 @@ impl<E: PairingEngine, MM: MarlinMode> Serialize for CircuitVerifyingKey<E, MM> 
     }
 }
 
-impl<'de, E: PairingEngine, MM: MarlinMode> Deserialize<'de> for CircuitVerifyingKey<E, MM> {
+impl<'de> Deserialize<'de> for CircuitVerifyingKey {
     #[inline]
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         match deserializer.is_human_readable() {

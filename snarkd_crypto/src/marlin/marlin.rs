@@ -14,9 +14,7 @@ use itertools::Itertools;
 use rand::{CryptoRng, Rng};
 use rand_core::RngCore;
 use snarkvm_curves::PairingEngine;
-use snarkvm_fields::{One, PrimeField, ToConstraintField, Zero};
 use snarkvm_r1cs::ConstraintSynthesizer;
-use snarkvm_utilities::{to_bytes_le, ToBytes};
 
 use std::{borrow::Borrow, sync::Arc};
 
@@ -75,8 +73,6 @@ impl<
         universal_srs: &UniversalSRS<E>,
         circuit: &C,
     ) -> Result<(CircuitProvingKey<E, MM>, CircuitVerifyingKey<E, MM>), SNARKError> {
-        let index_time = start_timer!(|| "Marlin::CircuitSetup");
-
         // TODO: Add check that c is in the correct mode.
         // Increase the universal SRS size to support the circuit size.
         let index = AHPForR1CS::<_, MM>::index(circuit)?;
@@ -100,10 +96,8 @@ impl<
             Some(&coefficient_support),
         )?;
 
-        let commit_time = start_timer!(|| "Commit to index polynomials");
         let (mut circuit_commitments, circuit_commitment_randomness): (_, _) =
             SonicKZG10::<E, FS>::commit(&committer_key, index.iter().map(Into::into), None)?;
-        end_timer!(commit_time);
 
         circuit_commitments.sort_by(|c1, c2| c1.label().cmp(c2.label()));
         let circuit_commitments = circuit_commitments
@@ -124,7 +118,6 @@ impl<
             committer_key: Arc::new(committer_key),
         };
 
-        end_timer!(index_time);
 
         Ok((circuit_proving_key, circuit_verifying_key))
     }
@@ -178,9 +171,7 @@ impl<
     }
 
     fn absorb(commitments: &[Commitment<E>], sponge: &mut FS) {
-        let sponge_time = start_timer!(|| "Absorbing commitments");
         sponge.absorb_native_field_elements(commitments);
-        end_timer!(sponge_time);
     }
 
     fn absorb_with_msg(
@@ -188,10 +179,8 @@ impl<
         msg: &prover::ThirdMessage<E::Fr>,
         sponge: &mut FS,
     ) {
-        let sponge_time = start_timer!(|| "Absorbing commitments and message");
         Self::absorb(commitments, sponge);
         sponge.absorb_nonnative_field_elements([msg.sum_a, msg.sum_b, msg.sum_c]);
-        end_timer!(sponge_time);
     }
 }
 
@@ -220,10 +209,8 @@ where
         rng: &mut R,
     ) -> Result<Self::UniversalSetupParameters, SNARKError> {
         let setup_time =
-            start_timer!(|| { format!("Marlin::UniversalSetup with max_degree {}", max_degree,) });
 
         let srs = SonicKZG10::<E, FS>::setup(*max_degree, rng).map_err(Into::into);
-        end_timer!(setup_time);
         srs
     }
 
@@ -351,7 +338,6 @@ where
         terminator: &AtomicBool,
         zk_rng: &mut R,
     ) -> Result<Self::Proof, SNARKError> {
-        let prover_time = start_timer!(|| "Marlin::Prover");
         let batch_size = circuits.len();
         if batch_size == 0 {
             return Err(SNARKError::EmptyBatch);
@@ -381,7 +367,6 @@ where
         let mut prover_state = AHPForR1CS::<_, MM>::prover_first_round(prover_state, zk_rng)?;
         Self::terminate(terminator)?;
 
-        let first_round_comm_time = start_timer!(|| "Committing to first round polys");
         let (first_commitments, first_commitment_randomnesses) = {
             let first_round_oracles =
                 Arc::get_mut(prover_state.first_round_oracles.as_mut().unwrap()).unwrap();
@@ -391,7 +376,6 @@ where
                 Some(zk_rng),
             )?
         };
-        end_timer!(first_round_comm_time);
 
         Self::absorb_labeled(&first_commitments, &mut sponge);
         Self::terminate(terminator)?;
@@ -411,7 +395,6 @@ where
             AHPForR1CS::<_, MM>::prover_second_round(&verifier_first_message, prover_state, zk_rng);
         Self::terminate(terminator)?;
 
-        let second_round_comm_time = start_timer!(|| "Committing to second round polys");
         let (second_commitments, second_commitment_randomnesses) =
             SonicKZG10::<E, FS>::commit_with_terminator(
                 &circuit_proving_key.committer_key,
@@ -419,7 +402,6 @@ where
                 terminator,
                 Some(zk_rng),
             )?;
-        end_timer!(second_round_comm_time);
 
         Self::absorb_labeled(&second_commitments, &mut sponge);
         Self::terminate(terminator)?;
@@ -437,7 +419,6 @@ where
             AHPForR1CS::<_, MM>::prover_third_round(&verifier_second_msg, prover_state, zk_rng)?;
         Self::terminate(terminator)?;
 
-        let third_round_comm_time = start_timer!(|| "Committing to third round polys");
         let (third_commitments, third_commitment_randomnesses) =
             SonicKZG10::<E, FS>::commit_with_terminator(
                 &circuit_proving_key.committer_key,
@@ -445,7 +426,6 @@ where
                 terminator,
                 Some(zk_rng),
             )?;
-        end_timer!(third_round_comm_time);
 
         Self::absorb_labeled_with_msg(&third_commitments, &prover_third_message, &mut sponge);
 
@@ -463,7 +443,6 @@ where
             AHPForR1CS::<_, MM>::prover_fourth_round(&verifier_third_msg, prover_state, zk_rng)?;
         Self::terminate(terminator)?;
 
-        let fourth_round_comm_time = start_timer!(|| "Committing to fourth round polys");
         let (fourth_commitments, fourth_commitment_randomnesses) =
             SonicKZG10::<E, FS>::commit_with_terminator(
                 &circuit_proving_key.committer_key,
@@ -471,7 +450,6 @@ where
                 terminator,
                 Some(zk_rng),
             )?;
-        end_timer!(fourth_round_comm_time);
 
         Self::absorb_labeled(&fourth_commitments, &mut sponge);
 
@@ -560,7 +538,6 @@ where
 
         Self::terminate(terminator)?;
 
-        let eval_time = start_timer!(|| "Evaluating linear combinations over query set");
         let mut evaluations = std::collections::BTreeMap::new();
         for (label, (_, point)) in query_set.to_set() {
             if !AHPForR1CS::<E::Fr, MM>::LC_WITH_ZERO_EVAL.contains(&label.as_str()) {
@@ -573,7 +550,6 @@ where
         }
 
         let evaluations = proof::Evaluations::from_map(&evaluations, batch_size);
-        end_timer!(eval_time);
 
         Self::terminate(terminator)?;
 
@@ -599,7 +575,6 @@ where
             pc_proof,
         );
         assert_eq!(proof.pc_proof.is_hiding(), MM::ZK);
-        end_timer!(prover_time);
 
         Ok(proof)
     }
@@ -630,7 +605,6 @@ where
         }
 
         let batch_size = public_inputs.len();
-        let verifier_time = start_timer!(|| format!("Marlin::Verify with batch size {batch_size}"));
 
         let first_round_info = AHPForR1CS::<E::Fr, MM>::first_round_polynomial_info(batch_size);
         let mut first_commitments = comms
@@ -714,43 +688,35 @@ where
 
         // --------------------------------------------------------------------
         // First round
-        let first_round_time = start_timer!(|| "First round");
         Self::absorb_labeled(&first_commitments, &mut sponge);
         let (_, verifier_state) = AHPForR1CS::<_, MM>::verifier_first_round(
             circuit_verifying_key.circuit_info,
             batch_size,
             &mut sponge,
         )?;
-        end_timer!(first_round_time);
         // --------------------------------------------------------------------
 
         // --------------------------------------------------------------------
         // Second round
-        let second_round_time = start_timer!(|| "Second round");
         Self::absorb_labeled(&second_commitments, &mut sponge);
         let (_, verifier_state) =
             AHPForR1CS::<_, MM>::verifier_second_round(verifier_state, &mut sponge)?;
-        end_timer!(second_round_time);
         // --------------------------------------------------------------------
 
         // --------------------------------------------------------------------
         // Third round
-        let third_round_time = start_timer!(|| "Third round");
 
         Self::absorb_labeled_with_msg(&third_commitments, &proof.msg, &mut sponge);
         let (_, verifier_state) =
             AHPForR1CS::<_, MM>::verifier_third_round(verifier_state, &mut sponge)?;
-        end_timer!(third_round_time);
         // --------------------------------------------------------------------
 
         // --------------------------------------------------------------------
         // Fourth round
-        let fourth_round_time = start_timer!(|| "Fourth round");
 
         Self::absorb_labeled(&fourth_commitments, &mut sponge);
         let verifier_state =
             AHPForR1CS::<_, MM>::verifier_fourth_round(verifier_state, &mut sponge)?;
-        end_timer!(fourth_round_time);
         // --------------------------------------------------------------------
 
         // Collect degree bounds for commitments. Indexed polynomials have *no*
@@ -769,9 +735,7 @@ where
             .chain(fourth_commitments)
             .collect();
 
-        let query_set_time = start_timer!(|| "Constructing query set");
         let (query_set, verifier_state) = AHPForR1CS::<_, MM>::verifier_query_set(verifier_state);
-        end_timer!(query_set_time);
 
         sponge.absorb_nonnative_field_elements(proof.evaluations.to_field_elements());
 
@@ -789,16 +753,13 @@ where
             }
         }
 
-        let lc_time = start_timer!(|| "Constructing linear combinations");
         let lc_s = AHPForR1CS::<_, MM>::construct_linear_combinations(
             &public_inputs,
             &evaluations,
             &proof.msg,
             &verifier_state,
         )?;
-        end_timer!(lc_time);
 
-        let pc_time = start_timer!(|| "Checking linear combinations with PC");
         let evaluations_are_correct = SonicKZG10::<E, FS>::check_combinations(
             &circuit_verifying_key.verifier_key,
             lc_s.values(),
@@ -808,16 +769,11 @@ where
             &proof.pc_proof,
             &mut sponge,
         )?;
-        end_timer!(pc_time);
 
         if !evaluations_are_correct {
             #[cfg(debug_assertions)]
             eprintln!("SonicKZG10::Check failed");
         }
-        end_timer!(verifier_time, || format!(
-            " SonicKZG10::Check for AHP Verifier linear equations: {}",
-            evaluations_are_correct & proof_has_correct_zk_mode
-        ));
         Ok(evaluations_are_correct & proof_has_correct_zk_mode)
     }
 }

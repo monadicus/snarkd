@@ -15,9 +15,9 @@ use crate::{
         },
         prover, MarlinMode,
     },
+    utils::*,
 };
 use snarkvm_fields::PrimeField;
-use snarkvm_utilities::{cfg_iter, cfg_iter_mut, ExecutionPool};
 
 use itertools::Itertools;
 use rand_core::RngCore;
@@ -56,8 +56,6 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
         mut state: prover::State<'a, F, MM>,
         _r: &mut R,
     ) -> (prover::SecondOracles<F>, prover::State<'a, F, MM>) {
-        let round_time = start_timer!(|| "AHP::Prover::SecondRound");
-
         let constraint_domain = state.constraint_domain;
         let zk_bound = Self::zk_bound();
 
@@ -71,7 +69,6 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
         let (summed_z_m, t) =
             Self::calculate_summed_z_m_and_t(&state, *alpha, *eta_b, *eta_c, batch_combiners);
 
-        let z_time = start_timer!(|| "Compute z poly");
         let z = cfg_iter!(state.first_round_oracles.as_ref().unwrap().batches)
             .zip_eq(batch_combiners)
             .zip(&state.x_poly)
@@ -93,8 +90,6 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
             .sum::<DensePolynomial<F>>();
         assert!(z.degree() <= constraint_domain.size());
 
-        end_timer!(z_time);
-
         let sumcheck_lhs = Self::calculate_lhs(&state, t, summed_z_m, z, *alpha);
 
         debug_assert!(sumcheck_lhs
@@ -104,13 +99,11 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
             .sum::<F>()
             .is_zero());
 
-        let sumcheck_time = start_timer!(|| "Compute sumcheck h and g polys");
         let (h_1, x_g_1) = sumcheck_lhs
             .divide_by_vanishing_poly(constraint_domain)
             .unwrap();
         let g_1 = DensePolynomial::from_coefficients_slice(&x_g_1.coeffs[1..]);
         drop(x_g_1);
-        end_timer!(sumcheck_time);
 
         assert!(g_1.degree() <= constraint_domain.size() - 2);
         assert!(h_1.degree() <= 2 * constraint_domain.size() + 2 * zk_bound.unwrap_or(0) - 2);
@@ -127,7 +120,6 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
         assert!(oracles.matches_info(&Self::second_round_polynomial_info(&state.index.index_info)));
 
         state.verifier_first_message = Some(verifier_message.clone());
-        end_timer!(round_time);
 
         (oracles, state)
     }
@@ -140,7 +132,6 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
         alpha: F,
     ) -> DensePolynomial<F> {
         let constraint_domain = state.constraint_domain;
-        let q_1_time = start_timer!(|| "Compute LHS of sumcheck");
 
         let mask_poly = state
             .first_round_oracles
@@ -179,7 +170,6 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
         lhs += &mask_poly.map_or(SparsePolynomial::zero(), |p| {
             p.polynomial().as_sparse().unwrap().clone()
         });
-        end_timer!(q_1_time);
         lhs
     }
 
@@ -191,7 +181,6 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
         batch_combiners: &[F],
     ) -> (DensePolynomial<F>, DensePolynomial<F>) {
         let constraint_domain = state.constraint_domain;
-        let summed_z_m_poly_time = start_timer!(|| "Compute z_m poly");
 
         let fft_precomputation = &state.index.fft_precomputation;
         let ifft_precomputation = &state.index.ifft_precomputation;
@@ -238,15 +227,12 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
                     cfg_iter_mut!(summed_z_m.coeffs).for_each(|c| *c *= *combiner);
 
                     assert_eq!(summed_z_m.degree(), z_a.degree() + z_b.degree());
-                    end_timer!(summed_z_m_poly_time);
                     summed_z_m
                 })
                 .sum::<DensePolynomial<_>>()
         });
 
         job_pool.add_job(|| {
-            let t_poly_time = start_timer!(|| "Compute t poly");
-
             let r_alpha_x_evals = constraint_domain
                 .batch_eval_unnormalized_bivariate_lagrange_poly_with_diff_inputs(alpha);
             let t = Self::calculate_t(
@@ -257,7 +243,6 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
                 &r_alpha_x_evals,
                 ifft_precomputation,
             );
-            end_timer!(t_poly_time);
             t
         });
         let [summed_z_m, t]: [DensePolynomial<F>; 2] = job_pool.execute_all().try_into().unwrap();
