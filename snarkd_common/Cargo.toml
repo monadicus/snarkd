@@ -8,3 +8,11 @@ serde = { workspace = true }
 smallvec = { workspace = true }
 hex = { workspace = true }
 prost = { workspace = true }
+arc-swap = { workspace = true }
+uuid = { workspace = true }
+lazy_static = { workspace = true }
+serde_yaml = { workspace = true }
+
+snarkd_peer = { workspace = true, features = [
+  "config",
+], default-features = false }

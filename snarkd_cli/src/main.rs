@@ -1,14 +1,14 @@
 use clap::{Parser, Subcommand};
 use log::error;
 use snarkd_client::SnarkdClient;
+use snarkd_common::config::CONFIG;
 use url::Url;
 
-/// Snarkd Blockchain Node
 #[derive(Parser, Debug)]
 #[command(author, version, about = "A CLI for interfacing with snarkd", long_about = None)]
 struct Args {
-    #[arg(short, long, default_value = "ws://127.0.0.1:5422")]
-    endpoint: String,
+    #[arg(short, long)]
+    endpoint: Option<String>,
 
     #[command(subcommand)]
     command: Commands,
@@ -22,12 +22,18 @@ enum Commands {
 
 #[tokio::main]
 async fn main() {
+    lazy_static::initialize(&CONFIG);
+    let config = CONFIG.load();
     let args = Args::parse();
 
-    let endpoint_url = match args.endpoint.parse::<Url>() {
+    let endpoint_url = args
+        .endpoint
+        .unwrap_or_else(|| format!("ws://127.0.0.1:{}", config.rpc_port));
+
+    let endpoint_url = match endpoint_url.parse::<Url>() {
         Ok(e) => e,
         Err(e) => {
-            error!("failed to parse endpoint url @ {}: {e:?}", args.endpoint);
+            error!("failed to parse endpoint url @ {}: {e:?}", endpoint_url);
             std::process::exit(1);
         }
     };
@@ -35,7 +41,7 @@ async fn main() {
     let client = match SnarkdClient::new(endpoint_url.clone()).await {
         Ok(c) => c,
         Err(e) => {
-            error!("failed to open client @ {}: {e:?}", args.endpoint);
+            error!("failed to open client @ {}: {e:?}", endpoint_url);
             std::process::exit(1);
         }
     };

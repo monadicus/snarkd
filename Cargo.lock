@@ -2126,8 +2126,10 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
+ "lazy_static",
  "log",
  "snarkd_client",
+ "snarkd_common",
  "tokio",
  "url",
 ]
@@ -2145,10 +2147,15 @@ dependencies = [
 name = "snarkd_common"
 version = "0.1.0"
 dependencies = [
+ "arc-swap",
  "hex",
+ "lazy_static",
  "prost",
  "serde",
+ "serde_yaml",
  "smallvec",
+ "snarkd_peer",
+ "uuid",
 ]
 
 [[package]]
@@ -2214,7 +2221,6 @@ version = "0.1.0"
 dependencies = [
  "always_cell",
  "anyhow",
- "arc-swap",
  "async-trait",
  "chrono",
  "clap",
@@ -2225,14 +2231,12 @@ dependencies = [
  "log",
  "rand",
  "serde",
- "serde_yaml",
  "snarkd_common",
  "snarkd_network",
  "snarkd_peer",
  "snarkd_rpc",
  "snarkd_storage",
  "tokio",
- "uuid",
 ]
 
 [[package]]

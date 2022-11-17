@@ -5,16 +5,16 @@ use std::{
 };
 
 use clap::Parser;
-use config::{Verbosity, CONFIG};
 use log::{debug, error, info, warn, LevelFilter};
 use peer_book::PeerBook;
+use snarkd_common::config::{Verbosity, CONFIG, NODE_ID};
 use snarkd_network::Connection;
 use snarkd_peer::announcer::AnnouncerConsumer;
 use snarkd_rpc::server::websocket_server;
 use snarkd_storage::{Database, PeerDirection};
 use tokio::{net::TcpListener, sync::oneshot, time::MissedTickBehavior};
 
-use crate::{config::NODE_ID, inbound_handler::InboundHandler, peer::PEER_PING_INTERVAL};
+use crate::{inbound_handler::InboundHandler, peer::PEER_PING_INTERVAL};
 
 mod config;
 mod inbound_handler;

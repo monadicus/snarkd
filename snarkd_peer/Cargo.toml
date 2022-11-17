@@ -4,14 +4,32 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-async-trait = { workspace = true }
-bip_bencode = "0.4.4"
-hex = { workspace = true }
-rand = { workspace = true }
-anyhow = { workspace = true }
-log = { workspace = true }
-reqwest = { version = "0.11.12", features = ["json"] }
-serde = { workspace = true }
-serde_json = { workspace = true }
-tokio = { workspace = true }
-url = { workspace = true }
+async-trait = { workspace = true, optional = true }
+bip_bencode = { version = "0.4.4", optional = true }
+hex = { workspace = true, optional = true }
+rand = { workspace = true, optional = true }
+anyhow = { workspace = true, optional = true }
+log = { workspace = true, optional = true }
+reqwest = { version = "0.11.12", features = ["json"], optional = true }
+serde = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
+tokio = { workspace = true, optional = true }
+url = { workspace = true, optional = true }
+
+[features]
+default = ["torrent"]
+config = ["dep:hex", "dep:serde", "dep:url"]
+torrent = [
+  "config",
+  "dep:async-trait",
+  "dep:bip_bencode",
+  "dep:hex",
+  "dep:rand",
+  "dep:anyhow",
+  "dep:log",
+  "dep:reqwest",
+  "dep:serde",
+  "dep:serde_json",
+  "dep:tokio",
+  "dep:url",
+]

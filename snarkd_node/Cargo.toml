@@ -13,8 +13,6 @@ anyhow = { workspace = true }
 lazy_static = { workspace = true }
 serde = { workspace = true }
 chrono = { workspace = true }
-arc-swap = { workspace = true }
-serde_yaml = { workspace = true }
 log = { workspace = true }
 env_logger = { workspace = true }
 clap = { workspace = true }
@@ -22,7 +20,6 @@ dashmap = { workspace = true }
 itertools = { workspace = true }
 async-trait = { workspace = true }
 rand = { workspace = true }
-uuid = { workspace = true }
 always_cell = { workspace = true }
 
 snarkd_common = { workspace = true }

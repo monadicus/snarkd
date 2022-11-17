@@ -1,3 +1,8 @@
+#[cfg(feature = "torrent")]
 pub mod announcer;
-pub mod config;
+
+#[cfg(feature = "torrent")]
 pub mod torrent;
+
+#[cfg(feature = "config")]
+pub mod config;
