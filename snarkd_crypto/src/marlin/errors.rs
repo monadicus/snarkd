@@ -1,4 +1,4 @@
-use crate::{snark::marlin::ahp::AHPError, SNARKError};
+use crate::{marlin::ahp::AHPError, SNARKError};
 
 use core::fmt::Debug;
 

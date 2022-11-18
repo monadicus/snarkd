@@ -1,35 +1,15 @@
 use crate::polycommit::sonic_pc;
-use snarkvm_curves::PairingEngine;
-use snarkvm_utilities::{
-    error,
-    io::{self, Read, Write},
-    serialize::*,
-    FromBytes, ToBytes,
-};
 
 /// A certificate for the verifying key.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Certificate<E: PairingEngine> {
+pub struct Certificate {
     /// An evaluation proof from the polynomial commitment.
-    pub pc_proof: sonic_pc::BatchLCProof<E>,
+    pub pc_proof: sonic_pc::BatchLCProof,
 }
 
-impl<E: PairingEngine> Certificate<E> {
+impl Certificate {
     /// Construct a new certificate.
-    pub fn new(pc_proof: sonic_pc::BatchLCProof<E>) -> Self {
+    pub fn new(pc_proof: sonic_pc::BatchLCProof) -> Self {
         Self { pc_proof }
-    }
-}
-
-impl<E: PairingEngine> ToBytes for Certificate<E> {
-    fn write_le<W: Write>(&self, mut w: W) -> io::Result<()> {
-        Self::serialize_compressed(self, &mut w)
-            .map_err(|_| error("Failed to serialize certificate"))
-    }
-}
-
-impl<E: PairingEngine> FromBytes for Certificate<E> {
-    fn read_le<R: Read>(mut r: R) -> io::Result<Self> {
-        Self::deserialize_compressed(&mut r).map_err(|_| error("Failed to deserialize certificate"))
     }
 }

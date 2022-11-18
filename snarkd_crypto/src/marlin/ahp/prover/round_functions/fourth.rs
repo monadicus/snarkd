@@ -1,15 +1,14 @@
 use std::collections::BTreeMap;
 
 use crate::{
-    polycommit::sonic_pc::{LabeledPolynomial, PolynomialInfo, PolynomialLabel},
-    snark::marlin::{
+    marlin::{
         ahp::{verifier, AHPError, AHPForR1CS},
         prover, MarlinMode,
     },
+    polycommit::sonic_pc::{LabeledPolynomial, PolynomialInfo, PolynomialLabel},
 };
 
 use rand_core::RngCore;
-use snarkvm_fields::PrimeField;
 
 impl AHPForR1CS {
     /// Output the fourth round message and the next state.

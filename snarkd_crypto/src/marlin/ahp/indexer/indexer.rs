@@ -11,6 +11,7 @@ use crate::{
         num_non_zero, MarlinMode,
     },
     polycommit::sonic_pc::{PolynomialInfo, PolynomialLabel},
+    ConstraintSynthesizer,
 };
 use anyhow::anyhow;
 
@@ -109,7 +110,7 @@ impl AHPForR1CS {
         let mut ics = IndexerConstraintSystem::new();
         c.generate_constraints(&mut ics)?;
 
-        crate::snark::marlin::ahp::matrices::pad_input_for_indexer_and_prover(&mut ics);
+        crate::marlin::ahp::matrices::pad_input_for_indexer_and_prover(&mut ics);
         ics.make_matrices_square();
 
         let a = ics.a_matrix();

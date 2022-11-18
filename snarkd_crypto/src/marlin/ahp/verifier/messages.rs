@@ -1,4 +1,4 @@
-use crate::bls12_377::Scalar;
+use crate::{bls12_377::Scalar, witness_label};
 
 /// First message of the verifier.
 #[derive(Clone, Debug)]
@@ -43,7 +43,7 @@ pub struct QuerySet {
     pub matrix_sumcheck_query: (String, Scalar),
 }
 
-impl QuerySe> {
+impl QuerySet {
     pub fn new(state: &super::State) -> Self {
         let beta = state.second_round_message.unwrap().beta;
         let gamma = state.gamma.unwrap();

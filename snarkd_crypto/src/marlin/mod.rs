@@ -10,6 +10,12 @@
 #![allow(clippy::module_inception)]
 #![allow(clippy::type_complexity)]
 
+use crate::{sonic_pc::UniversalParams, ConstraintSynthesizer, PoseidonParameters};
+use core::{borrow::Borrow, sync::atomic::AtomicBool};
+use rand::Rng;
+use rand_core::CryptoRng;
+use thiserror::Error;
+
 /// Implements an Algebraic Holographic Proof (AHP) for the R1CS indexed relation.
 pub mod ahp;
 pub use ahp::*;
@@ -31,3 +37,141 @@ pub use mode::*;
 
 #[cfg(test)]
 pub mod tests;
+
+#[derive(Debug, Error)]
+pub enum SNARKError {
+    #[error("{}", _0)]
+    AnyhowError(#[from] anyhow::Error),
+
+    #[error("{}: {}", _0, _1)]
+    Crate(&'static str, String),
+
+    #[error("Expected a circuit-specific SRS in SNARK")]
+    ExpectedCircuitSpecificSRS,
+
+    #[error("{}", _0)]
+    Message(String),
+
+    #[error("Batch size was zero; must be at least 1")]
+    EmptyBatch,
+
+    #[error("terminated")]
+    Terminated,
+}
+
+/// Defines a trait that describes preparing from an unprepared version to a prepare version.
+pub trait Prepare {
+    type Prepared;
+    fn prepare(&self) -> Self::Prepared;
+}
+
+/// An abstraction layer to enable a circuit-specific SRS or universal SRS.
+/// Forward compatible with future assumptions that proof systems will require.
+pub enum SRS<'a, R: Rng + CryptoRng, T> {
+    CircuitSpecific(&'a mut R),
+    Universal(&'a T),
+}
+
+pub trait SNARK {
+    fn universal_setup<R: Rng + CryptoRng>(
+        config: usize,
+        rng: &mut R,
+    ) -> Result<UniversalParams, SNARKError>;
+
+    fn setup<C: ConstraintSynthesizer, R: Rng + CryptoRng>(
+        circuit: &C,
+        srs: &mut SRS<R, UniversalParams>,
+    ) -> Result<(CircuitProvingKey, CircuitVerifyingKey), SNARKError>;
+
+    fn prove_vk(
+        fs_parameters: &PoseidonParameters,
+        verifying_key: &CircuitVerifyingKey,
+        proving_key: &CircuitProvingKey,
+    ) -> Result<Certificate, SNARKError>;
+
+    fn prove_batch<C: ConstraintSynthesizer, R: Rng + CryptoRng>(
+        fs_parameters: &PoseidonParameters,
+        proving_key: &CircuitProvingKey,
+        input_and_witness: &[C],
+        rng: &mut R,
+    ) -> Result<Proof, SNARKError> {
+        Self::prove_batch_with_terminator(
+            fs_parameters,
+            proving_key,
+            input_and_witness,
+            &AtomicBool::new(false),
+            rng,
+        )
+    }
+
+    fn prove<C: ConstraintSynthesizer, R: Rng + CryptoRng>(
+        fs_parameters: &PoseidonParameters,
+        proving_key: &CircuitProvingKey,
+        input_and_witness: &C,
+        rng: &mut R,
+    ) -> Result<Proof, SNARKError> {
+        Self::prove_batch(
+            fs_parameters,
+            proving_key,
+            std::slice::from_ref(input_and_witness),
+            rng,
+        )
+    }
+
+    fn prove_batch_with_terminator<C: ConstraintSynthesizer, R: Rng + CryptoRng>(
+        fs_parameters: &PoseidonParameters,
+        proving_key: &CircuitProvingKey,
+        input_and_witness: &[C],
+        terminator: &AtomicBool,
+        rng: &mut R,
+    ) -> Result<Proof, SNARKError>;
+
+    fn prove_with_terminator<C: ConstraintSynthesizer, R: Rng + CryptoRng>(
+        fs_parameters: &PoseidonParameters,
+        proving_key: &CircuitProvingKey,
+        input_and_witness: &C,
+        terminator: &AtomicBool,
+        rng: &mut R,
+    ) -> Result<Proof, SNARKError> {
+        Self::prove_batch_with_terminator(
+            fs_parameters,
+            proving_key,
+            std::slice::from_ref(input_and_witness),
+            terminator,
+            rng,
+        )
+    }
+
+    fn verify_vk<C: ConstraintSynthesizer>(
+        fs_parameters: &PoseidonParameters,
+        circuit: &C,
+        verifying_key: &CircuitVerifyingKey,
+        certificate: &Certificate,
+    ) -> Result<bool, SNARKError>;
+
+    fn verify_batch_prepared<B: Borrow<Self::VerifierInput>>(
+        fs_parameters: &PoseidonParameters,
+        prepared_verifying_key: &<CircuitVerifyingKey as Prepare>::Prepared,
+        input: &[B],
+        proof: &Proof,
+    ) -> Result<bool, SNARKError>;
+
+    fn verify_batch<B: Borrow<Self::VerifierInput>>(
+        fs_parameters: &PoseidonParameters,
+        verifying_key: &CircuitVerifyingKey,
+        input: &[B],
+        proof: &Proof,
+    ) -> Result<bool, SNARKError> {
+        let processed_verifying_key = verifying_key.prepare();
+        Self::verify_batch_prepared(fs_parameters, &processed_verifying_key, input, proof)
+    }
+
+    fn verify<B: Borrow<Self::VerifierInput>>(
+        fs_parameters: &PoseidonParameters,
+        verifying_key: &CircuitVerifyingKey,
+        input: B,
+        proof: &Proof,
+    ) -> Result<bool, SNARKError> {
+        Self::verify_batch(fs_parameters, verifying_key, &[input], proof)
+    }
+}

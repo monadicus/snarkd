@@ -1,26 +1,23 @@
 use core::marker::PhantomData;
 
 use crate::{
+    bls12_377::Scalar,
     fft::EvaluationDomain,
-    snark::marlin::{
-        ahp::{
-            indexer::CircuitInfo,
-            verifier::{FirstMessage, QuerySet, SecondMessage, State, ThirdMessage},
-            AHPError, AHPForR1CS,
-        },
-        MarlinMode,
+    marlin::ahp::{
+        indexer::CircuitInfo,
+        verifier::{FirstMessage, QuerySet, SecondMessage, State, ThirdMessage},
+        AHPError, AHPForR1CS,
     },
-    AlgebraicSponge,
+    utils::*,
 };
-use snarkvm_fields::PrimeField;
 
-impl<TargetField: PrimeField, MM: MarlinMode> AHPForR1CS<TargetField, MM> {
+impl AHPForR1CS {
     /// Output the first message and next round state.
-    pub fn verifier_first_round<BaseField: PrimeField, R: AlgebraicSponge<BaseField, 2>>(
-        index_info: CircuitInfo<TargetField>,
+    pub fn verifier_first_round(
+        index_info: CircuitInfo,
         batch_size: usize,
-        fs_rng: &mut R,
-    ) -> Result<(FirstMessage<TargetField>, State<TargetField, MM>), AHPError> {
+        fs_rng: &mut PoseidonSponge,
+    ) -> Result<(FirstMessage, State), AHPError> {
         // Check that the R1CS is a square matrix.
         if index_info.num_constraints != index_info.num_variables {
             return Err(AHPError::NonSquareMatrix);
@@ -44,7 +41,7 @@ impl<TargetField: PrimeField, MM: MarlinMode> AHPForR1CS<TargetField, MM> {
         let elems = fs_rng.squeeze_nonnative_field_elements(3 + batch_size - 1);
         let (first, rest) = elems.split_at(3);
         let [alpha, eta_b, eta_c]: [_; 3] = first.try_into().unwrap();
-        let mut batch_combiners = vec![TargetField::one()];
+        let mut batch_combiners = vec![Scalar::ONE];
         batch_combiners.extend_from_slice(rest);
 
         assert!(!constraint_domain
@@ -76,10 +73,10 @@ impl<TargetField: PrimeField, MM: MarlinMode> AHPForR1CS<TargetField, MM> {
     }
 
     /// Output the second message and next round state.
-    pub fn verifier_second_round<BaseField: PrimeField, R: AlgebraicSponge<BaseField, 2>>(
-        mut state: State<TargetField, MM>,
-        fs_rng: &mut R,
-    ) -> Result<(SecondMessage<TargetField>, State<TargetField, MM>), AHPError> {
+    pub fn verifier_second_round(
+        mut state: State,
+        fs_rng: &mut PoseidonSponge,
+    ) -> Result<(SecondMessage, State), AHPError> {
         let elems = fs_rng.squeeze_nonnative_field_elements(1);
         let beta = elems[0];
         assert!(!state
@@ -94,10 +91,10 @@ impl<TargetField: PrimeField, MM: MarlinMode> AHPForR1CS<TargetField, MM> {
     }
 
     /// Output the third message and next round state.
-    pub fn verifier_third_round<BaseField: PrimeField, R: AlgebraicSponge<BaseField, 2>>(
-        mut state: State<TargetField, MM>,
-        fs_rng: &mut R,
-    ) -> Result<(ThirdMessage<TargetField>, State<TargetField, MM>), AHPError> {
+    pub fn verifier_third_round(
+        mut state: State,
+        fs_rng: &mut PoseidonSponge,
+    ) -> Result<(ThirdMessage, State), AHPError> {
         let elems = fs_rng.squeeze_nonnative_field_elements(2);
         let r_b = elems[0];
         let r_c = elems[1];
@@ -108,10 +105,10 @@ impl<TargetField: PrimeField, MM: MarlinMode> AHPForR1CS<TargetField, MM> {
     }
 
     /// Output the third message and next round state.
-    pub fn verifier_fourth_round<BaseField: PrimeField, R: AlgebraicSponge<BaseField, 2>>(
-        mut state: State<TargetField, MM>,
-        fs_rng: &mut R,
-    ) -> Result<State<TargetField, MM>, AHPError> {
+    pub fn verifier_fourth_round(
+        mut state: State,
+        fs_rng: &mut PoseidonSponge,
+    ) -> Result<State, AHPError> {
         let elems = fs_rng.squeeze_nonnative_field_elements(1);
         let gamma = elems[0];
 
@@ -120,9 +117,7 @@ impl<TargetField: PrimeField, MM: MarlinMode> AHPForR1CS<TargetField, MM> {
     }
 
     /// Output the query state and next round state.
-    pub fn verifier_query_set(
-        state: State<TargetField, MM>,
-    ) -> (QuerySet<TargetField>, State<TargetField, MM>) {
+    pub fn verifier_query_set(state: State) -> (QuerySet, State) {
         (QuerySet::new(&state), state)
     }
 }

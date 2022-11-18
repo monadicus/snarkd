@@ -5,18 +5,17 @@ use crate::{
     fft::{
         DensePolynomial, EvaluationDomain, Evaluations as EvaluationsOnDomain, SparsePolynomial,
     },
+    marlin::{
+        ahp::{AHPError, AHPForR1CS},
+        prover, witness_label, MarlinMode,
+    },
     polycommit::sonic_pc::{
         LabeledPolynomial, LabeledPolynomialWithBasis, PolynomialInfo, PolynomialLabel,
         PolynomialWithBasis,
     },
-    snark::marlin::{
-        ahp::{AHPError, AHPForR1CS},
-        prover, witness_label, MarlinMode,
-    },
+    utils::*,
 };
 use itertools::Itertools;
-use snarkvm_fields::PrimeField;
-use snarkvm_utilities::cfg_into_iter;
 
 use rand_core::RngCore;
 
@@ -80,7 +79,7 @@ impl AHPForR1CS {
         assert_eq!(private_variables.len(), batch_size);
         let mut r_b_s = Vec::with_capacity(batch_size);
 
-        let mut job_pool = snarkvm_utilities::ExecutionPool::with_capacity(3 * batch_size);
+        let mut job_pool = crate::utils::ExecutionPool::with_capacity(3 * batch_size);
         let state_ref = &state;
         for (i, (z_a, z_b, private_variables, x_poly)) in
             itertools::izip!(z_a, z_b, private_variables, &state.x_poly).enumerate()
@@ -276,7 +275,7 @@ impl AHPForR1CS {
 #[derive(Debug)]
 pub enum PoolResult<'a> {
     Witness(LabeledPolynomial),
-    MatrixPoly(LabeledPolynomial, LabeledPolynomialWithBasis<'a),
+    MatrixPoly(LabeledPolynomial, LabeledPolynomialWithBasis<'a>),
 }
 
 impl<'a> PoolResult<'a> {

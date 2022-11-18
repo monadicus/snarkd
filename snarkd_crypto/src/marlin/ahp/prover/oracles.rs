@@ -1,24 +1,21 @@
-use std::collections::BTreeMap;
-
-use snarkvm_fields::PrimeField;
-
 use crate::polycommit::sonic_pc::{
     LabeledPolynomial, LabeledPolynomialWithBasis, PolynomialInfo, PolynomialLabel,
 };
+use std::collections::BTreeMap;
 
 /// The first set of prover oracles.
 #[derive(Debug, Clone)]
-pub struct FirstOracles<'a, F: PrimeField> {
-    pub(in crate::snark::marlin) batches: Vec<SingleEntry<'a, F>>,
+pub struct FirstOracles<'a> {
+    pub(in crate::marlin) batches: Vec<SingleEntry<'a>>,
     /// The sum-check hiding polynomial.
-    pub mask_poly: Option<LabeledPolynomial<F>>,
+    pub mask_poly: Option<LabeledPolynomial>,
 }
 
-impl<'a, F: PrimeField> FirstOracles<'a, F> {
+impl<'a> FirstOracles<'a> {
     /// Iterate over the polynomials output by the prover in the first round.
     /// Intended for use when committing.
     #[allow(clippy::needless_collect)]
-    pub fn iter_for_commit(&mut self) -> impl Iterator<Item = LabeledPolynomialWithBasis<'a, F>> {
+    pub fn iter_for_commit(&mut self) -> impl Iterator<Item = LabeledPolynomialWithBasis<'a>> {
         let t = self
             .batches
             .iter_mut()
@@ -29,7 +26,7 @@ impl<'a, F: PrimeField> FirstOracles<'a, F> {
 
     /// Iterate over the polynomials output by the prover in the first round.
     /// Intended for use when opening.
-    pub fn iter_for_open(&'a self) -> impl Iterator<Item = &'a LabeledPolynomial<F>> {
+    pub fn iter_for_open(&'a self) -> impl Iterator<Item = &'a LabeledPolynomial> {
         self.batches
             .iter()
             .flat_map(|b| b.iter_for_open())
@@ -46,23 +43,23 @@ impl<'a, F: PrimeField> FirstOracles<'a, F> {
 }
 
 #[derive(Debug, Clone)]
-pub(in crate::snark::marlin) struct SingleEntry<'a, F: PrimeField> {
+pub(in crate::marlin) struct SingleEntry<'a> {
     /// The evaluations of `Az`.
-    pub(super) z_a: LabeledPolynomialWithBasis<'a, F>,
+    pub(super) z_a: LabeledPolynomialWithBasis<'a>,
     /// The evaluations of `Bz`.
-    pub(super) z_b: LabeledPolynomialWithBasis<'a, F>,
+    pub(super) z_b: LabeledPolynomialWithBasis<'a>,
     /// The LDE of `w`.
-    pub(super) w_poly: LabeledPolynomial<F>,
+    pub(super) w_poly: LabeledPolynomial,
     /// The LDE of `Az`.
-    pub(super) z_a_poly: LabeledPolynomial<F>,
+    pub(super) z_a_poly: LabeledPolynomial,
     /// The LDE of `Bz`.
-    pub(super) z_b_poly: LabeledPolynomial<F>,
+    pub(super) z_b_poly: LabeledPolynomial,
 }
 
-impl<'a, F: PrimeField> SingleEntry<'a, F> {
+impl<'a> SingleEntry<'a> {
     /// Iterate over the polynomials output by the prover in the first round.
     /// Intended for use when committing.
-    pub fn iter_for_commit(&mut self) -> impl Iterator<Item = LabeledPolynomialWithBasis<'a, F>> {
+    pub fn iter_for_commit(&mut self) -> impl Iterator<Item = LabeledPolynomialWithBasis<'a>> {
         let w_poly = self.w_poly.clone();
 
         let z_a = self.z_a.clone();
@@ -81,7 +78,7 @@ impl<'a, F: PrimeField> SingleEntry<'a, F> {
 
     /// Iterate over the polynomials output by the prover in the first round.
     /// Intended for use when opening.
-    pub fn iter_for_open(&self) -> impl Iterator<Item = &LabeledPolynomial<F>> {
+    pub fn iter_for_open(&self) -> impl Iterator<Item = &LabeledPolynomial> {
         [(&self.w_poly), &self.z_a_poly, &self.z_b_poly].into_iter()
     }
 
@@ -96,16 +93,16 @@ impl<'a, F: PrimeField> SingleEntry<'a, F> {
 
 /// The second set of prover oracles.
 #[derive(Debug)]
-pub struct SecondOracles<F: PrimeField> {
+pub struct SecondOracles {
     /// The polynomial `g` resulting from the first sumcheck.
-    pub g_1: LabeledPolynomial<F>,
+    pub g_1: LabeledPolynomial,
     /// The polynomial `h` resulting from the first sumcheck.
-    pub h_1: LabeledPolynomial<F>,
+    pub h_1: LabeledPolynomial,
 }
 
-impl<F: PrimeField> SecondOracles<F> {
+impl SecondOracles {
     /// Iterate over the polynomials output by the prover in the second round.
-    pub fn iter(&self) -> impl Iterator<Item = &LabeledPolynomial<F>> {
+    pub fn iter(&self) -> impl Iterator<Item = &LabeledPolynomial> {
         [&self.g_1, &self.h_1].into_iter()
     }
 
@@ -117,18 +114,18 @@ impl<F: PrimeField> SecondOracles<F> {
 
 /// The third set of prover oracles.
 #[derive(Debug)]
-pub struct ThirdOracles<F: PrimeField> {
+pub struct ThirdOracles {
     /// The polynomial `g_a` resulting from the second sumcheck.
-    pub g_a: LabeledPolynomial<F>,
+    pub g_a: LabeledPolynomial,
     /// The polynomial `g_b` resulting from the second sumcheck.
-    pub g_b: LabeledPolynomial<F>,
+    pub g_b: LabeledPolynomial,
     /// The polynomial `g_c` resulting from the second sumcheck.
-    pub g_c: LabeledPolynomial<F>,
+    pub g_c: LabeledPolynomial,
 }
 
-impl<F: PrimeField> ThirdOracles<F> {
+impl ThirdOracles {
     /// Iterate over the polynomials output by the prover in the third round.
-    pub fn iter(&self) -> impl Iterator<Item = &LabeledPolynomial<F>> {
+    pub fn iter(&self) -> impl Iterator<Item = &LabeledPolynomial> {
         [&self.g_a, &self.g_b, &self.g_c].into_iter()
     }
 
@@ -140,14 +137,14 @@ impl<F: PrimeField> ThirdOracles<F> {
 }
 
 #[derive(Debug)]
-pub struct FourthOracles<F: PrimeField> {
+pub struct FourthOracles {
     /// The polynomial `h_2` resulting from the second sumcheck.
-    pub h_2: LabeledPolynomial<F>,
+    pub h_2: LabeledPolynomial,
 }
 
-impl<F: PrimeField> FourthOracles<F> {
+impl FourthOracles {
     /// Iterate over the polynomials output by the prover in the third round.
-    pub fn iter(&self) -> impl Iterator<Item = &LabeledPolynomial<F>> {
+    pub fn iter(&self) -> impl Iterator<Item = &LabeledPolynomial> {
         [&self.h_2].into_iter()
     }
 

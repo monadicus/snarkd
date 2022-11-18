@@ -1,21 +1,22 @@
-use crate::snark::marlin::ahp::matrices::make_matrices_square;
-use snarkvm_fields::Field;
-use snarkvm_r1cs::{
-    errors::SynthesisError, ConstraintSystem as CS, Index as VarIndex, LinearCombination, Variable,
+use crate::{
+    bls12_377::Scalar,
+    marlin::ahp::matrices::make_matrices_square,
+    r1cs::{ConstraintSystem as CS, Index as VarIndex, LinearCombination, Variable},
 };
+use anyhow::Result;
 
-pub(crate) struct ConstraintSystem<F: Field> {
-    pub(crate) public_variables: Vec<F>,
-    pub(crate) private_variables: Vec<F>,
+pub(crate) struct ConstraintSystem {
+    pub(crate) public_variables: Vec<Scalar>,
+    pub(crate) private_variables: Vec<Scalar>,
     pub(crate) num_public_variables: usize,
     pub(crate) num_private_variables: usize,
     pub(crate) num_constraints: usize,
 }
 
-impl<F: Field> ConstraintSystem<F> {
+impl ConstraintSystem {
     pub(crate) fn new() -> Self {
         Self {
-            public_variables: vec![F::one()],
+            public_variables: vec![Scalar::ONE],
             private_variables: Vec::new(),
             num_public_variables: 1usize,
             num_private_variables: 0usize,
@@ -25,15 +26,15 @@ impl<F: Field> ConstraintSystem<F> {
 
     /// Formats the public input according to the requirements of the constraint
     /// system
-    pub(crate) fn format_public_input(public_input: &[F]) -> Vec<F> {
-        let mut input = vec![F::one()];
+    pub(crate) fn format_public_input(public_input: &[Scalar]) -> Vec<Scalar> {
+        let mut input = vec![Scalar::ONE];
         input.extend_from_slice(public_input);
         input
     }
 
     /// Takes in a previously formatted public input and removes the formatting
     /// imposed by the constraint system.
-    pub(crate) fn unformat_public_input(input: &[F]) -> Vec<F> {
+    pub(crate) fn unformat_public_input(input: &[Scalar]) -> Vec<Scalar> {
         input[1..].to_vec()
     }
 
@@ -48,13 +49,14 @@ impl<F: Field> ConstraintSystem<F> {
     }
 }
 
-impl<F: Field> CS<F> for ConstraintSystem<F> {
+impl CS for ConstraintSystem {
     type Root = Self;
+    type Field = Scalar;
 
     #[inline]
-    fn alloc<Fn, A, AR>(&mut self, _: A, f: Fn) -> Result<Variable, SynthesisError>
+    fn alloc<Fn, A, AR>(&mut self, _: A, f: Fn) -> Result<Variable>
     where
-        Fn: FnOnce() -> Result<F, SynthesisError>,
+        Fn: FnOnce() -> Result<Self::Field>,
         A: FnOnce() -> AR,
         AR: AsRef<str>,
     {
@@ -66,9 +68,9 @@ impl<F: Field> CS<F> for ConstraintSystem<F> {
     }
 
     #[inline]
-    fn alloc_input<Fn, A, AR>(&mut self, _: A, f: Fn) -> Result<Variable, SynthesisError>
+    fn alloc_input<Fn, A, AR>(&mut self, _: A, f: Fn) -> Result<Variable>
     where
-        Fn: FnOnce() -> Result<F, SynthesisError>,
+        Fn: FnOnce() -> Result<Self::Field>,
         A: FnOnce() -> AR,
         AR: AsRef<str>,
     {
@@ -84,9 +86,9 @@ impl<F: Field> CS<F> for ConstraintSystem<F> {
     where
         A: FnOnce() -> AR,
         AR: AsRef<str>,
-        LA: FnOnce(LinearCombination<F>) -> LinearCombination<F>,
-        LB: FnOnce(LinearCombination<F>) -> LinearCombination<F>,
-        LC: FnOnce(LinearCombination<F>) -> LinearCombination<F>,
+        LA: FnOnce(LinearCombination<Self::Field>) -> LinearCombination<Self::Field>,
+        LB: FnOnce(LinearCombination<Self::Field>) -> LinearCombination<Self::Field>,
+        LC: FnOnce(LinearCombination<Self::Field>) -> LinearCombination<Self::Field>,
     {
         self.num_constraints += 1;
     }

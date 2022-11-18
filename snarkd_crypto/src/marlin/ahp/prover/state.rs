@@ -1,94 +1,94 @@
 use std::sync::Arc;
 
 use crate::{
+    bls12_377::Scalar,
     fft::{
         domain::{FFTPrecomputation, IFFTPrecomputation},
         DensePolynomial, EvaluationDomain, Evaluations as EvaluationsOnDomain,
     },
-    snark::marlin::{
+    marlin::{
         ahp::{indexer::Circuit, verifier},
         AHPError, MarlinMode,
     },
 };
-use snarkvm_fields::PrimeField;
-use snarkvm_r1cs::SynthesisError;
+use anyhow::anyhow;
 
 /// State for the AHP prover.
-pub struct State<'a, F: PrimeField, MM: MarlinMode> {
-    pub(super) index: &'a Circuit<F, MM>,
+pub struct State<'a> {
+    pub(super) index: &'a Circuit,
 
     /// A domain that is sized for the public input.
-    pub(super) input_domain: EvaluationDomain<F>,
+    pub(super) input_domain: EvaluationDomain,
 
     /// A domain that is sized for the number of constraints.
-    pub(super) constraint_domain: EvaluationDomain<F>,
+    pub(super) constraint_domain: EvaluationDomain,
 
     /// A domain that is sized for the number of non-zero elements in A.
-    pub(super) non_zero_a_domain: EvaluationDomain<F>,
+    pub(super) non_zero_a_domain: EvaluationDomain,
     /// A domain that is sized for the number of non-zero elements in B.
-    pub(super) non_zero_b_domain: EvaluationDomain<F>,
+    pub(super) non_zero_b_domain: EvaluationDomain,
     /// A domain that is sized for the number of non-zero elements in C.
-    pub(super) non_zero_c_domain: EvaluationDomain<F>,
+    pub(super) non_zero_c_domain: EvaluationDomain,
 
     /// The number of instances being proved in this batch.
-    pub(in crate::snark) batch_size: usize,
+    pub(in crate::marlin) batch_size: usize,
 
     /// The list of public inputs for each instance in the batch.
     /// The length of this list must be equal to the batch size.
-    pub(super) padded_public_variables: Vec<Vec<F>>,
+    pub(super) padded_public_variables: Vec<Vec<Scalar>>,
 
     /// The list of private variables for each instance in the batch.
     /// The length of this list must be equal to the batch size.
-    pub(super) private_variables: Vec<Vec<F>>,
+    pub(super) private_variables: Vec<Vec<Scalar>>,
 
     /// The list of Az vectors for each instance in the batch.
     /// The length of this list must be equal to the batch size.
-    pub(super) z_a: Option<Vec<Vec<F>>>,
+    pub(super) z_a: Option<Vec<Vec<Scalar>>>,
 
     /// The list of Bz vectors for each instance in the batch.
     /// The length of this list must be equal to the batch size.
-    pub(super) z_b: Option<Vec<Vec<F>>>,
+    pub(super) z_b: Option<Vec<Vec<Scalar>>>,
 
     /// A list of polynomials corresponding to the interpolation of the public input.
     /// The length of this list must be equal to the batch size.
-    pub(super) x_poly: Vec<DensePolynomial<F>>,
+    pub(super) x_poly: Vec<DensePolynomial>,
 
     /// The first round oracles sent by the prover.
     /// The length of this list must be equal to the batch size.
-    pub(in crate::snark) first_round_oracles: Option<Arc<super::FirstOracles<'a, F>>>,
+    pub(in crate::marlin) first_round_oracles: Option<Arc<super::FirstOracles<'a>>>,
 
     /// Randomizers for z_b.
     /// The length of this list must be equal to the batch size.
-    pub(super) mz_poly_randomizer: Option<Vec<F>>,
+    pub(super) mz_poly_randomizer: Option<Vec<Scalar>>,
 
     /// The challenges sent by the verifier in the first round
-    pub(super) verifier_first_message: Option<verifier::FirstMessage<F>>,
+    pub(super) verifier_first_message: Option<verifier::FirstMessage>,
 
     /// Polynomials involved in the holographic sumcheck.
-    pub(super) lhs_polynomials: Option<[DensePolynomial<F>; 3]>,
+    pub(super) lhs_polynomials: Option<[DensePolynomial; 3]>,
     /// Polynomials involved in the holographic sumcheck.
-    pub(super) sums: Option<[F; 3]>,
+    pub(super) sums: Option<[Scalar; 3]>,
 }
 
-impl<'a, F: PrimeField, MM: MarlinMode> State<'a, F, MM> {
+impl<'a> State<'a> {
     pub fn initialize(
-        padded_public_input: Vec<Vec<F>>,
-        private_variables: Vec<Vec<F>>,
-        index: &'a Circuit<F, MM>,
+        padded_public_input: Vec<Vec<Scalar>>,
+        private_variables: Vec<Vec<Scalar>>,
+        index: &'a Circuit,
     ) -> Result<Self, AHPError> {
         let index_info = &index.index_info;
         let constraint_domain = EvaluationDomain::new(index_info.num_constraints)
-            .ok_or(SynthesisError::PolynomialDegreeTooLarge)?;
+            .ok_or(anyhow!("polynomial degree too large"))?;
 
         let non_zero_a_domain = EvaluationDomain::new(index_info.num_non_zero_a)
-            .ok_or(SynthesisError::PolynomialDegreeTooLarge)?;
+            .ok_or(anyhow!("polynomial degree too large"))?;
         let non_zero_b_domain = EvaluationDomain::new(index_info.num_non_zero_b)
-            .ok_or(SynthesisError::PolynomialDegreeTooLarge)?;
+            .ok_or(anyhow!("polynomial degree too large"))?;
         let non_zero_c_domain = EvaluationDomain::new(index_info.num_non_zero_c)
-            .ok_or(SynthesisError::PolynomialDegreeTooLarge)?;
+            .ok_or(anyhow!("polynomial degree too large"))?;
 
         let input_domain = EvaluationDomain::new(padded_public_input[0].len())
-            .ok_or(SynthesisError::PolynomialDegreeTooLarge)?;
+            .ok_or(anyhow!("polynomial degree too large"))?;
 
         let x_poly = padded_public_input
             .iter()
@@ -127,7 +127,7 @@ impl<'a, F: PrimeField, MM: MarlinMode> State<'a, F, MM> {
     }
 
     /// Get the public inputs for the entire batch.
-    pub fn public_inputs(&self) -> Vec<Vec<F>> {
+    pub fn public_inputs(&self) -> Vec<Vec<Scalar>> {
         self.padded_public_variables
             .iter()
             .map(|v| super::ConstraintSystem::unformat_public_input(v))
@@ -135,15 +135,15 @@ impl<'a, F: PrimeField, MM: MarlinMode> State<'a, F, MM> {
     }
 
     /// Get the padded public inputs for the entire batch.
-    pub fn padded_public_inputs(&self) -> Vec<Vec<F>> {
+    pub fn padded_public_inputs(&self) -> Vec<Vec<Scalar>> {
         self.padded_public_variables.clone()
     }
 
-    pub fn fft_precomputation(&self) -> &FFTPrecomputation<F> {
+    pub fn fft_precomputation(&self) -> &FFTPrecomputation {
         &self.index.fft_precomputation
     }
 
-    pub fn ifft_precomputation(&self) -> &IFFTPrecomputation<F> {
+    pub fn ifft_precomputation(&self) -> &IFFTPrecomputation {
         &self.index.ifft_precomputation
     }
 }

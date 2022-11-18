@@ -1,22 +1,13 @@
 use crate::{
+    bls12_377::Fp,
     fft::EvaluationDomain,
+    marlin::{ahp::indexer::*, CircuitProvingKey, MarlinMode, PreparedCircuitVerifyingKey},
     polycommit::sonic_pc,
-    snark::marlin::{ahp::indexer::*, CircuitProvingKey, MarlinMode, PreparedCircuitVerifyingKey},
     Prepare,
-};
-use snarkvm_curves::PairingEngine;
-use snarkvm_fields::{ConstraintFieldError, ToConstraintField};
-use snarkvm_r1cs::SynthesisError;
-use snarkvm_utilities::{
-    error,
-    io::{self, Read, Write},
-    serialize::*,
-    string::String,
 };
 
 use anyhow::Result;
 use core::{fmt, marker::PhantomData, str::FromStr};
-use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 
 /// Verification key for a specific index (i.e., R1CS matrices).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -63,7 +54,7 @@ impl From<CircuitProvingKey> for CircuitVerifyingKey {
     }
 }
 
-impl From<&'a CircuitProvingKey> for CircuitVerifyingKey {
+impl<'a> From<&'a CircuitProvingKey> for CircuitVerifyingKey {
     fn from(other: &'a CircuitProvingKey) -> Self {
         other.circuit_verifying_key.clone()
     }
@@ -83,27 +74,28 @@ impl CircuitVerifyingKey {
 }
 
 impl CircuitVerifyingKey {
-    fn to_field_elements(&self) -> Result<Vec<E::Fq>, ConstraintFieldError> {
+    fn to_field_elements(&self) -> Vec<Fp> {
         let constraint_domain_size =
-            EvaluationDomain::<E::Fr>::compute_size_of_domain(self.circuit_info.num_constraints)
-                .unwrap() as u128;
+            EvaluationDomain::compute_size_of_domain(self.circuit_info.num_constraints).unwrap()
+                as u128;
         let non_zero_a_domain_size =
-            EvaluationDomain::<E::Fr>::compute_size_of_domain(self.circuit_info.num_non_zero_a)
-                .unwrap() as u128;
+            EvaluationDomain::compute_size_of_domain(self.circuit_info.num_non_zero_a).unwrap()
+                as u128;
         let non_zero_b_domain_size =
-            EvaluationDomain::<E::Fr>::compute_size_of_domain(self.circuit_info.num_non_zero_b)
-                .unwrap() as u128;
+            EvaluationDomain::compute_size_of_domain(self.circuit_info.num_non_zero_b).unwrap()
+                as u128;
         let non_zero_c_domain_size =
-            EvaluationDomain::<E::Fr>::compute_size_of_domain(self.circuit_info.num_non_zero_c)
-                .unwrap() as u128;
+            EvaluationDomain::compute_size_of_domain(self.circuit_info.num_non_zero_c).unwrap()
+                as u128;
 
         let mut res = Vec::new();
-        res.append(&mut E::Fq::from(constraint_domain_size).to_field_elements()?);
-        res.append(&mut E::Fq::from(non_zero_a_domain_size).to_field_elements()?);
-        res.append(&mut E::Fq::from(non_zero_b_domain_size).to_field_elements()?);
-        res.append(&mut E::Fq::from(non_zero_c_domain_size).to_field_elements()?);
+        res.append(&mut Fp::from(constraint_domain_size));
+        res.append(&mut Fp::from(non_zero_a_domain_size));
+        res.append(&mut Fp::from(non_zero_b_domain_size));
+        res.append(&mut Fp::from(non_zero_c_domain_size));
         for comm in self.circuit_commitments.iter() {
-            res.append(&mut comm.to_field_elements()?);
+            res.append(&mut comm.x);
+            res.append(&mut comm.y);
         }
 
         // Intentionally ignore the appending of the PC verifier key.
@@ -112,7 +104,7 @@ impl CircuitVerifyingKey {
     }
 }
 
-impl FromStr for CircuitVerifyingKe> {
+impl FromStr for CircuitVerifyingKey {
     type Err = anyhow::Error;
 
     #[inline]
@@ -129,31 +121,5 @@ impl fmt::Display for CircuitVerifyingKey {
                 .expect("Failed to convert verifying key to bytes"),
         );
         write!(f, "{}", vk_hex)
-    }
-}
-
-impl Serialize for CircuitVerifyingKey {
-    #[inline]
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        match serializer.is_human_readable() {
-            true => serializer.collect_str(self),
-            false => ToBytesSerializer::serialize_with_size_encoding(self, serializer),
-        }
-    }
-}
-
-impl<'de> Deserialize<'de> for CircuitVerifyingKey {
-    #[inline]
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        match deserializer.is_human_readable() {
-            true => {
-                let s: String = Deserialize::deserialize(deserializer)?;
-                FromStr::from_str(&s).map_err(de::Error::custom)
-            }
-            false => FromBytesDeserializer::<Self>::deserialize_with_size_encoding(
-                deserializer,
-                "verifying key",
-            ),
-        }
     }
 }

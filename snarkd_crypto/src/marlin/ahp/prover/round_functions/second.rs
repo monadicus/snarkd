@@ -2,30 +2,27 @@ use core::convert::TryInto;
 use std::collections::BTreeMap;
 
 use crate::{
+    bls12_377::Scalar,
     fft,
     fft::{
         domain::IFFTPrecomputation, polynomial::PolyMultiplier, DensePolynomial, EvaluationDomain,
         SparsePolynomial,
     },
-    polycommit::sonic_pc::{LabeledPolynomial, PolynomialInfo, PolynomialLabel},
-    snark::marlin::{
+    marlin::{
         ahp::{
             indexer::{CircuitInfo, Matrix},
             verifier, AHPForR1CS, UnnormalizedBivariateLagrangePoly,
         },
         prover, MarlinMode,
     },
+    polycommit::sonic_pc::{LabeledPolynomial, PolynomialInfo, PolynomialLabel},
     utils::*,
 };
-use snarkvm_fields::PrimeField;
-
 use itertools::Itertools;
 use rand_core::RngCore;
-
-#[cfg(feature = "parallel")]
 use rayon::prelude::*;
 
-impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
+impl AHPForR1CS {
     /// Output the number of oracles sent by the prover in the second round.
     pub fn num_second_round_oracles() -> usize {
         2
@@ -33,10 +30,10 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
 
     /// Output the degree bounds of oracles in the first round.
     pub fn second_round_polynomial_info(
-        info: &CircuitInfo<F>,
+        info: &CircuitInfo,
     ) -> BTreeMap<PolynomialLabel, PolynomialInfo> {
         let constraint_domain_size =
-            EvaluationDomain::<F>::compute_size_of_domain(info.num_constraints).unwrap();
+            EvaluationDomain::compute_size_of_domain(info.num_constraints).unwrap();
         [
             PolynomialInfo::new(
                 "g_1".into(),
@@ -52,10 +49,10 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
 
     /// Output the second round message and the next state.
     pub fn prover_second_round<'a, R: RngCore>(
-        verifier_message: &verifier::FirstMessage<F>,
-        mut state: prover::State<'a, F, MM>,
+        verifier_message: &verifier::FirstMessage,
+        mut state: prover::State<'a>,
         _r: &mut R,
-    ) -> (prover::SecondOracles<F>, prover::State<'a, F, MM>) {
+    ) -> (prover::SecondOracles, prover::State<'a>) {
         let constraint_domain = state.constraint_domain;
         let zk_bound = Self::zk_bound();
 
@@ -87,7 +84,7 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
                 cfg_iter_mut!(z.coeffs).for_each(|z| *z *= &coeff);
                 z
             })
-            .sum::<DensePolynomial<F>>();
+            .sum::<DensePolynomial>();
         assert!(z.degree() <= constraint_domain.size());
 
         let sumcheck_lhs = Self::calculate_lhs(&state, t, summed_z_m, z, *alpha);
@@ -96,7 +93,7 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
             .evaluate_over_domain_by_ref(constraint_domain)
             .evaluations
             .into_iter()
-            .sum::<F>()
+            .sum::<Scalar>()
             .is_zero());
 
         let (h_1, x_g_1) = sumcheck_lhs
@@ -125,12 +122,12 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
     }
 
     fn calculate_lhs(
-        state: &prover::State<F, MM>,
-        t: DensePolynomial<F>,
-        summed_z_m: DensePolynomial<F>,
-        z: DensePolynomial<F>,
-        alpha: F,
-    ) -> DensePolynomial<F> {
+        state: &prover::State,
+        t: DensePolynomial,
+        summed_z_m: DensePolynomial,
+        z: DensePolynomial,
+        alpha: Scalar,
+    ) -> DensePolynomial {
         let constraint_domain = state.constraint_domain;
 
         let mask_poly = state
@@ -174,12 +171,12 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
     }
 
     fn calculate_summed_z_m_and_t(
-        state: &prover::State<F, MM>,
-        alpha: F,
-        eta_b: F,
-        eta_c: F,
-        batch_combiners: &[F],
-    ) -> (DensePolynomial<F>, DensePolynomial<F>) {
+        state: &prover::State,
+        alpha: Scalar,
+        eta_b: Scalar,
+        eta_c: Scalar,
+        batch_combiners: &[Scalar],
+    ) -> (DensePolynomial, DensePolynomial) {
         let constraint_domain = state.constraint_domain;
 
         let fft_precomputation = &state.index.fft_precomputation;
@@ -208,14 +205,14 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
                         // Mutate z_b in place to compute eta_c * z_b + 1
                         // This saves us an additional memory allocation.
                         cfg_iter_mut!(z_b.coeffs).for_each(|b| *b *= eta_c);
-                        z_b.coeffs[0] += F::one();
+                        z_b.coeffs[0] += Scalar::ONE;
                         let mut multiplier = PolyMultiplier::new();
                         multiplier.add_polynomial_ref(z_a, "z_a");
                         multiplier.add_polynomial_ref(&z_b, "eta_c_z_b_plus_one");
                         multiplier.add_precomputation(fft_precomputation, ifft_precomputation);
                         let result = multiplier.multiply().unwrap();
                         // Start undoing in place mutation, by first subtracting the 1 that we added...
-                        z_b.coeffs[0] -= F::one();
+                        z_b.coeffs[0] -= Scalar::ONE;
                         result
                     };
                     // ... and then multiplying by eta_b/eta_c, instead of just eta_b.
@@ -237,7 +234,7 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
                 .batch_eval_unnormalized_bivariate_lagrange_poly_with_diff_inputs(alpha);
             let t = Self::calculate_t(
                 &[&state.index.a, &state.index.b, &state.index.c],
-                [F::one(), eta_b, eta_c],
+                [Scalar::ONE, eta_b, eta_c],
                 &state.input_domain,
                 &state.constraint_domain,
                 &r_alpha_x_evals,
@@ -245,19 +242,19 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
             );
             t
         });
-        let [summed_z_m, t]: [DensePolynomial<F>; 2] = job_pool.execute_all().try_into().unwrap();
+        let [summed_z_m, t]: [DensePolynomial; 2] = job_pool.execute_all().try_into().unwrap();
         (summed_z_m, t)
     }
 
     fn calculate_t<'a>(
-        matrices: &[&'a Matrix<F>],
-        matrix_randomizers: [F; 3],
-        input_domain: &EvaluationDomain<F>,
-        constraint_domain: &EvaluationDomain<F>,
-        r_alpha_x_on_h: &[F],
-        ifft_precomputation: &IFFTPrecomputation<F>,
-    ) -> DensePolynomial<F> {
-        let mut t_evals_on_h = vec![F::zero(); constraint_domain.size()];
+        matrices: &[&'a Matrix],
+        matrix_randomizers: [Scalar; 3],
+        input_domain: &EvaluationDomain,
+        constraint_domain: &EvaluationDomain,
+        r_alpha_x_on_h: &[Scalar],
+        ifft_precomputation: &IFFTPrecomputation,
+    ) -> DensePolynomial {
+        let mut t_evals_on_h = vec![Scalar::ZERO; constraint_domain.size()];
         for (matrix, eta) in matrices.iter().zip_eq(matrix_randomizers) {
             for (r, row) in matrix.iter().enumerate() {
                 for (coeff, c) in row.iter() {

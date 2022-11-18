@@ -17,7 +17,3 @@ pub use prepared_circuit_verifying_key::*;
 /// The Marlin zkSNARK proof.
 pub(super) mod proof;
 pub use proof::*;
-
-/// The Marlin universal SRS.
-pub(super) mod universal_srs;
-pub use universal_srs::*;

@@ -4,11 +4,11 @@ use crate::{
         domain::{FFTPrecomputation, IFFTPrecomputation},
         EvaluationDomain,
     },
-    polycommit::sonic_pc::{LCTerm, LabeledPolynomial, LinearCombination},
-    snark::marlin::{
+    marlin::{
         ahp::{matrices, verifier, AHPError, CircuitInfo},
         prover, MarlinMode,
     },
+    polycommit::sonic_pc::{LCTerm, LabeledPolynomial, LinearCombination},
 };
 use core::{borrow::Borrow, marker::PhantomData};
 use itertools::Itertools;
@@ -30,7 +30,7 @@ impl AHPForR1CS {
     #[rustfmt::skip]
     pub const LC_WITH_ZERO_EVAL: [&'static str; 2] = ["matrix_sumcheck", "lincheck_sumcheck"];
 
-    pub fn zk_bound() -> Option<usize> {
+    pub fn zk_bound(&self) -> Option<usize> {
         self.mode.then_some(1)
     }
 
@@ -52,6 +52,7 @@ impl AHPForR1CS {
     /// The number of the variables must include the "one" variable. That is, it
     /// must be with respect to the number of formatted public inputs.
     pub fn max_degree(
+        &self,
         num_constraints: usize,
         num_variables: usize,
         num_non_zero: usize,
@@ -65,7 +66,7 @@ impl AHPForR1CS {
 
         Ok(*[
             2 * constraint_domain_size + zk_bound - 2,
-            if MM::ZK {
+            if self.mode {
                 3 * constraint_domain_size + 2 * zk_bound - 3
             } else {
                 0
@@ -141,7 +142,7 @@ impl AHPForR1CS {
         evals: &E,
         prover_third_message: &prover::ThirdMessage,
         state: &verifier::State,
-    ) -> Result<BTreeMap<String, LinearCombination<Scalar>>, AHPError> {
+    ) -> Result<BTreeMap<String, LinearCombination>, AHPError> {
         assert!(!public_inputs.is_empty());
         let constraint_domain = state.constraint_domain;
 
@@ -336,7 +337,7 @@ impl AHPForR1CS {
         g_at_gamma: Scalar,
         sum: Scalar,
         selector_at_gamma: Scalar,
-    ) -> LinearCombination<Scalar> {
+    ) -> LinearCombination {
         let a = LinearCombination::new(
             "a_poly_".to_string() + label,
             [(v_h_at_alpha_beta, "val_".to_string() + label)],
@@ -367,19 +368,11 @@ impl AHPForR1CS {
 /// when constructing linear combinations via `AHPForR1CS::construct_linear_combinations`.
 pub trait EvaluationsProvider: core::fmt::Debug {
     /// Get the evaluation of linear combination `lc` at `point`.
-    fn get_lc_eval(
-        &self,
-        lc: &LinearCombination<Scalar>,
-        point: Scalar,
-    ) -> Result<Scalar, AHPError>;
+    fn get_lc_eval(&self, lc: &LinearCombination, point: Scalar) -> Result<Scalar, AHPError>;
 }
 
-impl EvaluationsProvider for crate::polycommit::sonic_pc::Evaluations<'a> {
-    fn get_lc_eval(
-        &self,
-        lc: &LinearCombination<Scalar>,
-        point: Scalar,
-    ) -> Result<Scalar, AHPError> {
+impl<'a> EvaluationsProvider for crate::polycommit::sonic_pc::Evaluations<'a> {
+    fn get_lc_eval(&self, lc: &LinearCombination, point: Scalar) -> Result<Scalar, AHPError> {
         let key = (lc.label.clone(), point);
         self.get(&key)
             .copied()
@@ -391,11 +384,7 @@ impl<T> EvaluationsProvider for Vec<T>
 where
     T: Borrow<LabeledPolynomial> + core::fmt::Debug,
 {
-    fn get_lc_eval(
-        &self,
-        lc: &LinearCombination<Scalar>,
-        point: Scalar,
-    ) -> Result<Scalar, AHPError> {
+    fn get_lc_eval(&self, lc: &LinearCombination, point: Scalar) -> Result<Scalar, AHPError> {
         let mut eval = Scalar::ZERO;
         for (coeff, term) in lc.iter() {
             let value = if let LCTerm::PolyLabel(label) = term {

@@ -1,10 +1,9 @@
-use crate::snark::marlin::{CircuitVerifyingKey, MarlinMode};
-use snarkvm_curves::PairingEngine;
+use crate::marlin::CircuitVerifyingKey;
 
 /// Verification key, prepared (preprocessed) for use in pairings.
 
 #[derive(Clone)]
-pub struct PreparedCircuitVerifyingKey<E: PairingEngine, MM: MarlinMode> {
+pub struct PreparedCircuitVerifyingKey {
     /// Size of the variable domain.
     pub constraint_domain_size: u64,
     /// Size of the domain that represents A.
@@ -16,5 +15,5 @@ pub struct PreparedCircuitVerifyingKey<E: PairingEngine, MM: MarlinMode> {
     /// Non-prepared verification key, for use in native "prepared verify" (which
     /// is actually standard verify), as well as in absorbing the original vk into
     /// the Fiat-Shamir sponge.
-    pub orig_vk: CircuitVerifyingKey<E, MM>,
+    pub orig_vk: CircuitVerifyingKey,
 }

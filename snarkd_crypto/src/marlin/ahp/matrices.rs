@@ -3,19 +3,15 @@
 use crate::{
     bls12_377::Scalar,
     fft::{EvaluationDomain, Evaluations as EvaluationsOnDomain},
+    marlin::ahp::{indexer::Matrix, UnnormalizedBivariateLagrangePoly},
     polycommit::sonic_pc::LabeledPolynomial,
-    snark::marlin::ahp::{indexer::Matrix, UnnormalizedBivariateLagrangePoly},
+    r1cs::{ConstraintSystem, Index as VarIndex},
     utils::*,
 };
-use itertools::Itertools;
-use snarkvm_r1cs::{ConstraintSystem, Index as VarIndex};
-
 use hashbrown::HashMap;
-
-use std::collections::BTreeMap;
-
-#[cfg(feature = "parallel")]
+use itertools::Itertools;
 use rayon::prelude::*;
+use std::collections::BTreeMap;
 
 // This function converts a matrix output by Zexe's constraint infrastructure
 // to the one used in this crate.
@@ -80,7 +76,7 @@ pub(crate) fn make_matrices_square<CS: ConstraintSystem>(
         // Add dummy unconstrained variables
         for i in 0..matrix_padding {
             let _ = cs
-                .alloc(|| format!("pad_variable_{}", i), || Ok(F::one()))
+                .alloc(|| format!("pad_variable_{}", i), || Ok(Scalar::ONE))
                 .expect("alloc failed");
         }
     }
@@ -210,10 +206,7 @@ pub(crate) fn matrix_evals(
 }
 
 // TODO for debugging: add test that checks result of arithmetize_matrix(M).
-pub(crate) fn arithmetize_matrix(
-    label: &str,
-    matrix_evals: MatrixEval>,
-) -> MatrixArithmetization {
+pub(crate) fn arithmetize_matrix(label: &str, matrix_evals: MatrixEvals) -> MatrixArithmetization {
     let row = matrix_evals.row.clone().interpolate();
     let col = matrix_evals.col.clone().interpolate();
     let val = matrix_evals.val.clone().interpolate();
@@ -231,7 +224,7 @@ pub(crate) fn arithmetize_matrix(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::snark::marlin::num_non_zero;
+    use crate::marlin::num_non_zero;
     use snarkvm_curves::bls12_377::Fr as F;
     use snarkvm_fields::{One, Zero};
 

@@ -2,20 +2,20 @@ use core::convert::TryInto;
 use std::collections::BTreeMap;
 
 use crate::{
+    bls12_377::Scalar,
     fft::{
         domain::{FFTPrecomputation, IFFTPrecomputation},
         polynomial::PolyMultiplier,
         DensePolynomial, EvaluationDomain, Evaluations as EvaluationsOnDomain,
     },
-    polycommit::sonic_pc::{LabeledPolynomial, PolynomialInfo, PolynomialLabel},
-    snark::marlin::{
+    marlin::{
         ahp::{indexer::CircuitInfo, verifier, AHPError, AHPForR1CS},
         matrices::MatrixArithmetization,
         prover, MarlinMode,
     },
+    polycommit::sonic_pc::{LabeledPolynomial, PolynomialInfo, PolynomialLabel},
     utils::*,
 };
-use snarkvm_fields::{batch_inversion_and_mul, PrimeField};
 
 use rand_core::RngCore;
 
@@ -24,7 +24,7 @@ use itertools::Itertools;
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
 
-impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
+impl AHPForR1CS {
     /// Output the number of oracles sent by the prover in the third round.
     pub fn num_third_round_oracles() -> usize {
         3
@@ -32,14 +32,14 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
 
     /// Output the degree bounds of oracles in the first round.
     pub fn third_round_polynomial_info(
-        info: &CircuitInfo<F>,
+        info: &CircuitInfo,
     ) -> BTreeMap<PolynomialLabel, PolynomialInfo> {
         let non_zero_a_size =
-            EvaluationDomain::<F>::compute_size_of_domain(info.num_non_zero_a).unwrap();
+            EvaluationDomain::compute_size_of_domain(info.num_non_zero_a).unwrap();
         let non_zero_b_size =
-            EvaluationDomain::<F>::compute_size_of_domain(info.num_non_zero_b).unwrap();
+            EvaluationDomain::compute_size_of_domain(info.num_non_zero_b).unwrap();
         let non_zero_c_size =
-            EvaluationDomain::<F>::compute_size_of_domain(info.num_non_zero_c).unwrap();
+            EvaluationDomain::compute_size_of_domain(info.num_non_zero_c).unwrap();
 
         [
             PolynomialInfo::new("g_a".into(), Some(non_zero_a_size - 2), None),
@@ -53,14 +53,14 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
 
     /// Output the third round message and the next state.
     pub fn prover_third_round<'a, R: RngCore>(
-        verifier_message: &verifier::SecondMessage<F>,
-        mut state: prover::State<'a, F, MM>,
+        verifier_message: &verifier::SecondMessage,
+        mut state: prover::State<'a>,
         _r: &mut R,
     ) -> Result<
         (
-            prover::ThirdMessage<F>,
-            prover::ThirdOracles<F>,
-            prover::State<'a, F, MM>,
+            prover::ThirdMessage,
+            prover::ThirdOracles,
+            prover::State<'a>,
         ),
         AHPError,
     > {
@@ -141,15 +141,15 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
     #[allow(clippy::too_many_arguments)]
     fn matrix_sumcheck_helper(
         label: &str,
-        non_zero_domain: EvaluationDomain<F>,
-        arithmetization: &MatrixArithmetization<F>,
-        alpha: F,
-        beta: F,
-        v_H_alpha_v_H_beta: F,
-        largest_non_zero_domain_size: F,
-        fft_precomputation: &FFTPrecomputation<F>,
-        ifft_precomputation: &IFFTPrecomputation<F>,
-    ) -> (F, DensePolynomial<F>, LabeledPolynomial<F>) {
+        non_zero_domain: EvaluationDomain,
+        arithmetization: &MatrixArithmetization,
+        alpha: Scalar,
+        beta: Scalar,
+        v_H_alpha_v_H_beta: Scalar,
+        largest_non_zero_domain_size: Scalar,
+        fft_precomputation: &FFTPrecomputation,
+        ifft_precomputation: &IFFTPrecomputation,
+    ) -> (Scalar, DensePolynomial, LabeledPolynomial) {
         let mut job_pool = crate::utils::ExecutionPool::with_capacity(2);
         job_pool.add_job(|| {
             let a_poly = {
@@ -170,7 +170,7 @@ impl<F: PrimeField, MM: MarlinMode> AHPForR1CS<F, MM> {
         job_pool.add_job(|| {
             let alpha_beta = alpha * beta;
             let b_poly = {
-                let evals: Vec<F> = cfg_iter!(row_on_K.evaluations)
+                let evals: Vec<Scalar> = cfg_iter!(row_on_K.evaluations)
                     .zip_eq(&col_on_K.evaluations)
                     .zip_eq(&row_col_on_K.evaluations)
                     .map(|((r, c), r_c)| alpha_beta - alpha * r - beta * c + r_c)

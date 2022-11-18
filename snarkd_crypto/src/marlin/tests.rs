@@ -62,7 +62,7 @@ impl<ConstraintF: Field> ConstraintSynthesizer<ConstraintF> for Circuit<Constrai
 
 mod marlin {
     use super::*;
-    use crate::snark::marlin::{
+    use crate::marlin::{
         AHPForR1CS, CircuitVerifyingKey, MarlinHidingMode, MarlinNonHidingMode, MarlinSNARK,
     };
     use snarkvm_curves::bls12_377::{Bls12_377, Fq, Fr};
@@ -356,7 +356,7 @@ mod marlin_recursion {
     use super::*;
     use crate::{
         crypto_hash::PoseidonSponge,
-        snark::marlin::{ahp::AHPForR1CS, CircuitVerifyingKey, MarlinHidingMode, MarlinSNARK},
+        marlin::{ahp::AHPForR1CS, CircuitVerifyingKey, MarlinHidingMode, MarlinSNARK},
     };
     use snarkvm_curves::bls12_377::{Bls12_377, Fq, Fr};
     use snarkvm_utilities::{

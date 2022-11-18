@@ -1,4 +1,4 @@
-use crate::{bls12_377::Scalar, polycommit::sonic_pc, snark::marlin::ahp};
+use crate::{bls12_377::Scalar, marlin::ahp, polycommit::sonic_pc};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Commitments {

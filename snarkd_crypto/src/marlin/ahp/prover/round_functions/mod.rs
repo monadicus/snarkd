@@ -1,13 +1,13 @@
-use crate::snark::marlin::{
+use crate::{
     bls12_377::Scalar,
-    ahp::{indexer::Circuit, AHPError, AHPForR1CS},
-    prover,
+    marlin::{
+        ahp::{indexer::Circuit, AHPError, AHPForR1CS},
+        prover,
+    },
+    r1cs::ConstraintSynthesizer,
     utils::*,
-    MarlinMode,
 };
 use itertools::Itertools;
-use snarkvm_fields::PrimeField;
-use snarkvm_r1cs::ConstraintSynthesizer;
 
 use rayon::prelude::*;
 
@@ -21,21 +21,15 @@ impl AHPForR1CS {
     pub fn init_prover<'a, C: ConstraintSynthesizer>(
         index: &'a Circuit,
         circuits: &[C],
-    ) -> Result<prover::State<'a, AHPError> {
-        let init_time = start_timer!(|| "AHP::Prover::Init");
-
+    ) -> Result<prover::State<'a>, AHPError> {
         // Perform matrix multiplications.
         let (padded_public_variables, private_variables, z_a, z_b) = cfg_iter!(circuits)
             .map(|circuit| {
-                let constraint_time = start_timer!(|| "Generating constraints and witnesses");
                 let mut pcs = prover::ConstraintSystem::new();
                 circuit.generate_constraints(&mut pcs)?;
-                end_timer!(constraint_time);
 
-                let padding_time = start_timer!(|| "Padding matrices to make them square");
-                crate::snark::marlin::ahp::matrices::pad_input_for_indexer_and_prover(&mut pcs);
+                crate::marlin::ahp::matrices::pad_input_for_indexer_and_prover(&mut pcs);
                 pcs.make_matrices_square();
-                end_timer!(padding_time);
 
                 let num_non_zero_a = index.index_info.num_non_zero_a;
                 let num_non_zero_b = index.index_info.num_non_zero_b;
@@ -75,7 +69,6 @@ impl AHPForR1CS {
 
                 Self::formatted_public_input_is_admissible(&padded_public_variables)?;
 
-                let eval_z_a_time = start_timer!(|| "Evaluating z_A");
                 let z_a = cfg_iter!(index.a)
                     .map(|row| {
                         inner_product(
@@ -86,9 +79,7 @@ impl AHPForR1CS {
                         )
                     })
                     .collect();
-                end_timer!(eval_z_a_time);
 
-                let eval_z_b_time = start_timer!(|| "Evaluating z_B");
                 let z_b = cfg_iter!(index.b)
                     .map(|row| {
                         inner_product(
@@ -99,8 +90,6 @@ impl AHPForR1CS {
                         )
                     })
                     .collect();
-                end_timer!(eval_z_b_time);
-                end_timer!(init_time);
                 Ok((padded_public_variables, private_variables, z_a, z_b))
             })
             .collect::<Result<Vec<_>, _>>()?
