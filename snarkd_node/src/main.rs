@@ -92,7 +92,7 @@ async fn main() {
     }
 
     let database = match config.database_file.as_ref() {
-        Some(path) => match Database::open_file(path).await {
+        Some(path) => match Database::open_file(path.clone()).await {
             Ok(x) => x,
             Err(e) => {
                 error!("failed to load database file @ {path}: {e:?}");

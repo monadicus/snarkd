@@ -4,7 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-tokio-rusqlite = { workspace = true }
 rusqlite = { workspace = true }
 tokio = { workspace = true }
 # we need a new release for rusqlite 0.28 support
@@ -13,6 +12,7 @@ anyhow = { workspace = true }
 serde = { workspace = true }
 chrono = { workspace = true }
 strum = { workspace = true }
+log = { workspace = true }
 
 snarkd_common = { path = "../snarkd_common", features = ["rusqlite"] }
 snarkd_crypto = { path = "../snarkd_crypto" }
