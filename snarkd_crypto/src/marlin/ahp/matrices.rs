@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
 use crate::{
-    bls12_377::Scalar,
+    bls12_377::{Field, Scalar},
     fft::{EvaluationDomain, Evaluations as EvaluationsOnDomain},
     marlin::ahp::{indexer::Matrix, UnnormalizedBivariateLagrangePoly},
     polycommit::sonic_pc::LabeledPolynomial,
@@ -27,7 +27,7 @@ pub(crate) fn to_matrix_helper(
                     VarIndex::Public(i) => *i,
                     VarIndex::Private(i) => num_input_variables + i,
                 };
-                *row_map.entry(column).or_insert_with(Scalar::ZERO) += *fe;
+                *row_map.entry(column).or_insert_with(|| Scalar::ZERO) += *fe;
             });
             row_map
                 .into_iter()
@@ -43,7 +43,7 @@ pub(crate) fn padded_matrix_dim(num_formatted_variables: usize, num_constraints:
 }
 
 /// Pads the public variables up to the closest power of two.
-pub(crate) fn pad_input_for_indexer_and_prover<CS: ConstraintSystem>(cs: &mut CS) {
+pub(crate) fn pad_input_for_indexer_and_prover<CS: ConstraintSystem<Field = Scalar>>(cs: &mut CS) {
     let num_public_variables = cs.num_public_variables();
 
     let power_of_two = EvaluationDomain::new(num_public_variables);
@@ -59,7 +59,7 @@ pub(crate) fn pad_input_for_indexer_and_prover<CS: ConstraintSystem>(cs: &mut CS
     }
 }
 
-pub(crate) fn make_matrices_square<CS: ConstraintSystem>(
+pub(crate) fn make_matrices_square<CS: ConstraintSystem<Field = Scalar>>(
     cs: &mut CS,
     num_formatted_variables: usize,
 ) {
@@ -174,7 +174,7 @@ pub(crate) fn matrix_evals(
         }
     }
 
-    batch_inversion::<Scalar>(&mut inverses);
+    Scalar::batch_inversion(&mut inverses);
 
     cfg_iter_mut!(val_vec)
         .zip_eq(inverses)

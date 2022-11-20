@@ -1,5 +1,5 @@
 use crate::{
-    bls12_377::Scalar,
+    bls12_377::{Field, Scalar},
     marlin::{
         ahp::{indexer::Circuit, AHPError, AHPForR1CS},
         prover,
@@ -21,7 +21,8 @@ impl AHPForR1CS {
     pub fn init_prover<'a, C: ConstraintSynthesizer>(
         index: &'a Circuit,
         circuits: &[C],
-    ) -> Result<prover::State<'a>, AHPError> {
+        mode: bool,
+    ) -> Result<(Self, prover::State<'a>), AHPError> {
         // Perform matrix multiplications.
         let (padded_public_variables, private_variables, z_a, z_b) = cfg_iter!(circuits)
             .map(|circuit| {
@@ -101,7 +102,7 @@ impl AHPForR1CS {
         state.z_a = Some(z_a);
         state.z_b = Some(z_b);
 
-        Ok(state)
+        Ok((Self { mode }, state))
     }
 }
 

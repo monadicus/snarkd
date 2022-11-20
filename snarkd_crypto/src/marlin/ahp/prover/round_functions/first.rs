@@ -1,7 +1,7 @@
 use std::{collections::BTreeMap, sync::Arc};
 
 use crate::{
-    bls12_377::Scalar,
+    bls12_377::{Field, Scalar},
     fft::{
         DensePolynomial, EvaluationDomain, Evaluations as EvaluationsOnDomain, SparsePolynomial,
     },
@@ -16,10 +16,7 @@ use crate::{
     utils::*,
 };
 use itertools::Itertools;
-
 use rand_core::RngCore;
-
-#[cfg(feature = "parallel")]
 use rayon::prelude::*;
 
 impl AHPForR1CS {
@@ -39,17 +36,17 @@ impl AHPForR1CS {
             polynomials.push(PolynomialInfo::new(
                 witness_label("w", i),
                 None,
-                Self::zk_bound(),
+                self.zk_bound(),
             ));
             polynomials.push(PolynomialInfo::new(
                 witness_label("z_a", i),
                 None,
-                Self::zk_bound(),
+                self.zk_bound(),
             ));
             polynomials.push(PolynomialInfo::new(
                 witness_label("z_b", i),
                 None,
-                Self::zk_bound(),
+                self.zk_bound(),
             ));
         }
         if self.mode {
@@ -90,7 +87,7 @@ impl AHPForR1CS {
             job_pool.add_job(move || {
                 self.calculate_z_m(witness_label("z_a", i), z_a, false, state_ref, None)
             });
-            let r_b = Scalar::rand(rng);
+            let r_b = Scalar::rand();
             job_pool.add_job(move || {
                 self.calculate_z_m(witness_label("z_b", i), z_b, true, state_ref, Some(r_b))
             });
@@ -163,7 +160,7 @@ impl AHPForR1CS {
                 assert_eq!(mask_poly.degree(), constraint_domain.size() + 3);
                 assert!(
                     mask_poly.degree()
-                        <= 3 * constraint_domain.size() + 2 * Self::zk_bound().unwrap() - 3
+                        <= 3 * constraint_domain.size() + 2 * self.zk_bound().unwrap() - 3
                 );
 
                 mask_poly
@@ -205,12 +202,7 @@ impl AHPForR1CS {
         assert!(remainder.is_zero());
 
         assert!(w_poly.degree() < constraint_domain.size() - input_domain.size());
-        PoolResult::Witness(LabeledPolynomial::new(
-            label,
-            w_poly,
-            None,
-            Self::zk_bound(),
-        ))
+        PoolResult::Witness(LabeledPolynomial::new(label, w_poly, None, self.zk_bound()))
     }
 
     fn calculate_z_m<'a>(
@@ -246,10 +238,10 @@ impl AHPForR1CS {
         );
 
         let poly_for_opening =
-            LabeledPolynomial::new(label.to_string(), poly, None, Self::zk_bound());
+            LabeledPolynomial::new(label.to_string(), poly, None, self.zk_bound());
         if should_randomize {
             assert!(
-                poly_for_opening.degree() < constraint_domain.size() + Self::zk_bound().unwrap()
+                poly_for_opening.degree() < constraint_domain.size() + self.zk_bound().unwrap()
             );
         } else {
             assert!(poly_for_opening.degree() < constraint_domain.size());
@@ -263,9 +255,9 @@ impl AHPForR1CS {
                     PolynomialWithBasis::new_sparse_monomial_basis(&v_H * r.unwrap(), None),
                 ),
             ];
-            LabeledPolynomialWithBasis::new_linear_combination(label, poly_terms, Self::zk_bound())
+            LabeledPolynomialWithBasis::new_linear_combination(label, poly_terms, self.zk_bound())
         } else {
-            LabeledPolynomialWithBasis::new_lagrange_basis(label, evals, Self::zk_bound())
+            LabeledPolynomialWithBasis::new_lagrange_basis(label, evals, self.zk_bound())
         };
 
         PoolResult::MatrixPoly(poly_for_opening, poly_for_committing)

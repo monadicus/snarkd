@@ -5,7 +5,6 @@ use crate::{
     fft::{DensePolynomial, EvaluationDomain},
     utils::*,
 };
-#[cfg(not(feature = "parallel"))]
 use itertools::Itertools;
 use rayon::prelude::*;
 

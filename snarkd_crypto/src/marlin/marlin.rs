@@ -1,10 +1,10 @@
 use crate::{
-    bls12_377::Scalar,
+    bls12_377::{Field, Scalar, ToScalar},
     fft::EvaluationDomain,
     marlin::{
         ahp::{AHPError, AHPForR1CS, EvaluationsProvider},
         proof, prover, witness_label, CircuitProvingKey, CircuitVerifyingKey, MarlinError,
-        MarlinMode, Proof,
+        MarlinMode, Prepare, Proof,
     },
     polycommit::sonic_pc::{
         Commitment, Evaluations, LabeledCommitment, QuerySet, Randomness, SonicKZG10,
@@ -28,7 +28,9 @@ use super::Certificate;
 
 /// The Marlin proof system.
 #[derive(Clone, Debug)]
-pub struct MarlinSNARK;
+pub struct MarlinSNARK {
+    pub mode: bool,
+}
 
 impl MarlinSNARK {
     /// The personalization string for this protocol.
@@ -47,10 +49,11 @@ impl MarlinSNARK {
     pub fn circuit_specific_setup<C: ConstraintSynthesizer, R: RngCore + CryptoRng>(
         c: &C,
         rng: &mut R,
+        mode: bool,
     ) -> Result<(CircuitProvingKey, CircuitVerifyingKey), SNARKError> {
-        let circuit = AHPForR1CS::index(c)?;
-        let srs = Self::universal_setup(&circuit.max_degree(), rng)?;
-        Self::circuit_setup(&srs, c)
+        let circuit = AHPForR1CS::index(c, mode)?;
+        let srs = Self::universal_setup(circuit.max_degree(), rng)?;
+        Self::circuit_setup(&srs, c, mode)
     }
 
     /// Generates the circuit proving and verifying keys.
@@ -59,10 +62,11 @@ impl MarlinSNARK {
     pub fn circuit_setup<C: ConstraintSynthesizer>(
         universal_srs: &UniversalParams,
         circuit: &C,
+        mode: bool,
     ) -> Result<(CircuitProvingKey, CircuitVerifyingKey), SNARKError> {
         // TODO: Add check that c is in the correct mode.
         // Increase the universal SRS size to support the circuit size.
-        let index = AHPForR1CS::index(circuit)?;
+        let index = AHPForR1CS::index(circuit, mode)?;
         if universal_srs.max_degree() < index.max_degree() {
             universal_srs
                 .increase_degree(index.max_degree())
@@ -95,7 +99,6 @@ impl MarlinSNARK {
             circuit_info: index.index_info,
             circuit_commitments,
             verifier_key,
-            mode: PhantomData,
         };
 
         let circuit_proving_key = CircuitProvingKey {
@@ -122,10 +125,15 @@ impl MarlinSNARK {
         circuit_commitments: &[crate::polycommit::sonic_pc::Commitment],
         inputs: &[Vec<Scalar>],
     ) -> PoseidonSponge {
-        let mut sponge = PoseidonSponge::new_with_parameters(fs_parameters);
+        let mut sponge = PoseidonSponge::new(Arc::new(fs_parameters.clone()));
         sponge.absorb_bytes(&b"MARLIN-2019"[..]);
         sponge.absorb_bytes(&batch_size.to_le_bytes());
-        sponge.absorb_native_field_elements(circuit_commitments);
+        sponge.absorb_native_field_elements(
+            &circuit_commitments
+                .into_iter()
+                .flat_map(|comm| [comm.0.x, comm.0.y])
+                .collect::<Vec<_>>(),
+        );
         for input in inputs {
             sponge.absorb_nonnative_field_elements(input.iter().copied());
         }
@@ -136,9 +144,14 @@ impl MarlinSNARK {
         fs_parameters: &PoseidonParameters,
         circuit_commitments: &[crate::polycommit::sonic_pc::Commitment],
     ) -> PoseidonSponge {
-        let mut sponge = PoseidonSponge::new_with_parameters(fs_parameters);
+        let mut sponge = PoseidonSponge::new(Arc::new(fs_parameters.clone()));
         sponge.absorb_bytes(&b"MARLIN-2019"[..]);
-        sponge.absorb_native_field_elements(circuit_commitments);
+        sponge.absorb_native_field_elements(
+            &circuit_commitments
+                .into_iter()
+                .flat_map(|comm| [comm.0.x, comm.0.y])
+                .collect::<Vec<_>>(),
+        );
         sponge
     }
 
@@ -157,7 +170,12 @@ impl MarlinSNARK {
     }
 
     fn absorb(commitments: &[Commitment], sponge: &mut PoseidonSponge) {
-        sponge.absorb_native_field_elements(commitments);
+        sponge.absorb_native_field_elements(
+            &commitments
+                .into_iter()
+                .flat_map(|comm| [comm.0.x, comm.0.y])
+                .collect::<Vec<_>>(),
+        );
     }
 
     fn absorb_with_msg(
@@ -175,17 +193,18 @@ impl SNARK for MarlinSNARK {
         max_degree: usize,
         rng: &mut R,
     ) -> Result<UniversalParams, SNARKError> {
-        let srs = SonicKZG10::setup(*max_degree, rng).map_err(Into::into);
+        let srs = SonicKZG10::setup(max_degree, rng).map_err(Into::into);
         srs
     }
 
     fn setup<C: ConstraintSynthesizer, R: Rng + CryptoRng>(
         circuit: &C,
         srs: &mut SRS<R, UniversalParams>,
+        mode: bool,
     ) -> Result<(CircuitProvingKey, CircuitVerifyingKey), SNARKError> {
         match srs {
-            SRS::CircuitSpecific(rng) => Self::circuit_specific_setup(circuit, rng),
-            SRS::Universal(srs) => Self::circuit_setup(srs, circuit),
+            SRS::CircuitSpecific(rng) => Self::circuit_specific_setup(circuit, rng, mode),
+            SRS::Universal(srs) => Self::circuit_setup(srs, circuit, mode),
         }
         .map_err(SNARKError::from)
     }
@@ -236,7 +255,7 @@ impl SNARK for MarlinSNARK {
             &mut sponge,
         )?;
 
-        Ok(Self::Certificate::new(certificate))
+        Ok(Certificate::new(certificate))
     }
 
     fn verify_vk<C: ConstraintSynthesizer>(
@@ -296,11 +315,13 @@ impl SNARK for MarlinSNARK {
 
     #[allow(clippy::only_used_in_recursion)]
     fn prove_batch_with_terminator<C: ConstraintSynthesizer, R: Rng + CryptoRng>(
+        &self,
         fs_parameters: &PoseidonParameters,
         circuit_proving_key: &CircuitProvingKey,
         circuits: &[C],
         terminator: &AtomicBool,
         zk_rng: &mut R,
+        mode: bool,
     ) -> Result<Proof, SNARKError> {
         let batch_size = circuits.len();
         if batch_size == 0 {
@@ -309,7 +330,8 @@ impl SNARK for MarlinSNARK {
 
         Self::terminate(terminator)?;
 
-        let prover_state = AHPForR1CS::init_prover(&circuit_proving_key.circuit, circuits)?;
+        let (ahp, prover_state) =
+            AHPForR1CS::init_prover(&circuit_proving_key.circuit, circuits, mode)?;
         let public_input = prover_state.public_inputs();
         let padded_public_input = prover_state.padded_public_inputs();
         assert_eq!(prover_state.batch_size, batch_size);
@@ -327,7 +349,7 @@ impl SNARK for MarlinSNARK {
         // First round
 
         Self::terminate(terminator)?;
-        let mut prover_state = AHPForR1CS::prover_first_round(prover_state, zk_rng)?;
+        let mut prover_state = ahp.prover_first_round(prover_state, zk_rng)?;
         Self::terminate(terminator)?;
 
         let (first_commitments, first_commitment_randomnesses) = {
@@ -355,7 +377,7 @@ impl SNARK for MarlinSNARK {
 
         Self::terminate(terminator)?;
         let (second_oracles, prover_state) =
-            AHPForR1CS::prover_second_round(&verifier_first_message, prover_state, zk_rng);
+            ahp.prover_second_round(&verifier_first_message, prover_state, zk_rng);
         Self::terminate(terminator)?;
 
         let (second_commitments, second_commitment_randomnesses) =
@@ -425,7 +447,7 @@ impl SNARK for MarlinSNARK {
         let polynomials: Vec<_> = circuit_proving_key
             .circuit
             .iter() // 12 items
-            .chain(first_round_oracles.iter_for_open()) // 3 * batch_size + (MM::ZK as usize) items
+            .chain(first_round_oracles.iter_for_open()) // 3 * batch_size + (self.mode as usize) items
             .chain(second_oracles.iter()) // 2 items
             .chain(third_oracles.iter()) // 3 items
             .chain(fourth_oracles.iter()) // 1 item
@@ -435,7 +457,9 @@ impl SNARK for MarlinSNARK {
 
         // Gather commitments in one vector.
         let witness_commitments = first_commitments.chunks_exact(3);
-        let mask_poly = MM::ZK.then(|| *witness_commitments.remainder()[0].commitment());
+        let mask_poly = self
+            .mode
+            .then(|| *witness_commitments.remainder()[0].commitment());
         let witness_commitments = witness_commitments
             .map(|c| proof::WitnessCommitments {
                 w: *c[0].commitment(),
@@ -482,7 +506,7 @@ impl SNARK for MarlinSNARK {
             .chain(fourth_commitment_randomnesses)
             .collect();
 
-        if !MM::ZK {
+        if !self.mode {
             let empty_randomness = Randomness::empty();
             assert!(commitment_randomnesses
                 .iter()
@@ -491,7 +515,7 @@ impl SNARK for MarlinSNARK {
 
         // Compute the AHP verifier's query set.
         let (query_set, verifier_state) = AHPForR1CS::verifier_query_set(verifier_state);
-        let lc_s = AHPForR1CS::construct_linear_combinations(
+        let lc_s = ahp.construct_linear_combinations(
             &public_input,
             &polynomials,
             &prover_third_message,
@@ -536,24 +560,27 @@ impl SNARK for MarlinSNARK {
             prover_third_message,
             pc_proof,
         );
-        assert_eq!(proof.pc_proof.is_hiding(), MM::ZK);
+        assert_eq!(proof.pc_proof.is_hiding(), self.mode);
 
         Ok(proof)
     }
 
-    fn verify_batch_prepared<B: Borrow<VerifierInput>>(
+    fn verify_batch_prepared<TS: ToScalar, B: Borrow<TS>>(
+        &self,
         fs_parameters: &PoseidonParameters,
         prepared_verifying_key: &<CircuitVerifyingKey as Prepare>::Prepared,
         public_inputs: &[B],
         proof: &Proof,
+        mode: bool,
     ) -> Result<bool, SNARKError> {
+        let ahp = AHPForR1CS { mode };
         let circuit_verifying_key = &prepared_verifying_key.orig_vk;
         if public_inputs.is_empty() {
             return Err(SNARKError::EmptyBatch);
         }
 
         let comms = &proof.commitments;
-        let proof_has_correct_zk_mode = if MM::ZK {
+        let proof_has_correct_zk_mode = if self.mode {
             proof.pc_proof.is_hiding() & comms.mask_poly.is_some()
         } else {
             !proof.pc_proof.is_hiding() & comms.mask_poly.is_none()
@@ -568,7 +595,7 @@ impl SNARK for MarlinSNARK {
 
         let batch_size = public_inputs.len();
 
-        let first_round_info = AHPForR1CS::first_round_polynomial_info(batch_size);
+        let first_round_info = ahp.first_round_polynomial_info(batch_size);
         let mut first_commitments = comms
             .witness_commitments
             .iter()
@@ -590,7 +617,7 @@ impl SNARK for MarlinSNARK {
                 ]
             })
             .collect::<Vec<_>>();
-        if MM::ZK {
+        if self.mode {
             first_commitments.push(LabeledCommitment::new_with_info(
                 first_round_info.get("mask_poly").unwrap(),
                 comms.mask_poly.unwrap(),
@@ -598,7 +625,7 @@ impl SNARK for MarlinSNARK {
         }
 
         let second_round_info =
-            AHPForR1CS::second_round_polynomial_info(&circuit_verifying_key.circuit_info);
+            ahp.second_round_polynomial_info(&circuit_verifying_key.circuit_info);
         let second_commitments = [
             LabeledCommitment::new_with_info(&second_round_info["g_1"], comms.g_1),
             LabeledCommitment::new_with_info(&second_round_info["h_1"], comms.h_1),
@@ -625,14 +652,15 @@ impl SNARK for MarlinSNARK {
             public_inputs
                 .iter()
                 .map(|input| {
-                    let input = input.borrow().to_field_elements().unwrap();
+                    let input = input.borrow().to_scalar().unwrap();
                     let mut new_input = vec![Scalar::ONE];
-                    new_input.extend_from_slice(&input);
+                    new_input.extend_from_slice(input.as_slice());
                     new_input.resize(input.len().max(input_domain.size()), Scalar::ZERO);
                     if cfg!(debug_assertions) {
                         println!("Number of padded public variables: {}", new_input.len());
                     }
-                    let unformatted = prover::ConstraintSystem::unformat_public_input(&new_input);
+                    let unformatted =
+                        prover::ConstraintSystem::unformat_public_input(new_input.as_slice());
                     (new_input, unformatted)
                 })
                 .unzip()
@@ -709,7 +737,7 @@ impl SNARK for MarlinSNARK {
             }
         }
 
-        let lc_s = AHPForR1CS::construct_linear_combinations(
+        let lc_s = ahp.construct_linear_combinations(
             &public_inputs,
             &evaluations,
             &proof.msg,

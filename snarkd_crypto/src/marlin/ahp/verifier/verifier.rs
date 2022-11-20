@@ -1,7 +1,7 @@
 use core::marker::PhantomData;
 
 use crate::{
-    bls12_377::Scalar,
+    bls12_377::{Field, Scalar},
     fft::EvaluationDomain,
     marlin::ahp::{
         indexer::CircuitInfo,
@@ -66,7 +66,6 @@ impl AHPForR1CS {
             second_round_message: None,
             third_round_message: None,
             gamma: None,
-            mode: PhantomData,
         };
 
         Ok((message, new_state))

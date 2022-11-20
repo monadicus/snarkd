@@ -1,5 +1,5 @@
 use crate::{
-    bls12_377::Scalar,
+    bls12_377::{Field, Scalar},
     fft::{
         domain::{FFTPrecomputation, IFFTPrecomputation},
         EvaluationDomain,
@@ -18,7 +18,7 @@ use std::collections::BTreeMap;
 /// Currently, this AHP only supports inputs of size one
 /// less than a power of 2 (i.e., of the form 2^n - 1).
 pub struct AHPForR1CS {
-    mode: bool,
+    pub mode: bool,
 }
 
 pub(crate) fn witness_label(poly: &str, i: usize) -> String {
@@ -138,6 +138,7 @@ impl AHPForR1CS {
     /// Public input should be unformatted.
     #[allow(non_snake_case)]
     pub fn construct_linear_combinations<E: EvaluationsProvider>(
+        &self,
         public_inputs: &[Vec<Scalar>],
         evals: &E,
         prover_third_message: &prover::ThirdMessage,
@@ -236,7 +237,7 @@ impl AHPForR1CS {
         #[rustfmt::skip]
         let lincheck_sumcheck = {
             let mut lincheck_sumcheck = LinearCombination::empty("lincheck_sumcheck");
-            if MM::ZK {
+            if self.mode {
                 lincheck_sumcheck.add(Scalar::ONE, "mask_poly");
             }
             for (i, (z_b_i_at_beta, combiner)) in z_b_s_at_beta.iter().zip_eq(batch_combiners).enumerate() {
@@ -432,7 +433,7 @@ impl UnnormalizedBivariateLagrangePoly for EvaluationDomain {
             (self.evaluate_vanishing_polynomial(x) - self.evaluate_vanishing_polynomial(y))
                 / (x - y)
         } else {
-            self.size_as_field_element * x.pow([(self.size() - 1) as u64])
+            self.size_as_field_element * x.pow(&[(self.size() - 1) as u64])
         }
     }
 
@@ -449,9 +450,9 @@ impl UnnormalizedBivariateLagrangePoly for EvaluationDomain {
 
         let mut denoms = cfg_iter!(elements).map(|e| x - e).collect::<Vec<_>>();
         if domain.size() <= self.size() {
-            snarkvm_fields::batch_inversion_and_mul(&mut denoms, &vanish_x);
+            Scalar::batch_inversion_and_mul(&mut denoms, &vanish_x);
         } else {
-            snarkvm_fields::batch_inversion(&mut denoms);
+            Scalar::batch_inversion(&mut denoms);
             let ratio = domain.size() / self.size();
             let mut numerators = vec![vanish_x; domain.size()];
             cfg_iter_mut!(numerators)

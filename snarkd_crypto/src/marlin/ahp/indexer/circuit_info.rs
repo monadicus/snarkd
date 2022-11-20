@@ -28,6 +28,8 @@ impl CircuitInfo {
             .num_non_zero_a
             .max(self.num_non_zero_b)
             .max(self.num_non_zero_c);
-        AHPForR1CS::max_degree(self.num_constraints, self.num_variables, max_non_zero, zk).unwrap()
+        AHPForR1CS { mode: zk }
+            .max_degree(self.num_constraints, self.num_variables, max_non_zero)
+            .unwrap()
     }
 }

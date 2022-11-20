@@ -2,7 +2,7 @@ use core::convert::TryInto;
 use std::collections::BTreeMap;
 
 use crate::{
-    bls12_377::Scalar,
+    bls12_377::{Field, Scalar},
     fft,
     fft::{
         domain::IFFTPrecomputation, polynomial::PolyMultiplier, DensePolynomial, EvaluationDomain,
@@ -30,6 +30,7 @@ impl AHPForR1CS {
 
     /// Output the degree bounds of oracles in the first round.
     pub fn second_round_polynomial_info(
+        &self,
         info: &CircuitInfo,
     ) -> BTreeMap<PolynomialLabel, PolynomialInfo> {
         let constraint_domain_size =
@@ -38,7 +39,7 @@ impl AHPForR1CS {
             PolynomialInfo::new(
                 "g_1".into(),
                 Some(constraint_domain_size - 2),
-                Self::zk_bound(),
+                self.zk_bound(),
             ),
             PolynomialInfo::new("h_1".into(), None, None),
         ]
@@ -49,12 +50,13 @@ impl AHPForR1CS {
 
     /// Output the second round message and the next state.
     pub fn prover_second_round<'a, R: RngCore>(
+        &self,
         verifier_message: &verifier::FirstMessage,
         mut state: prover::State<'a>,
         _r: &mut R,
     ) -> (prover::SecondOracles, prover::State<'a>) {
         let constraint_domain = state.constraint_domain;
-        let zk_bound = Self::zk_bound();
+        let zk_bound = self.zk_bound();
 
         let verifier::FirstMessage {
             alpha,
@@ -64,7 +66,7 @@ impl AHPForR1CS {
         } = verifier_message;
 
         let (summed_z_m, t) =
-            Self::calculate_summed_z_m_and_t(&state, *alpha, *eta_b, *eta_c, batch_combiners);
+            self.calculate_summed_z_m_and_t(&state, *alpha, *eta_b, *eta_c, batch_combiners);
 
         let z = cfg_iter!(state.first_round_oracles.as_ref().unwrap().batches)
             .zip_eq(batch_combiners)
@@ -87,7 +89,7 @@ impl AHPForR1CS {
             .sum::<DensePolynomial>();
         assert!(z.degree() <= constraint_domain.size());
 
-        let sumcheck_lhs = Self::calculate_lhs(&state, t, summed_z_m, z, *alpha);
+        let sumcheck_lhs = self.calculate_lhs(&state, t, summed_z_m, z, *alpha);
 
         debug_assert!(sumcheck_lhs
             .evaluate_over_domain_by_ref(constraint_domain)
@@ -114,7 +116,7 @@ impl AHPForR1CS {
             ),
             h_1: LabeledPolynomial::new("h_1".into(), h_1, None, None),
         };
-        assert!(oracles.matches_info(&Self::second_round_polynomial_info(&state.index.index_info)));
+        assert!(oracles.matches_info(&self.second_round_polynomial_info(&state.index.index_info)));
 
         state.verifier_first_message = Some(verifier_message.clone());
 
@@ -122,6 +124,7 @@ impl AHPForR1CS {
     }
 
     fn calculate_lhs(
+        &self,
         state: &prover::State,
         t: DensePolynomial,
         summed_z_m: DensePolynomial,
@@ -136,7 +139,7 @@ impl AHPForR1CS {
             .unwrap()
             .mask_poly
             .as_ref();
-        assert_eq!(MM::ZK, mask_poly.is_some());
+        assert_eq!(self.mode, mask_poly.is_some());
 
         let mul_domain_size =
             (constraint_domain.size() + summed_z_m.coeffs.len()).max(t.coeffs.len() + z.len());
@@ -171,6 +174,7 @@ impl AHPForR1CS {
     }
 
     fn calculate_summed_z_m_and_t(
+        &self,
         state: &prover::State,
         alpha: Scalar,
         eta_b: Scalar,
@@ -191,7 +195,7 @@ impl AHPForR1CS {
                     let z_a = entry.z_a_poly.polynomial().as_dense().unwrap();
                     let mut z_b = entry.z_b_poly.polynomial().as_dense().unwrap().clone();
                     assert!(z_a.degree() < constraint_domain.size());
-                    if MM::ZK {
+                    if self.mode {
                         assert_eq!(z_b.degree(), constraint_domain.size());
                     } else {
                         assert!(z_b.degree() < constraint_domain.size());
@@ -226,7 +230,7 @@ impl AHPForR1CS {
                     assert_eq!(summed_z_m.degree(), z_a.degree() + z_b.degree());
                     summed_z_m
                 })
-                .sum::<DensePolynomial<_>>()
+                .sum::<DensePolynomial>()
         });
 
         job_pool.add_job(|| {

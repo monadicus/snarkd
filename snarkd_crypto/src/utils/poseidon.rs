@@ -792,6 +792,20 @@ impl PoseidonSponge {
         }
     }
 
+    /// Takes in bytes.
+    pub fn absorb_bytes(&mut self, elements: &[u8]) {
+        let elements = elements
+            .chunks(6 * 8) // 6 limbs, 8 bytes per limb
+            .map(|bytes| {
+                let mut array = [0u8; 6 * 8];
+                array.copy_from_slice(bytes);
+                Fp(Uint::from_le_bytes(array))
+            })
+            .collect::<SmallVec<[Fp; 10]>>();
+
+        self.absorb_native_field_elements(&elements);
+    }
+
     /// Takes in field elements.
     pub fn absorb_native_field_elements(&mut self, elements: &[Fp]) {
         let input = elements.to_vec();

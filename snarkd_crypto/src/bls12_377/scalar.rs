@@ -31,7 +31,7 @@ use ruint::{uint, Uint};
 /// print("2-adic gen (g2 * R % q): ", g2 * R % q)
 /// print("2-adic gen into_chunks(g2 * R % q): ", into_chunks(g2 * R % q, 64, 4))
 /// ```
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Scalar(pub Uint<256, 4>);
 
 impl From<Uint<256, 4>> for Scalar {
@@ -285,7 +285,7 @@ impl Scalar {
     }
 
     // Given a vector of field elements {v_i}, compute the vector {coeff * v_i^(-1)}
-    fn batch_inversion_and_mul(v: &mut [Self], coeff: &Self) {
+    pub fn batch_inversion_and_mul(v: &mut [Self], coeff: &Self) {
         use rayon::prelude::*;
         // Divide the vector v evenly between all available cores
         let min_elements_per_thread = 1;

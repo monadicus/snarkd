@@ -89,37 +89,17 @@ impl CircuitVerifyingKey {
                 as u128;
 
         let mut res = Vec::new();
-        res.append(&mut Fp::from(constraint_domain_size));
-        res.append(&mut Fp::from(non_zero_a_domain_size));
-        res.append(&mut Fp::from(non_zero_b_domain_size));
-        res.append(&mut Fp::from(non_zero_c_domain_size));
+        res.append(&mut vec![Fp::from(constraint_domain_size)]);
+        res.append(&mut vec![Fp::from(non_zero_a_domain_size)]);
+        res.append(&mut vec![Fp::from(non_zero_b_domain_size)]);
+        res.append(&mut vec![Fp::from(non_zero_c_domain_size)]);
         for comm in self.circuit_commitments.iter() {
-            res.append(&mut comm.x);
-            res.append(&mut comm.y);
+            res.append(&mut vec![comm.0.x]);
+            res.append(&mut vec![comm.0.y]);
         }
 
         // Intentionally ignore the appending of the PC verifier key.
 
-        Ok(res)
-    }
-}
-
-impl FromStr for CircuitVerifyingKey {
-    type Err = anyhow::Error;
-
-    #[inline]
-    fn from_str(vk_hex: &str) -> Result<Self, Self::Err> {
-        Self::from_bytes_le(&hex::decode(vk_hex)?)
-    }
-}
-
-impl fmt::Display for CircuitVerifyingKey {
-    #[inline]
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let vk_hex = hex::encode(
-            self.to_bytes_le()
-                .expect("Failed to convert verifying key to bytes"),
-        );
-        write!(f, "{}", vk_hex)
+        res
     }
 }

@@ -16,6 +16,7 @@ use crate::{
     polycommit::sonic_pc::{LabeledPolynomial, PolynomialInfo, PolynomialLabel},
     utils::*,
 };
+use rayon::prelude::*;
 
 use rand_core::RngCore;
 
@@ -186,7 +187,7 @@ impl AHPForR1CS {
             .zip_eq(&col_on_K.evaluations)
             .map(|(r, c)| (beta - r) * (alpha - c))
             .collect();
-        batch_inversion_and_mul(&mut inverses, &v_H_alpha_v_H_beta);
+        Scalar::batch_inversion_and_mul(&mut inverses, &v_H_alpha_v_H_beta);
 
         cfg_iter_mut!(inverses)
             .zip_eq(&arithmetization.evals_on_K.val.evaluations)

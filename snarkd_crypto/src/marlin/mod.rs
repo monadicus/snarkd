@@ -10,7 +10,11 @@
 #![allow(clippy::module_inception)]
 #![allow(clippy::type_complexity)]
 
-use crate::{sonic_pc::UniversalParams, ConstraintSynthesizer, PoseidonParameters};
+use crate::{
+    bls12_377::{Field, ToScalar},
+    sonic_pc::UniversalParams,
+    ConstraintSynthesizer, PoseidonParameters,
+};
 use core::{borrow::Borrow, sync::atomic::AtomicBool};
 use rand::Rng;
 use rand_core::CryptoRng;
@@ -81,6 +85,7 @@ pub trait SNARK {
     fn setup<C: ConstraintSynthesizer, R: Rng + CryptoRng>(
         circuit: &C,
         srs: &mut SRS<R, UniversalParams>,
+        mode: bool,
     ) -> Result<(CircuitProvingKey, CircuitVerifyingKey), SNARKError>;
 
     fn prove_vk(
@@ -90,55 +95,66 @@ pub trait SNARK {
     ) -> Result<Certificate, SNARKError>;
 
     fn prove_batch<C: ConstraintSynthesizer, R: Rng + CryptoRng>(
+        &self,
         fs_parameters: &PoseidonParameters,
         proving_key: &CircuitProvingKey,
         input_and_witness: &[C],
         rng: &mut R,
+        mode: bool,
     ) -> Result<Proof, SNARKError> {
-        Self::prove_batch_with_terminator(
+        self.prove_batch_with_terminator(
             fs_parameters,
             proving_key,
             input_and_witness,
             &AtomicBool::new(false),
             rng,
+            mode,
         )
     }
 
     fn prove<C: ConstraintSynthesizer, R: Rng + CryptoRng>(
+        &self,
         fs_parameters: &PoseidonParameters,
         proving_key: &CircuitProvingKey,
         input_and_witness: &C,
         rng: &mut R,
+        mode: bool,
     ) -> Result<Proof, SNARKError> {
-        Self::prove_batch(
+        self.prove_batch(
             fs_parameters,
             proving_key,
             std::slice::from_ref(input_and_witness),
             rng,
+            mode,
         )
     }
 
     fn prove_batch_with_terminator<C: ConstraintSynthesizer, R: Rng + CryptoRng>(
+        &self,
         fs_parameters: &PoseidonParameters,
         proving_key: &CircuitProvingKey,
         input_and_witness: &[C],
         terminator: &AtomicBool,
         rng: &mut R,
+        mode: bool,
     ) -> Result<Proof, SNARKError>;
 
     fn prove_with_terminator<C: ConstraintSynthesizer, R: Rng + CryptoRng>(
+        &self,
         fs_parameters: &PoseidonParameters,
         proving_key: &CircuitProvingKey,
         input_and_witness: &C,
         terminator: &AtomicBool,
         rng: &mut R,
+        mode: bool,
     ) -> Result<Proof, SNARKError> {
-        Self::prove_batch_with_terminator(
+        self.prove_batch_with_terminator(
             fs_parameters,
             proving_key,
             std::slice::from_ref(input_and_witness),
             terminator,
             rng,
+            mode,
         )
     }
 
@@ -149,29 +165,35 @@ pub trait SNARK {
         certificate: &Certificate,
     ) -> Result<bool, SNARKError>;
 
-    fn verify_batch_prepared<B: Borrow<Self::VerifierInput>>(
+    fn verify_batch_prepared<TS: ToScalar, B: Borrow<TS>>(
+        &self,
         fs_parameters: &PoseidonParameters,
         prepared_verifying_key: &<CircuitVerifyingKey as Prepare>::Prepared,
         input: &[B],
         proof: &Proof,
+        mode: bool,
     ) -> Result<bool, SNARKError>;
 
-    fn verify_batch<B: Borrow<Self::VerifierInput>>(
+    fn verify_batch<TS: ToScalar, B: Borrow<TS>>(
+        &self,
         fs_parameters: &PoseidonParameters,
         verifying_key: &CircuitVerifyingKey,
         input: &[B],
         proof: &Proof,
+        mode: bool,
     ) -> Result<bool, SNARKError> {
         let processed_verifying_key = verifying_key.prepare();
-        Self::verify_batch_prepared(fs_parameters, &processed_verifying_key, input, proof)
+        self.verify_batch_prepared(fs_parameters, &processed_verifying_key, input, proof, mode)
     }
 
-    fn verify<B: Borrow<Self::VerifierInput>>(
+    fn verify<TS: ToScalar, B: Borrow<TS>>(
+        &self,
         fs_parameters: &PoseidonParameters,
         verifying_key: &CircuitVerifyingKey,
         input: B,
         proof: &Proof,
+        mode: bool,
     ) -> Result<bool, SNARKError> {
-        Self::verify_batch(fs_parameters, verifying_key, &[input], proof)
+        self.verify_batch(fs_parameters, verifying_key, &[input], proof, mode)
     }
 }
