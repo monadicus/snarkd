@@ -100,7 +100,6 @@ pub trait SNARK {
         proving_key: &CircuitProvingKey,
         input_and_witness: &[C],
         rng: &mut R,
-        mode: bool,
     ) -> Result<Proof, SNARKError> {
         self.prove_batch_with_terminator(
             fs_parameters,
@@ -108,7 +107,6 @@ pub trait SNARK {
             input_and_witness,
             &AtomicBool::new(false),
             rng,
-            mode,
         )
     }
 
@@ -118,14 +116,12 @@ pub trait SNARK {
         proving_key: &CircuitProvingKey,
         input_and_witness: &C,
         rng: &mut R,
-        mode: bool,
     ) -> Result<Proof, SNARKError> {
         self.prove_batch(
             fs_parameters,
             proving_key,
             std::slice::from_ref(input_and_witness),
             rng,
-            mode,
         )
     }
 
@@ -136,7 +132,6 @@ pub trait SNARK {
         input_and_witness: &[C],
         terminator: &AtomicBool,
         rng: &mut R,
-        mode: bool,
     ) -> Result<Proof, SNARKError>;
 
     fn prove_with_terminator<C: ConstraintSynthesizer, R: Rng + CryptoRng>(
@@ -146,7 +141,6 @@ pub trait SNARK {
         input_and_witness: &C,
         terminator: &AtomicBool,
         rng: &mut R,
-        mode: bool,
     ) -> Result<Proof, SNARKError> {
         self.prove_batch_with_terminator(
             fs_parameters,
@@ -154,7 +148,6 @@ pub trait SNARK {
             std::slice::from_ref(input_and_witness),
             terminator,
             rng,
-            mode,
         )
     }
 
@@ -165,35 +158,32 @@ pub trait SNARK {
         certificate: &Certificate,
     ) -> Result<bool, SNARKError>;
 
-    fn verify_batch_prepared<TS: ToScalar, B: Borrow<TS>>(
+    fn verify_batch_prepared<TS: ToScalar + ?Sized, B: Borrow<TS>>(
         &self,
         fs_parameters: &PoseidonParameters,
         prepared_verifying_key: &<CircuitVerifyingKey as Prepare>::Prepared,
         input: &[B],
         proof: &Proof,
-        mode: bool,
     ) -> Result<bool, SNARKError>;
 
-    fn verify_batch<TS: ToScalar, B: Borrow<TS>>(
+    fn verify_batch<TS: ToScalar + ?Sized, B: Borrow<TS>>(
         &self,
         fs_parameters: &PoseidonParameters,
         verifying_key: &CircuitVerifyingKey,
         input: &[B],
         proof: &Proof,
-        mode: bool,
     ) -> Result<bool, SNARKError> {
         let processed_verifying_key = verifying_key.prepare();
-        self.verify_batch_prepared(fs_parameters, &processed_verifying_key, input, proof, mode)
+        self.verify_batch_prepared(fs_parameters, &processed_verifying_key, input, proof)
     }
 
-    fn verify<TS: ToScalar, B: Borrow<TS>>(
+    fn verify<TS: ToScalar + ?Sized, B: Borrow<TS>>(
         &self,
         fs_parameters: &PoseidonParameters,
         verifying_key: &CircuitVerifyingKey,
         input: B,
         proof: &Proof,
-        mode: bool,
     ) -> Result<bool, SNARKError> {
-        self.verify_batch(fs_parameters, verifying_key, &[input], proof, mode)
+        self.verify_batch(fs_parameters, verifying_key, &[input], proof)
     }
 }

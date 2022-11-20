@@ -225,47 +225,45 @@ pub(crate) fn arithmetize_matrix(label: &str, matrix_evals: MatrixEvals) -> Matr
 mod tests {
     use super::*;
     use crate::marlin::num_non_zero;
-    use snarkvm_curves::bls12_377::Fr as F;
-    use snarkvm_fields::{One, Zero};
 
-    fn entry(matrix: &Matrix<F>, row: usize, col: usize) -> F {
+    fn entry(matrix: &Matrix, row: usize, col: usize) -> Scalar {
         matrix[row]
             .iter()
             .find_map(|(f, i)| (i == &col).then_some(*f))
-            .unwrap_or_else(F::zero)
+            .unwrap_or(Scalar::ZERO)
     }
 
     #[test]
     fn check_arithmetization() {
         let a = vec![
-            vec![(F::one(), 1), (F::one(), 2)],
-            vec![(F::one(), 3)],
-            vec![(F::one(), 3)],
-            vec![(F::one(), 0), (F::one(), 1), (F::one(), 5)],
-            vec![(F::one(), 1), (F::one(), 2), (F::one(), 6)],
-            vec![(F::one(), 2), (F::one(), 5), (F::one(), 7)],
-            vec![(F::one(), 3), (F::one(), 4), (F::one(), 6)],
-            vec![(F::one(), 0), (F::one(), 6), (F::one(), 7)],
+            vec![(Scalar::ONE, 1), (Scalar::ONE, 2)],
+            vec![(Scalar::ONE, 3)],
+            vec![(Scalar::ONE, 3)],
+            vec![(Scalar::ONE, 0), (Scalar::ONE, 1), (Scalar::ONE, 5)],
+            vec![(Scalar::ONE, 1), (Scalar::ONE, 2), (Scalar::ONE, 6)],
+            vec![(Scalar::ONE, 2), (Scalar::ONE, 5), (Scalar::ONE, 7)],
+            vec![(Scalar::ONE, 3), (Scalar::ONE, 4), (Scalar::ONE, 6)],
+            vec![(Scalar::ONE, 0), (Scalar::ONE, 6), (Scalar::ONE, 7)],
         ];
 
         let b = vec![
             vec![],
-            vec![(F::one(), 1)],
-            vec![(F::one(), 0)],
-            vec![(F::one(), 2)],
-            vec![(F::one(), 3)],
-            vec![(F::one(), 4)],
-            vec![(F::one(), 5)],
-            vec![(F::one(), 6)],
+            vec![(Scalar::ONE, 1)],
+            vec![(Scalar::ONE, 0)],
+            vec![(Scalar::ONE, 2)],
+            vec![(Scalar::ONE, 3)],
+            vec![(Scalar::ONE, 4)],
+            vec![(Scalar::ONE, 5)],
+            vec![(Scalar::ONE, 6)],
         ];
 
         let c = vec![
             vec![],
-            vec![(F::one(), 7)],
+            vec![(Scalar::ONE, 7)],
             vec![],
             vec![],
             vec![],
-            vec![(F::one(), 3)],
+            vec![(Scalar::ONE, 3)],
             vec![],
             vec![],
         ];
@@ -284,7 +282,7 @@ mod tests {
                 (elements[reindexed_i], i)
             })
             .collect::<HashMap<_, _>>();
-        let eq_poly_vals: HashMap<F, F> = constraint_domain
+        let eq_poly_vals: HashMap<Scalar, Scalar> = constraint_domain
             .elements()
             .zip_eq(
                 constraint_domain

@@ -134,15 +134,13 @@ fn inner_product(
 #[test]
 fn check_division_by_vanishing_poly_preserve_sparseness() {
     use crate::fft::{EvaluationDomain, Evaluations as EvaluationsOnDomain};
-    use snarkvm_curves::bls12_377::Fr;
-    use snarkvm_fields::{Field, One, Zero};
 
     let domain = EvaluationDomain::new(16).unwrap();
     let small_domain = EvaluationDomain::new(4).unwrap();
-    let val = Fr::one().double().double().double() - Fr::one();
-    let mut evals = (0..16).map(|pow| val.pow([pow])).collect::<Vec<_>>();
+    let val = Scalar::ONE.double().double().double() - Scalar::ONE;
+    let mut evals = (0..16).map(|pow| val.pow(&[pow])).collect::<Vec<_>>();
     for i in 0..4 {
-        evals[4 * i] = Fr::zero();
+        evals[4 * i] = Scalar::ZERO;
     }
     let p = EvaluationsOnDomain::from_vec_and_domain(evals, domain).interpolate();
     assert_eq!(p.degree(), 15);

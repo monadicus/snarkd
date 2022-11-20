@@ -504,15 +504,15 @@ impl SelectorPolynomial for EvaluationDomain {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::fft::{DensePolynomial, Evaluations};
-    use snarkvm_curves::bls12_377::fr::Fr;
-    use snarkvm_fields::{One, Zero};
-    use snarkvm_utilities::rand::{TestRng, Uniform};
+    use crate::{
+        bls12_377::{Field, Scalar},
+        fft::{DensePolynomial, Evaluations},
+    };
 
     #[test]
     fn domain_unnormalized_bivariate_lagrange_poly() {
         for domain_size in 1..10 {
-            let domain = EvaluationDomain::<Fr>::new(1 << domain_size).unwrap();
+            let domain = EvaluationDomain::new(1 << domain_size).unwrap();
             let manual: Vec<_> = domain
                 .elements()
                 .map(|elem| domain.eval_unnormalized_bivariate_lagrange_poly(elem, elem))
@@ -524,10 +524,10 @@ mod tests {
 
     #[test]
     fn domain_unnormalized_bivariate_lagrange_poly_diff_inputs() {
-        let rng = &mut TestRng::default();
+        let rng = &mut rand::thread_rng();
         for domain_size in 1..10 {
-            let domain = EvaluationDomain::<Fr>::new(1 << domain_size).unwrap();
-            let x = Fr::rand(rng);
+            let domain = EvaluationDomain::new(1 << domain_size).unwrap();
+            let x = Scalar::rand();
             let manual: Vec<_> = domain
                 .elements()
                 .map(|y| domain.eval_unnormalized_bivariate_lagrange_poly(x, y))
@@ -539,12 +539,12 @@ mod tests {
 
     #[test]
     fn domain_unnormalized_bivariate_lagrange_poly_diff_inputs_over_domain() {
-        let rng = &mut TestRng::default();
+        let rng = &mut rand::thread_rng();
         for domain_size in 1..10 {
-            let domain = EvaluationDomain::<Fr>::new(1 << domain_size).unwrap();
-            let x = Fr::rand(rng);
+            let domain = EvaluationDomain::new(1 << domain_size).unwrap();
+            let x = Scalar::rand();
             for other_domain_size in 1..10 {
-                let other = EvaluationDomain::<Fr>::new(1 << other_domain_size).unwrap();
+                let other = EvaluationDomain::new(1 << other_domain_size).unwrap();
                 let manual: Vec<_> = other
                     .elements()
                     .map(|y| domain.eval_unnormalized_bivariate_lagrange_poly(x, y))
@@ -564,13 +564,13 @@ mod tests {
 
     #[test]
     fn test_summation() {
-        let rng = &mut TestRng::default();
+        let rng = &mut rand::thread_rng();
         let size = 1 << 4;
-        let domain = EvaluationDomain::<Fr>::new(1 << 4).unwrap();
+        let domain = EvaluationDomain::new(1 << 4).unwrap();
         let size_as_fe = domain.size_as_field_element;
         let poly = DensePolynomial::rand(size, rng);
 
-        let mut sum: Fr = Fr::zero();
+        let mut sum = Scalar::ZERO;
         for eval in domain.elements().map(|e| poly.evaluate(e)) {
             sum += &eval;
         }
@@ -585,12 +585,12 @@ mod tests {
 
     #[test]
     fn test_alternator_polynomial() {
-        let mut rng = TestRng::default();
+        let mut rng = rand::thread_rng();
 
         for i in 1..10 {
             for j in 1..i {
-                let domain_i = EvaluationDomain::<Fr>::new(1 << i).unwrap();
-                let domain_j = EvaluationDomain::<Fr>::new(1 << j).unwrap();
+                let domain_i = EvaluationDomain::new(1 << i).unwrap();
+                let domain_j = EvaluationDomain::new(1 << j).unwrap();
                 let point = domain_j.sample_element_outside_domain(&mut rng);
                 let j_elements = domain_j.elements().collect::<Vec<_>>();
                 let slow_selector = {
@@ -598,9 +598,9 @@ mod tests {
                         .elements()
                         .map(|e| {
                             if j_elements.contains(&e) {
-                                Fr::one()
+                                Scalar::ONE
                             } else {
-                                Fr::zero()
+                                Scalar::ZERO
                             }
                         })
                         .collect();
@@ -615,13 +615,13 @@ mod tests {
                     if j_elements.contains(&element) {
                         assert_eq!(
                             slow_selector.evaluate(element),
-                            Fr::one(),
+                            Scalar::ONE,
                             "failed for {} vs {}",
                             i,
                             j
                         );
                     } else {
-                        assert_eq!(slow_selector.evaluate(element), Fr::zero());
+                        assert_eq!(slow_selector.evaluate(element), Scalar::ZERO);
                     }
                 }
             }

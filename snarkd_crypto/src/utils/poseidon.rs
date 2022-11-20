@@ -798,7 +798,7 @@ impl PoseidonSponge {
             .chunks(6 * 8) // 6 limbs, 8 bytes per limb
             .map(|bytes| {
                 let mut array = [0u8; 6 * 8];
-                array.copy_from_slice(bytes);
+                array[..bytes.len()].copy_from_slice(bytes);
                 Fp(Uint::from_le_bytes(array))
             })
             .collect::<SmallVec<[Fp; 10]>>();

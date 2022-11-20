@@ -14,3 +14,9 @@ impl ToScalar for bool {
         }
     }
 }
+
+impl ToScalar for [Scalar] {
+    fn to_scalar(&self) -> Result<Vec<Scalar>> {
+        Ok(self.to_vec())
+    }
+}

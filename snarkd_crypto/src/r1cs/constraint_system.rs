@@ -1,4 +1,7 @@
-use crate::{bls12_377::Field, Index, LinearCombination, Namespace, Variable};
+use crate::{
+    bls12_377::{Field, Scalar},
+    Index, LinearCombination, Namespace, Variable,
+};
 
 use anyhow::Result;
 
@@ -7,7 +10,8 @@ use anyhow::Result;
 /// both CRS generation and for proving.
 pub trait ConstraintSynthesizer: Sync {
     /// Drives generation of new constraints inside `CS`.
-    fn generate_constraints<CS: ConstraintSystem>(&self, cs: &mut CS) -> Result<()>;
+    fn generate_constraints<CS: ConstraintSystem<Field = Scalar>>(&self, cs: &mut CS)
+        -> Result<()>;
 }
 
 /// Represents a constraint system which can have new variables

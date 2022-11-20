@@ -321,7 +321,6 @@ impl SNARK for MarlinSNARK {
         circuits: &[C],
         terminator: &AtomicBool,
         zk_rng: &mut R,
-        mode: bool,
     ) -> Result<Proof, SNARKError> {
         let batch_size = circuits.len();
         if batch_size == 0 {
@@ -331,7 +330,7 @@ impl SNARK for MarlinSNARK {
         Self::terminate(terminator)?;
 
         let (ahp, prover_state) =
-            AHPForR1CS::init_prover(&circuit_proving_key.circuit, circuits, mode)?;
+            AHPForR1CS::init_prover(&circuit_proving_key.circuit, circuits, self.mode)?;
         let public_input = prover_state.public_inputs();
         let padded_public_input = prover_state.padded_public_inputs();
         assert_eq!(prover_state.batch_size, batch_size);
@@ -565,15 +564,14 @@ impl SNARK for MarlinSNARK {
         Ok(proof)
     }
 
-    fn verify_batch_prepared<TS: ToScalar, B: Borrow<TS>>(
+    fn verify_batch_prepared<TS: ToScalar + ?Sized, B: Borrow<TS>>(
         &self,
         fs_parameters: &PoseidonParameters,
         prepared_verifying_key: &<CircuitVerifyingKey as Prepare>::Prepared,
         public_inputs: &[B],
         proof: &Proof,
-        mode: bool,
     ) -> Result<bool, SNARKError> {
-        let ahp = AHPForR1CS { mode };
+        let ahp = AHPForR1CS { mode: self.mode };
         let circuit_verifying_key = &prepared_verifying_key.orig_vk;
         if public_inputs.is_empty() {
             return Err(SNARKError::EmptyBatch);
@@ -765,40 +763,33 @@ impl SNARK for MarlinSNARK {
 #[cfg(test)]
 pub mod test {
     use super::*;
-    use crate::{
-        crypto_hash::PoseidonSponge,
-        marlin::{MarlinHidingMode, MarlinSNARK},
-        AlgebraicSponge, SRS,
-    };
-    use snarkvm_curves::bls12_377::{Bls12_377, Fq, Fr};
-    use snarkvm_fields::Field;
-    use snarkvm_r1cs::{ConstraintSystem, SynthesisError};
-    use snarkvm_utilities::{TestRng, Uniform};
-
+    use crate::{bls12_377::Scalar, marlin::MarlinSNARK, r1cs::ConstraintSystem, utils::*, SRS};
+    use anyhow::{anyhow, Result};
     use core::ops::MulAssign;
+    use rayon::prelude::*;
 
     const ITERATIONS: usize = 10;
 
     #[derive(Copy, Clone)]
-    pub struct Circuit<F: Field> {
-        pub a: Option<F>,
-        pub b: Option<F>,
+    pub struct Circuit {
+        pub a: Option<Scalar>,
+        pub b: Option<Scalar>,
         pub num_constraints: usize,
         pub num_variables: usize,
     }
 
-    impl<ConstraintF: Field> ConstraintSynthesizer<ConstraintF> for Circuit<ConstraintF> {
-        fn generate_constraints<CS: ConstraintSystem<ConstraintF>>(
+    impl ConstraintSynthesizer for Circuit {
+        fn generate_constraints<CS: ConstraintSystem<Field = Scalar>>(
             &self,
             cs: &mut CS,
-        ) -> Result<(), SynthesisError> {
-            let a = cs.alloc(|| "a", || self.a.ok_or(SynthesisError::AssignmentMissing))?;
-            let b = cs.alloc(|| "b", || self.b.ok_or(SynthesisError::AssignmentMissing))?;
+        ) -> Result<()> {
+            let a = cs.alloc(|| "a", || self.a.ok_or(anyhow!("assignment missing")))?;
+            let b = cs.alloc(|| "b", || self.b.ok_or(anyhow!("assignment missing")))?;
             let c = cs.alloc_input(
                 || "c",
                 || {
-                    let mut a = self.a.ok_or(SynthesisError::AssignmentMissing)?;
-                    let b = self.b.ok_or(SynthesisError::AssignmentMissing)?;
+                    let mut a = self.a.ok_or(anyhow!("assignment missing"))?;
+                    let b = self.b.ok_or(anyhow!("assignment missing"))?;
 
                     a.mul_assign(&b);
                     Ok(a)
@@ -808,7 +799,7 @@ pub mod test {
             for i in 0..(self.num_variables - 3) {
                 let _ = cs.alloc(
                     || format!("var {}", i),
-                    || self.a.ok_or(SynthesisError::AssignmentMissing),
+                    || self.a.ok_or(anyhow!("assignment missing")),
                 )?;
             }
 
@@ -825,18 +816,17 @@ pub mod test {
         }
     }
 
-    type FS = PoseidonSponge<Fq, 2, 1>;
-    type TestSNARK = MarlinSNARK<Bls12_377, FS, MarlinHidingMode, Vec<Fr>>;
+    type FS = PoseidonSponge;
+    type TestSNARK = MarlinSNARK;
 
     #[test]
     fn marlin_snark_test() {
-        let mut rng = TestRng::default();
+        (0..ITERATIONS).into_par_iter().for_each(|_| {
+            let mut rng = rand::thread_rng();
 
-        for _ in 0..ITERATIONS {
             // Construct the circuit.
-
-            let a = Fr::rand(&mut rng);
-            let b = Fr::rand(&mut rng);
+            let a = Scalar::rand();
+            let b = Scalar::rand();
             let mut c = a;
             c.mul_assign(&b);
 
@@ -849,17 +839,21 @@ pub mod test {
 
             // Generate the circuit parameters.
 
-            let (pk, vk) = TestSNARK::setup(&circ, &mut SRS::CircuitSpecific(&mut rng)).unwrap();
+            let (pk, vk) =
+                TestSNARK::setup(&circ, &mut SRS::CircuitSpecific(&mut rng), true).unwrap();
 
             // Test native proof and verification.
-            let fs_parameters = FS::sample_parameters();
+            let fs_parameters = PoseidonParameters::default();
 
-            let proof = TestSNARK::prove(&fs_parameters, &pk, &circ, &mut rng).unwrap();
+            let snark = TestSNARK { mode: true };
+            let proof = snark.prove(&fs_parameters, &pk, &circ, &mut rng).unwrap();
 
             assert!(
-                TestSNARK::verify(&fs_parameters, &vk.clone(), &vec![c], &proof).unwrap(),
+                snark
+                    .verify::<[Scalar], _>(&fs_parameters, &vk.clone(), [c], &proof)
+                    .unwrap(),
                 "The native verification check fails."
             );
-        }
+        });
     }
 }
