@@ -596,8 +596,8 @@ mod tests {
         let rng = &mut rand::thread_rng();
         for a_degree in 0..70 {
             for b_degree in 0..70 {
-                dbg!(a_degree);
-                dbg!(b_degree);
+                // dbg!(a_degree);
+                // dbg!(b_degree);
                 let a = DensePolynomial::rand(a_degree, rng);
                 let b = DensePolynomial::rand(b_degree, rng);
                 assert_eq!(&a * &b, a.naive_mul(&b))

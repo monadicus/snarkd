@@ -14,4 +14,4 @@ serde = { workspace = true }
 chrono = { workspace = true }
 strum = { workspace = true }
 
-snarkd_common = { path = "../snarkd_common" }
+snarkd_common = { path = "../snarkd_common", features = ["rusqlite"] }

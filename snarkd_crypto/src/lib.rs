@@ -11,7 +11,6 @@ pub mod fft;
 pub mod marlin;
 pub use marlin::*;
 mod msm;
-mod objects;
 pub mod polycommit;
 pub use polycommit::*;
 mod r1cs;
