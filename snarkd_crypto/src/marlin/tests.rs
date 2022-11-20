@@ -96,114 +96,107 @@ mod marlin {
                     let universal_srs = $marlin_inst::universal_setup(max_degree, rng).unwrap();
                     let fs_parameters = PoseidonParameters::default();
 
-                    (0..10).into_par_iter().for_each(|_| {
-                        let rng = &mut rand::thread_rng();
-                        let a = Scalar::rand();
-                        let b = Scalar::rand();
-                        let mut c = a;
-                        c.mul_assign(&b);
-                        let mut d = c;
-                        d.mul_assign(&b);
+                    let rng = &mut rand::thread_rng();
+                    let a = Scalar::rand();
+                    let b = Scalar::rand();
+                    let mut c = a;
+                    c.mul_assign(&b);
+                    let mut d = c;
+                    d.mul_assign(&b);
 
-                        let circ = Circuit {
-                            a: Some(a),
-                            b: Some(b),
-                            num_constraints,
-                            num_variables,
-                        };
+                    let circ = Circuit {
+                        a: Some(a),
+                        b: Some(b),
+                        num_constraints,
+                        num_variables,
+                    };
 
-                        let (index_pk, index_vk) =
-                            $marlin_inst::circuit_setup(&universal_srs, &circ, $marlin_mode)
-                                .unwrap();
-                        println!("Called circuit setup");
+                    let (index_pk, index_vk) =
+                        $marlin_inst::circuit_setup(&universal_srs, &circ, $marlin_mode).unwrap();
+                    println!("Called circuit setup");
 
-                        let certificate =
-                            $marlin_inst::prove_vk(&fs_parameters, &index_vk, &index_pk).unwrap();
-                        assert!($marlin_inst::verify_vk(
-                            &fs_parameters,
-                            &circ,
-                            &index_vk,
-                            &certificate
-                        )
+                    let certificate =
+                        $marlin_inst::prove_vk(&fs_parameters, &index_vk, &index_pk).unwrap();
+                    assert!($marlin_inst::verify_vk(
+                        &fs_parameters,
+                        &circ,
+                        &index_vk,
+                        &certificate
+                    )
+                    .unwrap());
+
+                    let snark = $marlin_inst { mode: $marlin_mode };
+
+                    let proof = snark.prove(&fs_parameters, &index_pk, &circ, rng).unwrap();
+                    println!("Called prover");
+
+                    assert!(snark
+                        .verify::<[Scalar], _>(&fs_parameters, &index_vk, [c, d], &proof)
+                        .unwrap());
+                    println!("Called verifier");
+                    println!("\nShould not verify (i.e. verifier messages should print below):");
+                    assert!(!snark
+                        .verify::<[Scalar], _>(&fs_parameters, &index_vk, [a, a], &proof)
                         .unwrap());
 
-                        let snark = $marlin_inst { mode: $marlin_mode };
+                    let rng = &mut rand::thread_rng();
+                    for batch_size in (0..5).map(|i| 2usize.pow(i)) {
+                        let (circuit_batch, input_batch): (Vec<_>, Vec<_>) = (0..batch_size)
+                            .map(|_| {
+                                let a = Scalar::rand();
+                                let b = Scalar::rand();
+                                let mut c = a;
+                                c.mul_assign(&b);
+                                let mut d = c;
+                                d.mul_assign(&b);
 
-                        let proof = snark.prove(&fs_parameters, &index_pk, &circ, rng).unwrap();
+                                let circ = Circuit {
+                                    a: Some(a),
+                                    b: Some(b),
+                                    num_constraints,
+                                    num_variables,
+                                };
+                                (circ, [c, d])
+                            })
+                            .unzip();
+                        let (index_pk, index_vk) = $marlin_inst::circuit_setup(
+                            &universal_srs,
+                            &circuit_batch[0],
+                            $marlin_mode,
+                        )
+                        .unwrap();
+                        println!("Called circuit setup");
+
+                        let snark = $marlin_inst { mode: $marlin_mode };
+                        let proof = snark
+                            .prove_batch(&fs_parameters, &index_pk, &circuit_batch, rng)
+                            .unwrap();
                         println!("Called prover");
 
-                        assert!(snark
-                            .verify::<[Scalar], _>(&fs_parameters, &index_vk, [c, d], &proof)
-                            .unwrap());
+                        assert!(
+                            snark
+                                .verify_batch::<[Scalar], _>(
+                                    &fs_parameters,
+                                    &index_vk,
+                                    &input_batch,
+                                    &proof
+                                )
+                                .unwrap(),
+                            "Batch verification failed with {batch_size} inputs"
+                        );
                         println!("Called verifier");
                         println!(
                             "\nShould not verify (i.e. verifier messages should print below):"
                         );
                         assert!(!snark
-                            .verify::<[Scalar], _>(&fs_parameters, &index_vk, [a, a], &proof)
-                            .unwrap());
-                    });
-
-                    (0..10).into_par_iter().for_each(|_| {
-                        let rng = &mut rand::thread_rng();
-                        for batch_size in (0..5).map(|i| 2usize.pow(i)) {
-                            let (circuit_batch, input_batch): (Vec<_>, Vec<_>) = (0..batch_size)
-                                .map(|_| {
-                                    let a = Scalar::rand();
-                                    let b = Scalar::rand();
-                                    let mut c = a;
-                                    c.mul_assign(&b);
-                                    let mut d = c;
-                                    d.mul_assign(&b);
-
-                                    let circ = Circuit {
-                                        a: Some(a),
-                                        b: Some(b),
-                                        num_constraints,
-                                        num_variables,
-                                    };
-                                    (circ, [c, d])
-                                })
-                                .unzip();
-                            let (index_pk, index_vk) = $marlin_inst::circuit_setup(
-                                &universal_srs,
-                                &circuit_batch[0],
-                                $marlin_mode,
+                            .verify_batch::<[Scalar], _>(
+                                &fs_parameters,
+                                &index_vk,
+                                &vec![[Scalar::rand(), Scalar::rand()]; batch_size],
+                                &proof
                             )
-                            .unwrap();
-                            println!("Called circuit setup");
-
-                            let snark = $marlin_inst { mode: $marlin_mode };
-                            let proof = snark
-                                .prove_batch(&fs_parameters, &index_pk, &circuit_batch, rng)
-                                .unwrap();
-                            println!("Called prover");
-
-                            assert!(
-                                snark
-                                    .verify_batch::<[Scalar], _>(
-                                        &fs_parameters,
-                                        &index_vk,
-                                        &input_batch,
-                                        &proof
-                                    )
-                                    .unwrap(),
-                                "Batch verification failed with {batch_size} inputs"
-                            );
-                            println!("Called verifier");
-                            println!(
-                                "\nShould not verify (i.e. verifier messages should print below):"
-                            );
-                            assert!(!snark
-                                .verify_batch::<[Scalar], _>(
-                                    &fs_parameters,
-                                    &index_vk,
-                                    &vec![[Scalar::rand(), Scalar::rand()]; batch_size],
-                                    &proof
-                                )
-                                .unwrap());
-                        }
-                    });
+                            .unwrap());
+                    }
                 }
             }
         };
@@ -279,41 +272,39 @@ mod marlin_recursion {
         let universal_srs = MarlinInst::universal_setup(max_degree, rng).unwrap();
         let fs_parameters = PoseidonParameters::default();
 
-        (0..10).into_par_iter().for_each(|_| {
-            let rng = &mut rand::thread_rng();
-            let a = Scalar::rand();
-            let b = Scalar::rand();
-            let mut c = a;
-            c.mul_assign(&b);
-            let mut d = c;
-            d.mul_assign(&b);
+        let rng = &mut rand::thread_rng();
+        let a = Scalar::rand();
+        let b = Scalar::rand();
+        let mut c = a;
+        c.mul_assign(&b);
+        let mut d = c;
+        d.mul_assign(&b);
 
-            let circuit = Circuit {
-                a: Some(a),
-                b: Some(b),
-                num_constraints,
-                num_variables,
-            };
+        let circuit = Circuit {
+            a: Some(a),
+            b: Some(b),
+            num_constraints,
+            num_variables,
+        };
 
-            let (index_pk, index_vk) =
-                MarlinInst::circuit_setup(&universal_srs, &circuit, true).unwrap();
-            println!("Called circuit setup");
+        let (index_pk, index_vk) =
+            MarlinInst::circuit_setup(&universal_srs, &circuit, true).unwrap();
+        println!("Called circuit setup");
 
-            let snark = MarlinInst { mode: true };
-            let proof = snark
-                .prove(&fs_parameters, &index_pk, &circuit, rng)
-                .unwrap();
-            println!("Called prover");
+        let snark = MarlinInst { mode: true };
+        let proof = snark
+            .prove(&fs_parameters, &index_pk, &circuit, rng)
+            .unwrap();
+        println!("Called prover");
 
-            assert!(snark
-                .verify::<[Scalar], _>(&fs_parameters, &index_vk, [c, d], &proof)
-                .unwrap());
-            println!("Called verifier");
-            println!("\nShould not verify (i.e. verifier messages should print below):");
-            assert!(!snark
-                .verify::<[Scalar], _>(&fs_parameters, &index_vk, [a, a], &proof)
-                .unwrap());
-        });
+        assert!(snark
+            .verify::<[Scalar], _>(&fs_parameters, &index_vk, [c, d], &proof)
+            .unwrap());
+        println!("Called verifier");
+        println!("\nShould not verify (i.e. verifier messages should print below):");
+        assert!(!snark
+            .verify::<[Scalar], _>(&fs_parameters, &index_vk, [a, a], &proof)
+            .unwrap());
     }
 
     #[test]

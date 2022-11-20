@@ -768,8 +768,6 @@ pub mod test {
     use core::ops::MulAssign;
     use rayon::prelude::*;
 
-    const ITERATIONS: usize = 10;
-
     #[derive(Copy, Clone)]
     pub struct Circuit {
         pub a: Option<Scalar>,
@@ -821,39 +819,36 @@ pub mod test {
 
     #[test]
     fn marlin_snark_test() {
-        (0..ITERATIONS).into_par_iter().for_each(|_| {
-            let mut rng = rand::thread_rng();
+        let mut rng = rand::thread_rng();
 
-            // Construct the circuit.
-            let a = Scalar::rand();
-            let b = Scalar::rand();
-            let mut c = a;
-            c.mul_assign(&b);
+        // Construct the circuit.
+        let a = Scalar::rand();
+        let b = Scalar::rand();
+        let mut c = a;
+        c.mul_assign(&b);
 
-            let circ = Circuit {
-                a: Some(a),
-                b: Some(b),
-                num_constraints: 100,
-                num_variables: 25,
-            };
+        let circ = Circuit {
+            a: Some(a),
+            b: Some(b),
+            num_constraints: 100,
+            num_variables: 25,
+        };
 
-            // Generate the circuit parameters.
+        // Generate the circuit parameters.
 
-            let (pk, vk) =
-                TestSNARK::setup(&circ, &mut SRS::CircuitSpecific(&mut rng), true).unwrap();
+        let (pk, vk) = TestSNARK::setup(&circ, &mut SRS::CircuitSpecific(&mut rng), true).unwrap();
 
-            // Test native proof and verification.
-            let fs_parameters = PoseidonParameters::default();
+        // Test native proof and verification.
+        let fs_parameters = PoseidonParameters::default();
 
-            let snark = TestSNARK { mode: true };
-            let proof = snark.prove(&fs_parameters, &pk, &circ, &mut rng).unwrap();
+        let snark = TestSNARK { mode: true };
+        let proof = snark.prove(&fs_parameters, &pk, &circ, &mut rng).unwrap();
 
-            assert!(
-                snark
-                    .verify::<[Scalar], _>(&fs_parameters, &vk.clone(), [c], &proof)
-                    .unwrap(),
-                "The native verification check fails."
-            );
-        });
+        assert!(
+            snark
+                .verify::<[Scalar], _>(&fs_parameters, &vk.clone(), [c], &proof)
+                .unwrap(),
+            "The native verification check fails."
+        );
     }
 }
