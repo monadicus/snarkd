@@ -87,7 +87,7 @@ mod tests {
 
     #[test]
     fn test_subgroup_membership() {
-        (0..1000).into_par_iter().for_each(|_| {
+        (0..100).into_par_iter().for_each(|_| {
             let p = G1Affine::rand();
             assert!(p.is_in_correct_subgroup_assuming_on_curve());
             let x = Fp::rand();
