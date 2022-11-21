@@ -56,7 +56,6 @@ tokio = { version = "1.0", features = ["full"] }
 # we need a new release for rusqlite 0.28 support
 tokio-rusqlite = "0.3.0"
 uuid = { version = "1.2", features = ["serde", "v4"] }
-
 snarkd_common = { path = "./snarkd_common" }
 snarkd_errors = { path = "./snarkd_errors" }
 open = "3.2.0"
