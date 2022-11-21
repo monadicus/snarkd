@@ -17,8 +17,20 @@ impl From<Uint<384, 6>> for Fp {
     }
 }
 
+impl From<i32> for Fp {
+    fn from(v: i32) -> Self {
+        Self(Uint::from(v))
+    }
+}
+
 impl From<u64> for Fp {
     fn from(v: u64) -> Self {
+        Self(Uint::from(v))
+    }
+}
+
+impl From<u128> for Fp {
+    fn from(v: u128) -> Self {
         Self(Uint::from(v))
     }
 }

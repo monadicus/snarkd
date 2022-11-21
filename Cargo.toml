@@ -13,7 +13,7 @@ members = [
 
 [workspace.dependencies]
 always_cell = "0.1"
-anyhow = "1.0"
+anyhow = "=1.0.65"
 arc-swap = "1.0"
 async-trait = "0.1"
 bech32 = "0.9.1"
@@ -58,3 +58,8 @@ uuid = { version = "1.2", features = ["serde", "v4"] }
 
 snarkd_common = { path = "./snarkd_common" }
 snarkd_errors = { path = "./snarkd_errors" }
+
+[profile.test]
+opt-level = 3
+lto = true
+debug-assertions = true

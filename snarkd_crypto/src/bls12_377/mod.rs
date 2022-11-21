@@ -40,6 +40,9 @@ pub use sw_affine::*;
 pub mod sw_projective;
 pub use sw_projective::*;
 
+pub mod to_scalar;
+pub use to_scalar::*;
+
 #[cfg(test)]
 mod tests;
 

@@ -524,6 +524,8 @@ impl Sum<Fp6> for Fp6 {
 
 #[cfg(test)]
 mod test {
+    use rayon::prelude::{IntoParallelIterator, ParallelIterator};
+
     use super::*;
 
     #[test]
@@ -531,13 +533,13 @@ mod test {
         let nqr = Fp2::new(Fp::ZERO, Fp::ONE);
         println!("One: {:?}", Fp::ONE);
 
-        for _ in 0..1000 {
+        (0..100).into_par_iter().for_each(|_| {
             let mut a = Fp2::rand();
             let mut b = a;
             a *= &NONRESIDUE;
             b *= &nqr;
 
             assert_eq!(a, b);
-        }
+        });
     }
 }
