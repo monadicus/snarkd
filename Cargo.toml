@@ -59,6 +59,7 @@ uuid = { version = "1.2", features = ["serde", "v4"] }
 
 snarkd_common = { path = "./snarkd_common" }
 snarkd_errors = { path = "./snarkd_errors" }
+open = "3.2.0"
 
 [profile.test]
 opt-level = 3
