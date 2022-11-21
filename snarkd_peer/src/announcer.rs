@@ -1,11 +1,8 @@
+use crate::config::PeerConfig;
+use crate::torrent::{AnnounceRequest, Tracker, TrackerHTTP};
+use log::error;
 use std::net::SocketAddr;
 use std::time::Duration;
-
-use log::error;
-
-use crate::config::PeerConfig;
-
-use crate::torrent::{AnnounceRequest, Tracker, TrackerHTTP};
 
 pub trait AnnouncerConsumer: Clone + Send + Sync + 'static {
     fn peers_needed(&self) -> usize;

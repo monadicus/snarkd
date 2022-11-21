@@ -8,3 +8,6 @@ serde = { workspace = true }
 smallvec = { workspace = true }
 hex = { workspace = true }
 prost = { workspace = true }
+rusqlite = { workspace = true, optional = true }
+indexmap = "1.9"
+sha2 = "0.10"

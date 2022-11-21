@@ -11,6 +11,30 @@ use ruint::{uint, Uint};
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Fp(pub Uint<384, 6>);
 
+impl From<Uint<384, 6>> for Fp {
+    fn from(v: Uint<384, 6>) -> Self {
+        Self(v)
+    }
+}
+
+impl From<i32> for Fp {
+    fn from(v: i32) -> Self {
+        Self(Uint::from(v))
+    }
+}
+
+impl From<u64> for Fp {
+    fn from(v: u64) -> Self {
+        Self(Uint::from(v))
+    }
+}
+
+impl From<u128> for Fp {
+    fn from(v: u128) -> Self {
+        Self(Uint::from(v))
+    }
+}
+
 pub const POWERS_OF_G: &[Uint<384, 6>] = &[
     uint!(11759432984210757955515102394259421622842731805301722003778799460755806109766954778381794158916389006258470283894_U384),
     uint!(76728627332054330107215521437663829484089413964084084888354490166669576688184173341868214290394688896870888326044_U384),
@@ -114,10 +138,6 @@ impl Fp {
         }
     }
 
-    pub fn half() -> Self {
-        Self((MODULUS + uint!(1_U384)) >> 1)
-    }
-
     pub fn is_valid(&self) -> bool {
         self.0 < MODULUS
     }
@@ -143,6 +163,10 @@ impl Field for Fp {
 
     fn is_one(&self) -> bool {
         self.0 == Self::ONE.0
+    }
+
+    fn half() -> Self {
+        Self((MODULUS + uint!(1_U384)) >> 1)
     }
 
     fn rand() -> Self {

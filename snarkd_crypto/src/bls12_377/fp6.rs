@@ -148,6 +148,14 @@ impl Field for Fp6 {
         self.c0.is_one() && self.c1.is_zero() && self.c2.is_zero()
     }
 
+    fn half() -> Self {
+        Self {
+            c0: Fp2::half(),
+            c1: Fp2::ZERO,
+            c2: Fp2::ZERO,
+        }
+    }
+
     fn rand() -> Self {
         Self {
             c0: Fp2::rand(),
@@ -516,6 +524,8 @@ impl Sum<Fp6> for Fp6 {
 
 #[cfg(test)]
 mod test {
+    use rayon::prelude::{IntoParallelIterator, ParallelIterator};
+
     use super::*;
 
     #[test]
@@ -523,13 +533,13 @@ mod test {
         let nqr = Fp2::new(Fp::ZERO, Fp::ONE);
         println!("One: {:?}", Fp::ONE);
 
-        for _ in 0..1000 {
+        (0..100).into_par_iter().for_each(|_| {
             let mut a = Fp2::rand();
             let mut b = a;
             a *= &NONRESIDUE;
             b *= &nqr;
 
             assert_eq!(a, b);
-        }
+        });
     }
 }
