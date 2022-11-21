@@ -1,4 +1,4 @@
-use crate::{ConstraintSystem, LinearCombination, Variable};
+use crate::{r1cs::ConstraintSystem, LinearCombination, Variable};
 
 use anyhow::Result;
 

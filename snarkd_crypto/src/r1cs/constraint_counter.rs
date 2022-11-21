@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{bls12_377::Field, ConstraintSystem, Index, LinearCombination, Variable};
+use crate::{bls12_377::Field, r1cs::ConstraintSystem, Index, LinearCombination, Variable};
 use anyhow::Result;
 
 /// Constraint counter for testing purposes.

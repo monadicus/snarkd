@@ -8,6 +8,8 @@ pub use utils::*;
 
 pub mod bls12_377;
 pub mod fft;
+pub mod marlin;
+pub use marlin::*;
 mod msm;
 pub mod polycommit;
 pub use polycommit::*;
