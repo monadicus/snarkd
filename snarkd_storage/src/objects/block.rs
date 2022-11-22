@@ -157,7 +157,7 @@ impl Database {
                         .signature
                         .compute_key
                         .public_randomness_signature,
-                    &block.header.signature.compute_key.secret_key_program,
+                    &block.header.signature.compute_key.prf_secret_key,
                 ])?;
                 let block_id = transaction.last_insert_rowid();
                 transaction.execute(
@@ -359,7 +359,7 @@ impl Database {
                             compute_key: ComputeKey {
                                 public_key_signature: row.get(11)?,
                                 public_randomness_signature: row.get(12)?,
-                                secret_key_program: row.get(13)?,
+                                prf_secret_key: row.get(13)?,
                             },
                         },
                     })

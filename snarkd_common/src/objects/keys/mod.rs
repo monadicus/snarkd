@@ -6,5 +6,7 @@ pub mod graph_key;
 pub use graph_key::*;
 pub mod private_key;
 pub use private_key::*;
+pub mod signature;
+pub use signature::*;
 pub mod view_key;
 pub use view_key::*;

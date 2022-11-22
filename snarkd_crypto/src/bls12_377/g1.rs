@@ -78,6 +78,34 @@ impl Default for G1Prepared {
     }
 }
 
+impl rusqlite::types::FromSql for G1Affine {
+    fn column_result(value: rusqlite::types::ValueRef<'_>) -> rusqlite::types::FromSqlResult<Self> {
+        match value {
+            rusqlite::types::ValueRef::Blob(blob) => {
+                let mut x = [0u8; 48];
+                x.copy_from_slice(&blob[..48]);
+                let mut y = [0u8; 48];
+                y.copy_from_slice(&blob[48..96]);
+                let infinity = blob[96] != 0;
+                Ok(Self { x: Fp(Uint::from_le_bytes(x)), y: Fp(Uint::from_le_bytes(y)), infinity, })
+            }
+            _ => Err(rusqlite::types::FromSqlError::InvalidType),
+        }
+    }
+}
+
+impl rusqlite::types::ToSql for G1Affine {
+    fn to_sql(&self) -> rusqlite::Result<rusqlite::types::ToSqlOutput<'_>> {
+        let mut bytes = Vec::<u8>::with_capacity(97);
+        bytes.extend(self.x.0.as_le_slice());
+        bytes.extend(self.y.0.as_le_slice());
+        bytes.push(self.infinity as u8);
+        Ok(rusqlite::types::ToSqlOutput::Owned(
+            rusqlite::types::Value::Blob(bytes),
+        ))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{super::G1Affine, *};
