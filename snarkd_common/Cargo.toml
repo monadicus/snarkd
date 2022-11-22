@@ -11,3 +11,4 @@ prost = { workspace = true }
 rusqlite = { workspace = true, optional = true }
 indexmap = "1.9"
 sha2 = "0.10"
+snarkd_crypto = { path = "../snarkd_crypto" }
