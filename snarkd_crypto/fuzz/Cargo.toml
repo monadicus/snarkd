@@ -1,0 +1,43 @@
+[package]
+name = "snarkd_crypto-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+snarkd_crypto = { path = "..", features = ["arbitrary"] }
+
+# Prevent this from interfering with workspaces
+[workspace]
+members = ["."]
+
+[profile.release]
+debug = 1
+
+[[bin]]
+name = "fp"
+path = "fuzz_targets/fp.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fp2"
+path = "fuzz_targets/fp2.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fp6"
+path = "fuzz_targets/fp6.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fp12"
+path = "fuzz_targets/fp12.rs"
+test = false
+doc = false
