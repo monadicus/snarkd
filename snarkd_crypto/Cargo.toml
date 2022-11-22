@@ -7,13 +7,20 @@ edition = "2021"
 anyhow = { workspace = true }
 bitvec = { workspace = true }
 fxhash = { workspace = true }
+hashbrown = { workspace = true }
+hex = { workspace = true }
 indexmap = { workspace = true }
 itertools = { workspace = true }
 num-bigint = { workspace = true }
 num_cpus = "1.0"
+parking_lot = {workspace = true }
 rand = { workspace = true }
+rand_core = { workspace = true }
 rand_xorshift = { workspace = true }
 rayon = { workspace = true }
 ruint = { workspace = true }
+serde = { workspace = true }
+smallvec = { workspace = true }
 snarkd_common = { workspace = true }
+sha2 = { workspace = true }
 thiserror = { workspace = true }

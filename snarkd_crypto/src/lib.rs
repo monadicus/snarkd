@@ -4,11 +4,14 @@ extern crate thiserror;
 // execution pool
 #[macro_use]
 mod utils;
+pub use utils::*;
 
 pub mod bls12_377;
 pub mod fft;
-mod objects;
-// mod polycommit;
+pub mod marlin;
+pub use marlin::*;
 mod msm;
+pub mod polycommit;
+pub use polycommit::*;
 mod r1cs;
 pub use r1cs::*;

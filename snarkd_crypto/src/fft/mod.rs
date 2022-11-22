@@ -1,6 +1,8 @@
 //! This crate implements functions for manipulating polynomials over finite fields,
 //! including FFTs.
 
+use crate::bls12_377::Field;
+
 pub mod domain;
 pub use domain::EvaluationDomain;
 
