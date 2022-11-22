@@ -1,0 +1,10 @@
+{
+    "namespace": "IR",
+    "method": "u8_deserialize_serialize",
+    "tests": {
+        "simple": {
+            "input": 1,
+            "expectation": "Pass"
+        }
+    }
+}

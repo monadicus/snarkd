@@ -11,5 +11,9 @@ serde = { workspace = true }
 prost = { workspace = true }
 snarkd_errors = { workspace = true }
 
+[dev-dependencies]
+serde_json = { workspace = true }
+test-runner = { workspace = true }
+
 [build-dependencies]
 prost-build = { workspace = true }
