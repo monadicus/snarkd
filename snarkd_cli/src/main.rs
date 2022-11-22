@@ -1,7 +1,7 @@
 use clap::{Parser, Subcommand};
 use log::error;
 use snarkd_client::SnarkdClient;
-use snarkd_common::config::CONFIG;
+use snarkd_common::config::load_config;
 use url::Url;
 
 #[derive(Parser, Debug)]
@@ -22,8 +22,7 @@ enum Commands {
 
 #[tokio::main]
 async fn main() {
-    lazy_static::initialize(&CONFIG);
-    let config = CONFIG.load();
+    let config = load_config().unwrap_or_default();
     let args = Args::parse();
 
     let endpoint_url = args

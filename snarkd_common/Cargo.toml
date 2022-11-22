@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-arc-swap = { workspace = true }
+anyhow = { workspace = true }
 hex = { workspace = true }
 indexmap = "1.9"
 lazy_static = { workspace = true }
@@ -16,4 +16,3 @@ serde_yaml = { workspace = true }
 sha2 = "0.10"
 smallvec = { workspace = true }
 url = { workspace = true }
-uuid = { workspace = true }

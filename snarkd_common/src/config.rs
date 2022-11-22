@@ -1,13 +1,10 @@
+pub use crate::peer_config::*;
+use anyhow::{anyhow, Result};
+use serde::{Deserialize, Serialize};
 use std::{
     net::Ipv4Addr,
     path::{Path, PathBuf},
-    sync::Arc,
 };
-
-pub use crate::peer_config::*;
-use arc_swap::ArcSwap;
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 #[derive(Serialize, Deserialize, Default, Clone, Copy)]
 #[serde(rename_all = "snake_case")]
@@ -75,12 +72,31 @@ pub struct Config {
     pub rpc_port: u16,
 }
 
-const CONFIG_ENV_VAR: &str = "SNARKD_CONFIG";
-const CONFIG_NAME: &str = "snarkd.yaml";
-const FULL_CONFIG_PATH: &str = "/etc/snarkd.yaml";
+pub const CONFIG_ENV_VAR: &str = "SNARKD_CONFIG";
+pub const CONFIG_NAME: &str = "snarkd.yaml";
+pub const FULL_CONFIG_PATH: &str = "/etc/snarkd.yaml";
+pub static VERSION: &str = env!("CARGO_PKG_VERSION");
+
+pub fn load_config() -> Result<Config> {
+    if !CONFIG_PATH.exists() {
+        return Err(anyhow!("cannot find config @ {}", CONFIG_PATH.display()));
+    }
+
+    let config_raw = std::fs::read_to_string(&*CONFIG_PATH)
+        .map_err(|e| anyhow!("cannot read config @ {}: {e:?}", CONFIG_PATH.display()))?;
+
+    serde_yaml::from_str(&config_raw)
+        .map_err(|e| anyhow!("cannot parse config @ {}: {e:?}", CONFIG_PATH.display()))
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        serde_yaml::from_str("{}").unwrap()
+    }
+}
 
 lazy_static::lazy_static! {
-    static ref CONFIG_PATH: PathBuf = {
+    pub static ref CONFIG_PATH: PathBuf = {
         let env_value = std::env::var(CONFIG_ENV_VAR).unwrap_or_default();
         if !env_value.trim().is_empty() {
             return Path::new(&*env_value).to_path_buf();
@@ -91,29 +107,4 @@ lazy_static::lazy_static! {
             Path::new(FULL_CONFIG_PATH).to_path_buf()
         }
     };
-    // ArcSwap to allow hotloading later on
-    pub static ref CONFIG: ArcSwap<Config> = {
-        println!("loading config @ {}", CONFIG_PATH.display());
-        if !CONFIG_PATH.exists() {
-            eprintln!("cannot find config @ {}", CONFIG_PATH.display());
-            std::process::exit(1);
-        }
-        let config_raw = match std::fs::read_to_string(&*CONFIG_PATH) {
-            Err(e) => {
-                eprintln!("cannot read config @ {}: {e:?}", CONFIG_PATH.display());
-                std::process::exit(1);
-            },
-            Ok(x) => x,
-        };
-        match serde_yaml::from_str(&config_raw) {
-            Ok(x) => ArcSwap::new(Arc::new(x)),
-            Err(e) => {
-                eprintln!("cannot parse config @ {}: {e:?}", CONFIG_PATH.display());
-                std::process::exit(1);
-            }
-        }
-    };
-    /// unique node id, used to avoid cyclic connections
-    pub static ref NODE_ID: Uuid = Uuid::new_v4();
 }
-pub static VERSION: &str = env!("CARGO_PKG_VERSION");

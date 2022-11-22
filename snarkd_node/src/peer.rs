@@ -1,10 +1,11 @@
 use std::{net::SocketAddr, sync::Arc, time::Duration};
 
+use crate::config::{CONFIG, NODE_ID};
 use crate::{inbound_handler::InboundHandler, peer_book::PeerBook};
 use anyhow::Result;
 use chrono::{DateTime, Utc};
 use log::{debug, error, info};
-use snarkd_common::config::{CONFIG, NODE_ID, VERSION};
+use snarkd_common::config::VERSION;
 use snarkd_network::{
     proto::{packet::PacketBody, CommandId, Introduction, ResponseCode},
     Connection,

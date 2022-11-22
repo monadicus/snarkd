@@ -5,9 +5,10 @@ use std::{
 };
 
 use clap::Parser;
+use config::{CONFIG, NODE_ID};
 use log::{debug, error, info, warn, LevelFilter};
 use peer_book::PeerBook;
-use snarkd_common::config::{Verbosity, CONFIG, NODE_ID};
+use snarkd_common::config::Verbosity;
 use snarkd_network::Connection;
 use snarkd_peer::announcer::AnnouncerConsumer;
 use snarkd_rpc::server::websocket_server;

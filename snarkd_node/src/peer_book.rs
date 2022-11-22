@@ -1,6 +1,6 @@
 use std::{net::SocketAddr, sync::Arc};
 
-use crate::peer::Peer;
+use crate::{config::CONFIG, peer::Peer};
 use anyhow::Result;
 use dashmap::{
     mapref::{
@@ -14,7 +14,6 @@ use itertools::Itertools;
 use log::{debug, error, info, trace, warn};
 use rand::seq::IteratorRandom;
 use rand::thread_rng;
-use snarkd_common::config::CONFIG;
 use snarkd_storage::{Database, PeerData, PeerDirection};
 
 #[derive(Clone)]
