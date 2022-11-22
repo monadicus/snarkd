@@ -32,6 +32,7 @@ use ruint::{uint, Uint};
 /// print("2-adic gen into_chunks(g2 * R % q): ", into_chunks(g2 * R % q, 64, 4))
 /// ```
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct Scalar(pub Uint<256, 4>);
 
 impl From<Uint<256, 4>> for Scalar {

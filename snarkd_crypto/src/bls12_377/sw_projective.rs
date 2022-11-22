@@ -17,6 +17,7 @@ use rayon::prelude::*;
 use ruint::{uint, Uint};
 
 #[derive(Copy, Clone, Debug)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct SWProjective<P: Parameters> {
     pub x: P::BaseField,
     pub y: P::BaseField,
