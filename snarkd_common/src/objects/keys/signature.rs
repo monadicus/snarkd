@@ -14,7 +14,11 @@ pub struct Signature {
 impl Signature {
     /// Returns a new [`Signature`] from the given data.
     pub fn new(challenge: Scalar, response: Scalar, compute_key: ComputeKey) -> Self {
-        Self { challenge, response, compute_key }
+        Self {
+            challenge,
+            response,
+            compute_key,
+        }
     }
 
     /// Returns the signer address.

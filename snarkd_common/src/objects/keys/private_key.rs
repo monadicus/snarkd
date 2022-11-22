@@ -1,5 +1,8 @@
-use snarkd_crypto::{utils::*, bls12_377::{Scalar, Fp, Field, G1Affine, Affine, Projective}};
 use super::{ComputeKey, Signature};
+use snarkd_crypto::{
+    bls12_377::{Affine, Field, Fp, G1Affine, Projective, Scalar},
+    utils::*,
+};
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct PrivateKey {
@@ -17,7 +20,10 @@ impl PrivateKey {
 
     /// Samples a new random private key.
     pub fn rand() -> Self {
-        Self { sk_sig: Scalar::rand(), r_sig: Scalar::rand() }
+        Self {
+            sk_sig: Scalar::rand(),
+            r_sig: Scalar::rand(),
+        }
     }
 
     /// Returns a signature for the given message (as field elements) using the private key.

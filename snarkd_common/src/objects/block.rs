@@ -2,7 +2,7 @@ use sha2::{Digest, Sha256};
 
 use crate::Digest32;
 
-use super::{Signature, Field, Scalar, Transaction};
+use super::{Field, Scalar, Signature, Transaction};
 
 type BlockHash = Digest32;
 

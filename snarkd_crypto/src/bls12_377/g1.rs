@@ -87,7 +87,11 @@ impl rusqlite::types::FromSql for G1Affine {
                 let mut y = [0u8; 48];
                 y.copy_from_slice(&blob[48..96]);
                 let infinity = blob[96] != 0;
-                Ok(Self { x: Fp(Uint::from_le_bytes(x)), y: Fp(Uint::from_le_bytes(y)), infinity, })
+                Ok(Self {
+                    x: Fp(Uint::from_le_bytes(x)),
+                    y: Fp(Uint::from_le_bytes(y)),
+                    infinity,
+                })
             }
             _ => Err(rusqlite::types::FromSqlError::InvalidType),
         }
