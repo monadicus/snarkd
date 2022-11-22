@@ -2194,12 +2194,13 @@ dependencies = [
  "indexmap",
  "lazy_static",
  "prost",
+ "rand",
  "rusqlite",
  "serde",
  "serde_yaml",
  "sha2",
  "smallvec",
- "snarkd_peer",
+ "url",
  "uuid",
 ]
 
@@ -2304,6 +2305,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "snarkd_common",
  "tokio",
  "url",
 ]

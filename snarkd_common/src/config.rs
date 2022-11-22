@@ -4,9 +4,9 @@ use std::{
     sync::Arc,
 };
 
+pub use crate::peer_config::*;
 use arc_swap::ArcSwap;
 use serde::{Deserialize, Serialize};
-use snarkd_peer::config::PeerConfig;
 use uuid::Uuid;
 
 #[derive(Serialize, Deserialize, Default, Clone, Copy)]

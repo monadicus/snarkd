@@ -4,17 +4,16 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-serde = { workspace = true }
-smallvec = { workspace = true }
-hex = { workspace = true }
-prost = { workspace = true }
 arc-swap = { workspace = true }
-uuid = { workspace = true }
-lazy_static = { workspace = true }
-serde_yaml = { workspace = true }
-snarkd_peer = { workspace = true, features = [
-  "config",
-], default-features = false }
-rusqlite = { workspace = true, optional = true }
+hex = { workspace = true }
 indexmap = "1.9"
+lazy_static = { workspace = true }
+prost = { workspace = true }
+rand = { workspace = true }
+rusqlite = { workspace = true, optional = true }
+serde = { workspace = true }
+serde_yaml = { workspace = true }
 sha2 = "0.10"
+smallvec = { workspace = true }
+url = { workspace = true }
+uuid = { workspace = true }
