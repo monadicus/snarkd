@@ -2,7 +2,7 @@ use sha2::{Digest, Sha256};
 
 use crate::Digest32;
 
-use super::{compute_key::ComputeKey, Field, Scalar, Transaction};
+use super::{Field, Scalar, Signature, Transaction};
 
 type BlockHash = Digest32;
 
@@ -10,13 +10,6 @@ type BlockHash = Digest32;
 pub struct Block {
     pub header: BlockHeader,
     pub transactions: Vec<Transaction>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Signature {
-    pub challenge: Scalar,
-    pub response: Scalar,
-    pub compute_key: ComputeKey,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

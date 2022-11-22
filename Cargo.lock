@@ -1701,6 +1701,7 @@ dependencies = [
  "serde",
  "sha2",
  "smallvec",
+ "snarkd_crypto",
 ]
 
 [[package]]
@@ -1722,10 +1723,10 @@ dependencies = [
  "rand_xorshift",
  "rayon",
  "ruint",
+ "rusqlite",
  "serde",
  "sha2",
  "smallvec",
- "snarkd_common",
  "thiserror",
 ]
 
