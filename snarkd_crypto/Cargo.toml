@@ -19,8 +19,8 @@ rand_core = { workspace = true }
 rand_xorshift = { workspace = true }
 rayon = { workspace = true }
 ruint = { workspace = true }
+rusqlite = { workspace = true }
 serde = { workspace = true }
 smallvec = { workspace = true }
-snarkd_common = { workspace = true }
 sha2 = { workspace = true }
 thiserror = { workspace = true }

@@ -669,6 +669,27 @@ impl Display for Scalar {
     }
 }
 
+impl rusqlite::types::FromSql for Scalar {
+    fn column_result(value: rusqlite::types::ValueRef<'_>) -> rusqlite::types::FromSqlResult<Self> {
+        match value {
+            rusqlite::types::ValueRef::Blob(blob) => {
+                let mut array = [0u8; 32];
+                array.copy_from_slice(blob);
+                Ok(Self(Uint::from_le_bytes(array)))
+            }
+            _ => Err(rusqlite::types::FromSqlError::InvalidType),
+        }
+    }
+}
+
+impl rusqlite::types::ToSql for Scalar {
+    fn to_sql(&self) -> rusqlite::Result<rusqlite::types::ToSqlOutput<'_>> {
+        Ok(rusqlite::types::ToSqlOutput::Borrowed(
+            rusqlite::types::ValueRef::Blob(self.0.as_le_slice()),
+        ))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
