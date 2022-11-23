@@ -5,8 +5,11 @@ struct IRNamespace;
 
 impl IRNamespace {
     fn u8_deserialize_serialize(input: Value) -> Result<String, String> {
-        let value_to_convert: u8 = serde_json::from_value(input).expect("foo");
-        Ok(value_to_convert.to_string())
+        let value_to_convert: Result<u8, _> = serde_json::from_value(input);
+        match value_to_convert {
+            Ok(value) => Ok(value.to_string()),
+            Err(_) => Err("Failed".to_string()),
+        }
     }
 }
 
