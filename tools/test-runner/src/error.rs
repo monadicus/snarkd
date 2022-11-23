@@ -1,3 +1,5 @@
+use colored::Colorize;
+
 use std::fmt;
 
 use crate::test::TestExpectationMode;
@@ -41,21 +43,18 @@ pub enum TestError {
 
 impl fmt::Display for TestError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let format_test = |test: &str| -> String {
-            if test.len() > 50 {
-                String::new()
-            } else {
-                format!("\n\n{test}\n\n")
-            }
-        };
         match self {
             TestError::Panicked { test, index, error } => {
                 write!(
                     f,
-                    "test #{}: {}encountered a rust panic:\n{}",
-                    index + 1,
-                    format_test(test),
-                    error
+                    "{}",
+                    format!(
+                        "test #{}: case `{}` encountered a rust panic:\n{}",
+                        index + 1,
+                        test.purple(),
+                        error
+                    )
+                    .red()
                 )
             }
             TestError::UnexpectedOutput {
@@ -66,28 +65,44 @@ impl fmt::Display for TestError {
             } => {
                 write!(
                     f,
-                    "test #{}: {}expected\n{}\ngot\n{}",
-                    index + 1,
-                    format_test(test),
-                    serde_json::to_string(&expected).expect("serialization failed"),
-                    serde_json::to_string(&output).expect("serialization failed")
+                    "{}",
+                    format!(
+                        "test #{}: case '{}' expected '{}' got '{}'",
+                        index + 1,
+                        test.purple(),
+                        serde_json::to_string(&expected)
+                            .expect("serialization failed")
+                            .cyan(),
+                        serde_json::to_string(&output)
+                            .expect("serialization failed")
+                            .blue()
+                    )
+                    .red()
                 )
             }
             TestError::PassedAndShouldntHave { test, index } => {
                 write!(
                     f,
-                    "test #{}: {}passed and shouldn't have",
-                    index + 1,
-                    format_test(test)
+                    "{}",
+                    format!(
+                        "test #{}: case '{}' passed and shouldn't have",
+                        index + 1,
+                        test.purple()
+                    )
+                    .red()
                 )
             }
             TestError::FailedAndShouldntHave { test, index, error } => {
                 write!(
                     f,
-                    "test #{}: {}failed and shouldn't have:\n{}",
-                    index + 1,
-                    format_test(test),
-                    error
+                    "{}",
+                    format!(
+                        "test #{}: case '{}' failed and shouldn't have:\n{}",
+                        index + 1,
+                        test.purple(),
+                        error
+                    )
+                    .red()
                 )
             }
             TestError::UnexpectedError {
@@ -98,17 +113,21 @@ impl fmt::Display for TestError {
             } => {
                 write!(
                     f,
-                    "test #{}: {}expected error\n{}\ngot\n{}",
-                    index + 1,
-                    format_test(test),
-                    expected,
-                    output
+                    "{}",
+                    format!(
+                        "test #{}: case `{}` expected error `{}` got `{}`",
+                        index + 1,
+                        test.purple(),
+                        expected.cyan(),
+                        output.blue(),
+                    )
+                    .red(),
                 )
             }
             TestError::MismatchedTestExpectationLength => {
-                write!(f, "invalid number of test expectations")
+                write!(f, "{}", "invalid number of test expectations".red())
             }
-            TestError::MissingTestConfig => write!(f, "missing test config"),
+            TestError::MissingTestConfig => write!(f, "{}", "missing test config".red()),
         }
     }
 }

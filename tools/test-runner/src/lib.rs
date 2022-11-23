@@ -8,4 +8,3 @@ mod fetch;
 pub use fetch::*;
 mod output;
 pub use output::*;
-

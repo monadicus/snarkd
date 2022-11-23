@@ -1,3 +1,4 @@
+use colored::Colorize;
 use serde_json::Value;
 use std::{
     any::Any,
@@ -67,16 +68,12 @@ fn take_hook(
 }
 
 pub struct TestCases {
-    tests: Vec<TestConfig>,
     path_prefix: PathBuf,
     fail_categories: Vec<TestFailure>,
 }
 
 impl TestCases {
-    fn new(
-        expectation_category: &str,
-        additional_check: impl Fn(&TestConfig) -> bool,
-    ) -> (Self, Vec<TestConfig>) {
+    fn new(expectation_category: &str) -> Self {
         let mut path_prefix = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path_prefix.push("../../tests/");
         path_prefix.push(expectation_category);
@@ -87,27 +84,10 @@ impl TestCases {
         let mut expectation_dir = path_prefix.clone();
         expectation_dir.push("expectations");
 
-        let mut new = Self {
-            tests: Vec::new(),
+        Self {
             path_prefix,
             fail_categories: Vec::new(),
-        };
-        let tests = new.load_tests(additional_check);
-        (new, tests)
-    }
-
-    fn load_tests(&mut self, additional_check: impl Fn(&TestConfig) -> bool) -> Vec<TestConfig> {
-        let mut configs = Vec::new();
-
-        self.tests = find_tests(&self.path_prefix.clone())
-            .filter(|cfg| {
-                let res = additional_check(cfg);
-                configs.push(cfg.clone());
-                res
-            })
-            .collect();
-
-        configs
+        }
     }
 
     fn load_expectations(&self, path: &Path) -> (PathBuf, Option<TestExpectation>) {
@@ -119,7 +99,7 @@ impl TestCases {
             .join("expectations")
             .join(relative_path.parent().expect("no parent dir for test"))
             .join(relative_path.file_name().expect("no file name for test"))
-            .with_extension("out");
+            .with_extension("json");
 
         if expectation_path.exists() {
             if !is_env_var_set("CLEAR_TEST_EXPECTATIONS") {
@@ -138,15 +118,21 @@ impl TestCases {
     }
 }
 
-pub fn run_tests<T: Runner>(runner: &T, expectation_category: &str) {
-    let (mut cases, configs) = TestCases::new(expectation_category, |_| true);
+#[cfg(target_os = "windows")]
+const TESTS: &'static str = "tests\\";
+#[cfg(not(target_os = "windows"))]
+const TESTS: &'static str = "tests/";
 
-    let mut pass_categories = 0;
+pub fn run_tests<T: Runner>(runner: &T, expectation_category: &str) {
+    let mut cases = TestCases::new(expectation_category);
+    let configs = find_tests(&cases.path_prefix.clone()).collect::<Vec<_>>();
+
     let mut pass_tests = 0;
     let mut fail_tests = 0;
+    let mut skipped_tests = 0;
 
     let mut outputs = vec![];
-    for config in cases.tests.clone() {
+    for config in configs {
         let namespace = match runner.resolve_namespace(&config.namespace) {
             Some(ns) => ns,
             None => return,
@@ -156,7 +142,14 @@ pub fn run_tests<T: Runner>(runner: &T, expectation_category: &str) {
 
         let mut errors = vec![];
         if let Some(expectations) = expectations.as_ref() {
-            if config.tests.len() != expectations.0.len() {
+            if config.tests.len()
+                - config
+                    .tests
+                    .iter()
+                    .filter(|(_, case)| case.expectation == TestExpectationMode::Skip)
+                    .count()
+                != expectations.0.len()
+            {
                 errors.push(TestError::MismatchedTestExpectationLength);
             }
         }
@@ -165,10 +158,39 @@ pub fn run_tests<T: Runner>(runner: &T, expectation_category: &str) {
         let mut expected_output = expectations.as_ref().map(|x| x.0.iter());
 
         for (i, (test_name, test_case)) in config.tests.into_iter().enumerate() {
+            if matches!(test_case.expectation, TestExpectationMode::Skip) {
+                println!(
+                    "{}",
+                    format!(
+                        "skipping test '{test_name}' @ '{TESTS}{}'",
+                        config
+                            .path
+                            .display()
+                            .to_string()
+                            .rsplit('/')
+                            .next()
+                            .unwrap(),
+                    )
+                    .yellow()
+                );
+                skipped_tests += 1;
+                continue;
+            }
+
             let expected_output = expected_output.as_mut().and_then(|x| x.next());
             println!(
-                "running test {test_name} @ '{}'",
-                config.path.to_str().unwrap(),
+                "{}",
+                format!(
+                    "running test '{test_name}' @ '{TESTS}{}'",
+                    config
+                        .path
+                        .display()
+                        .to_string()
+                        .rsplit('/')
+                        .next()
+                        .unwrap(),
+                )
+                .cyan()
             );
 
             let panic_buf = set_hook();
@@ -199,7 +221,6 @@ pub fn run_tests<T: Runner>(runner: &T, expectation_category: &str) {
             if expectations.is_none() {
                 outputs.push((expectation_path, TestExpectation(new_outputs)));
             }
-            pass_categories += 1;
         } else {
             cases.fail_categories.push(TestFailure {
                 path: config.path.display().to_string(),
@@ -208,24 +229,27 @@ pub fn run_tests<T: Runner>(runner: &T, expectation_category: &str) {
         }
     }
 
+    println!(
+        "{}",
+        format!("skipped {skipped_tests}/{skipped_tests} tests").yellow()
+    );
+
     if !cases.fail_categories.is_empty() {
         for (i, fail) in cases.fail_categories.iter().enumerate() {
             println!(
-                "\n\n-----------------TEST #{} FAILED (and shouldn't have)-----------------",
-                i + 1
+                "{}",
+                format!(
+                    "\n\n-----------------TEST #{} FAILED (and shouldn't have)-----------------",
+                    i + 1
+                )
+                .red()
             );
             println!("File: {}", fail.path);
             for error in &fail.errors {
                 println!("{error}");
             }
         }
-        panic!(
-            "failed {}/{} tests in {}/{} categories",
-            pass_tests,
-            fail_tests + pass_tests,
-            cases.fail_categories.len(),
-            cases.fail_categories.len() + pass_categories
-        );
+        panic!("failed {pass_tests}/{} tests", fail_tests + pass_tests,);
     } else {
         for (path, new_expectation) in outputs {
             std::fs::create_dir_all(path.parent().unwrap())
@@ -233,33 +257,26 @@ pub fn run_tests<T: Runner>(runner: &T, expectation_category: &str) {
             std::fs::write(
                 &path,
                 serde_json::to_string_pretty(&new_expectation)
-                    .expect("failed to serialize expectation yaml"),
+                    .expect("failed to serialize expectation json"),
             )
             .expect("failed to write expectation file");
         }
         println!(
-            "passed {}/{} tests in {}/{} categories",
-            pass_tests,
-            fail_tests + pass_tests,
-            pass_categories,
-            pass_categories
+            "{}",
+            format!("passed {pass_tests}/{} tests", fail_tests + pass_tests,).green()
         );
     }
 }
 
-// /// returns (name, content) for all benchmark samples
-// pub fn get_benches() -> Vec<(String, String)> {
-//     let (mut cases, configs) = TestCases::new("compiler", |config| {
-//         (&config.namespace == "Bench" && config.expectation == TestExpectationMode::Pass)
-//             || (&config.namespace == "Compile"
-//                 && !matches!(
-//                     config.expectation,
-//                     TestExpectationMode::Fail | TestExpectationMode::Skip
-//                 ))
-//     });
-
-//     // cases.process_tests(configs, |_, (_, content, test_name, _)| {
-//     //     (test_name.to_string(), content.to_string())
-//     // })
-//     todo!()
-// }
+/// returns all test configs for a given test folder.
+pub fn get_benches(test_folder: &str) -> Vec<TestConfig> {
+    let cases = TestCases::new(test_folder);
+    find_tests(&cases.path_prefix)
+        .map(|mut config| {
+            config
+                .tests
+                .retain(|_, case| case.expectation == TestExpectationMode::Pass);
+            config
+        })
+        .collect::<Vec<_>>()
+}
