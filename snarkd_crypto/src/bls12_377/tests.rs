@@ -12,81 +12,76 @@ use std::{
 
 pub(crate) const ITERATIONS: usize = 10;
 
-fn random_addition_test<G: Projective>() {
-    (0..ITERATIONS).into_par_iter().for_each(|_| {
-        let a = G::rand();
-        let b = G::rand();
-        let c = G::rand();
-        let a_affine = a.to_affine();
-        let b_affine = b.to_affine();
-        let c_affine = c.to_affine();
+pub fn random_addition_test<G: Projective>(a: G, b: G, c: G) {
+    let a_affine = a.to_affine();
+    let b_affine = b.to_affine();
+    let c_affine = c.to_affine();
 
-        // a + a should equal the doubling
-        {
-            let mut aplusa = a;
-            aplusa.add_assign(a);
+    // a + a should equal the doubling
+    {
+        let mut aplusa = a;
+        aplusa.add_assign(a);
 
-            let mut aplusamixed = a;
-            aplusamixed.add_assign_mixed(&a.to_affine());
+        let mut aplusamixed = a;
+        aplusamixed.add_assign_mixed(&a.to_affine());
 
-            let mut adouble = a;
-            adouble.double_in_place();
+        let mut adouble = a;
+        adouble.double_in_place();
 
-            assert_eq!(aplusa, adouble);
-            assert_eq!(aplusa, aplusamixed);
-        }
+        assert_eq!(aplusa, adouble);
+        assert_eq!(aplusa, aplusamixed);
+    }
 
-        let mut tmp = vec![G::ZERO; 6];
+    let mut tmp = vec![G::ZERO; 6];
 
-        // (a + b) + c
-        tmp[0] = (a + b) + c;
+    // (a + b) + c
+    tmp[0] = (a + b) + c;
 
-        // a + (b + c)
-        tmp[1] = a + (b + c);
+    // a + (b + c)
+    tmp[1] = a + (b + c);
 
-        // (a + c) + b
-        tmp[2] = (a + c) + b;
+    // (a + c) + b
+    tmp[2] = (a + c) + b;
 
-        // Mixed addition
+    // Mixed addition
 
-        // (a + b) + c
-        tmp[3] = a_affine.to_projective();
-        tmp[3].add_assign_mixed(&b_affine);
-        tmp[3].add_assign_mixed(&c_affine);
+    // (a + b) + c
+    tmp[3] = a_affine.to_projective();
+    tmp[3].add_assign_mixed(&b_affine);
+    tmp[3].add_assign_mixed(&c_affine);
 
-        // a + (b + c)
-        tmp[4] = b_affine.to_projective();
-        tmp[4].add_assign_mixed(&c_affine);
-        tmp[4].add_assign_mixed(&a_affine);
+    // a + (b + c)
+    tmp[4] = b_affine.to_projective();
+    tmp[4].add_assign_mixed(&c_affine);
+    tmp[4].add_assign_mixed(&a_affine);
 
-        // (a + c) + b
-        tmp[5] = a_affine.to_projective();
-        tmp[5].add_assign_mixed(&c_affine);
-        tmp[5].add_assign_mixed(&b_affine);
+    // (a + c) + b
+    tmp[5] = a_affine.to_projective();
+    tmp[5].add_assign_mixed(&c_affine);
+    tmp[5].add_assign_mixed(&b_affine);
 
-        // Comparisons
-        for i in 0..6 {
-            for j in 0..6 {
-                if tmp[i] != tmp[j] {
-                    println!("{} \n{}", tmp[i], tmp[j]);
-                }
-                assert_eq!(tmp[i], tmp[j], "Associativity failed {} {}", i, j);
-                assert_eq!(
-                    tmp[i].to_affine(),
-                    tmp[j].to_affine(),
-                    "Associativity failed"
-                );
+    // Comparisons
+    for i in 0..6 {
+        for j in 0..6 {
+            if tmp[i] != tmp[j] {
+                println!("{} \n{}", tmp[i], tmp[j]);
             }
-
-            assert!(tmp[i] != a);
-            assert!(tmp[i] != b);
-            assert!(tmp[i] != c);
-
-            assert!(a != tmp[i]);
-            assert!(b != tmp[i]);
-            assert!(c != tmp[i]);
+            assert_eq!(tmp[i], tmp[j], "Associativity failed {} {}", i, j);
+            assert_eq!(
+                tmp[i].to_affine(),
+                tmp[j].to_affine(),
+                "Associativity failed"
+            );
         }
-    })
+
+        assert!(tmp[i] != a);
+        assert!(tmp[i] != b);
+        assert!(tmp[i] != c);
+
+        assert!(a != tmp[i]);
+        assert!(b != tmp[i]);
+        assert!(c != tmp[i]);
+    }
 }
 
 fn random_multiplication_test<G: Projective>() {
@@ -586,7 +581,11 @@ pub fn curve_tests<G: Projective>() {
         assert_eq!(b, c);
     }
 
-    random_addition_test::<G>();
+    // TODO change this to not use random
+    let a = G::rand();
+    let b = G::rand();
+    let c = G::rand();
+    random_addition_test::<G>(a, b, c);
     random_multiplication_test::<G>();
     random_doubling_test::<G>();
     random_negation_test::<G>();
