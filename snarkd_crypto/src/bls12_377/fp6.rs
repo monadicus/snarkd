@@ -1,4 +1,7 @@
-use crate::bls12_377::{field::Field, Fp, Fp2};
+use crate::{
+    bls12_377::{field::Field, Fp, Fp2},
+    test::Testable,
+};
 use core::{
     iter::Sum,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
@@ -523,6 +526,8 @@ impl Sum<Fp6> for Fp6 {
         iter.fold(Fp6::ZERO, |a, b| a + b)
     }
 }
+
+impl Testable for Fp6 {}
 
 #[cfg(test)]
 mod test {

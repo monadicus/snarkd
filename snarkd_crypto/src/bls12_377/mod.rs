@@ -47,9 +47,7 @@ pub use to_scalar::*;
 #[path = ""]
 mod test {
 
-    mod projective_tests;
-    pub use projective_tests::*;
-    mod test_runner;
+    mod old;
     mod tests;
 }
 

@@ -1,4 +1,7 @@
-use crate::bls12_377::{field::Field, Fp, Fp2, Fp6};
+use crate::{
+    bls12_377::{field::Field, Fp, Fp2, Fp6},
+    test::Testable,
+};
 use bitvec::prelude::*;
 use core::{
     iter::Sum,
@@ -539,3 +542,5 @@ impl Sum<Fp12> for Fp12 {
         iter.fold(Fp12::ZERO, |a, b| a + b)
     }
 }
+
+impl Testable for Fp12 {}

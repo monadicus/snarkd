@@ -1,4 +1,7 @@
-use crate::bls12_377::{field::Field, Fp, LegendreSymbol};
+use crate::{
+    bls12_377::{field::Field, Fp, LegendreSymbol},
+    test::Testable,
+};
 use core::{
     cmp::Ordering,
     iter::Sum,
@@ -393,3 +396,5 @@ impl PartialOrd for Fp2 {
         Some(self.cmp(other))
     }
 }
+
+impl Testable for Fp2 {}

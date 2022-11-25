@@ -15,3 +15,5 @@ pub mod polycommit;
 pub use polycommit::*;
 mod r1cs;
 pub use r1cs::*;
+mod test;
+pub(crate) use test::Testable;

@@ -1,4 +1,7 @@
-use crate::bls12_377::{field::Field, LegendreSymbol};
+use crate::{
+    bls12_377::{field::Field, LegendreSymbol},
+    test::Testable,
+};
 use bitvec::prelude::*;
 use core::{
     fmt::{Display, Formatter, Result as FmtResult},
@@ -473,6 +476,8 @@ impl Display for Fp {
         write!(f, "{}", self.0)
     }
 }
+
+impl Testable for Fp {}
 
 #[cfg(test)]
 mod tests {
