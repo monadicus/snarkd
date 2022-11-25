@@ -7,6 +7,7 @@ use ruint::uint;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[cfg_attr(test, derive(serde::Serialize, serde::Deserialize))]
 pub struct Fp6 {
     pub c0: Fp2,
     pub c1: Fp2,

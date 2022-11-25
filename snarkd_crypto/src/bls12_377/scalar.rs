@@ -33,6 +33,7 @@ use ruint::{uint, Uint};
 /// ```
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[cfg_attr(test, derive(serde::Serialize, serde::Deserialize))]
 pub struct Scalar(pub Uint<256, 4>);
 
 impl From<Uint<256, 4>> for Scalar {

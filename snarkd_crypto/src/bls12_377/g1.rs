@@ -8,6 +8,7 @@ use ruint::{uint, Uint};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[cfg_attr(test, derive(serde::Serialize, serde::Deserialize))]
 pub struct G1Parameters;
 
 impl Parameters for G1Parameters {

@@ -13,6 +13,7 @@ use rand::{
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[cfg_attr(test, derive(serde::Serialize, serde::Deserialize))]
 pub struct SWAffine<P: Parameters> {
     pub x: P::BaseField,
     pub y: P::BaseField,

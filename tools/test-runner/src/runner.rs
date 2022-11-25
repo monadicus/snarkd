@@ -19,7 +19,7 @@ pub struct Test {
 }
 
 pub trait Namespace: UnwindSafe + RefUnwindSafe {
-    fn run_test(&self, test: Test) -> Result<String, String>;
+    fn run_test(&self, test: Test) -> Result<Value, String>;
 }
 
 pub trait Runner {
@@ -54,9 +54,9 @@ fn set_hook() -> Arc<Mutex<Option<String>>> {
 }
 
 fn take_hook(
-    output: Result<Result<String, String>, Box<dyn Any + Send>>,
+    output: Result<Result<Value, String>, Box<dyn Any + Send>>,
     panic_buf: Arc<Mutex<Option<String>>>,
-) -> Result<Result<String, String>, String> {
+) -> Result<Result<Value, String>, String> {
     let _ = panic::take_hook();
     output.map_err(|_| {
         panic_buf
@@ -213,7 +213,7 @@ pub fn run_tests<T: Runner>(runner: &T, expectation_category: &str) {
                 errors.push(error);
             } else {
                 pass_tests += 1;
-                new_outputs.insert(test_name, output.unwrap().unwrap_or_else(|e| e));
+                new_outputs.insert(test_name, output.unwrap().unwrap_or_else(|e| e.into()));
             }
         }
 

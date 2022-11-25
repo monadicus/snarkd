@@ -43,8 +43,15 @@ pub use sw_projective::*;
 pub mod to_scalar;
 pub use to_scalar::*;
 
-#[cfg(any(test, feature = "arbitrary"))]
-pub mod tests;
+#[cfg(test)]
+#[path = ""]
+mod test {
+
+    mod projective_tests;
+    pub use projective_tests::*;
+    mod test_runner;
+    mod tests;
+}
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum LegendreSymbol {

@@ -1,4 +1,5 @@
 use colored::Colorize;
+use serde_json::Value;
 
 use std::fmt;
 
@@ -19,8 +20,8 @@ pub enum TestError {
     UnexpectedOutput {
         test: String,
         index: usize,
-        expected: String,
-        output: String,
+        expected: Value,
+        output: Value,
     },
     PassedAndShouldntHave {
         test: String,
@@ -134,9 +135,9 @@ impl fmt::Display for TestError {
 
 pub fn emit_errors(
     test: &str,
-    output: &Result<Result<String, String>, String>,
+    output: &Result<Result<Value, String>, String>,
     mode: TestExpectationMode,
-    expected_output: Option<(&String, &String)>,
+    expected_output: Option<(&String, &Value)>,
     test_index: usize,
 ) -> Option<TestError> {
     match (output, mode) {

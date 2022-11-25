@@ -1524,6 +1524,7 @@ dependencies = [
  "rand",
  "ruint-macro",
  "rustc_version",
+ "serde",
  "thiserror",
 ]
 
@@ -1767,8 +1768,10 @@ dependencies = [
  "ruint",
  "rusqlite",
  "serde",
+ "serde_json",
  "sha2",
  "smallvec",
+ "test-runner",
  "thiserror",
 ]
 

@@ -18,6 +18,7 @@ use ruint::{uint, Uint};
 
 #[derive(Copy, Clone, Debug)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[cfg_attr(test, derive(serde::Serialize, serde::Deserialize))]
 pub struct SWProjective<P: Parameters> {
     pub x: P::BaseField,
     pub y: P::BaseField,
