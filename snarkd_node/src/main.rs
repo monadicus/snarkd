@@ -276,8 +276,9 @@ async fn main() {
 
     let rpc_handle = if config.rpc_port != 0 {
         let rpc_addr = SocketAddr::new(config.rpc_ip.into(), config.rpc_port);
+        let rpc_module = rpc::SnarkdRpc { peer_book }.module();
 
-        match websocket_server(rpc::module(), rpc_addr).await {
+        match websocket_server(rpc_module, rpc_addr).await {
             Ok((addr, handle)) => {
                 info!("json rpc listening on ws://{}", addr);
                 Some(handle)

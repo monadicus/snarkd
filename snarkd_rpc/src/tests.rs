@@ -1,3 +1,5 @@
+use snarkd_storage::PeerData;
+
 use crate::{client, common, server};
 
 #[tokio::test]
@@ -20,6 +22,10 @@ async fn test_snarkd_rpc() -> anyhow::Result<()> {
         async fn bar(&self, arg: String) -> Result<String, RpcError> {
             Ok(arg)
         }
+
+        async fn list_peers(&self) -> Result<Vec<PeerData>, RpcError> {
+            Ok(vec![])
+        }
     }
 
     let (addr, server) =
@@ -28,6 +34,7 @@ async fn test_snarkd_rpc() -> anyhow::Result<()> {
 
     assert_eq!(rpc.foo().await?, "foo");
     assert_eq!(rpc.bar("bar".to_string()).await?, "bar");
+    assert_eq!(rpc.list_peers().await?.len(), 0);
 
     server.stop()?;
 

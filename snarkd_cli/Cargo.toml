@@ -8,6 +8,7 @@ clap = { workspace = true }
 anyhow = { workspace = true }
 snarkd_client = { workspace = true }
 snarkd_common = { workspace = true }
+serde_json = { workspace = true }
 url = { workspace = true }
 tokio = { workspace = true }
 log = { workspace = true }

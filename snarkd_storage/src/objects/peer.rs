@@ -1,12 +1,12 @@
-use std::net::SocketAddr;
-
 use anyhow::Result;
 use chrono::{DateTime, NaiveDateTime, Utc};
 use rusqlite::params;
+use serde::{Deserialize, Serialize};
+use std::net::SocketAddr;
 
 use crate::Database;
 
-#[derive(strum::IntoStaticStr, Clone, Copy, strum::EnumString)]
+#[derive(strum::IntoStaticStr, Clone, Copy, strum::EnumString, Serialize, Deserialize)]
 pub enum PeerDirection {
     /// peer connected to us
     Inbound,
@@ -16,7 +16,7 @@ pub enum PeerDirection {
     Unknown,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Serialize, Deserialize)]
 pub struct PeerData {
     pub address: SocketAddr,
     pub last_peer_direction: PeerDirection,

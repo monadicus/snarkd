@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 use snarkd_rpc::{
     client::{websocket_client, Client},
-    common::RpcClient,
+    common::{PeerData, RpcClient},
 };
 use url::Url;
 
@@ -29,5 +29,9 @@ impl SnarkdClient {
 
     pub async fn bar(&self, arg: String) -> Result<String> {
         Ok(self.rpc.bar(arg).await?)
+    }
+
+    pub async fn list_peers(&self) -> Result<Vec<PeerData>> {
+        Ok(self.rpc.list_peers().await?)
     }
 }

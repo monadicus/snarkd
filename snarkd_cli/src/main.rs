@@ -1,5 +1,6 @@
 use clap::{Parser, Subcommand};
 use log::error;
+use serde_json::json;
 use snarkd_client::SnarkdClient;
 use snarkd_common::config::load_config;
 use url::Url;
@@ -15,9 +16,18 @@ struct Args {
 }
 
 #[derive(Debug, Subcommand)]
+enum PeersCommands {
+    List,
+}
+
+#[derive(Debug, Subcommand)]
 enum Commands {
     Foo,
-    Bar { arg: String },
+    Bar {
+        arg: String,
+    },
+    #[command(subcommand)]
+    Peers(PeersCommands),
 }
 
 #[tokio::main]
@@ -46,12 +56,20 @@ async fn main() {
     };
 
     match args.command {
-        Commands::Foo => println!("output: {}", client.foo().await.expect("error running foo")),
+        Commands::Foo => println!("{}", json!(client.foo().await.expect("error running foo"))),
         Commands::Bar { arg } => {
             println!(
-                "output: {}",
-                client.bar(arg).await.expect("error running foo")
+                "{}",
+                json!(client.bar(arg).await.expect("error running foo"))
             )
         }
+        Commands::Peers(command) => match command {
+            PeersCommands::List => {
+                println!(
+                    "{}",
+                    json!(client.list_peers().await.expect("error listing peers"))
+                )
+            }
+        },
     }
 }

@@ -4,10 +4,11 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-jsonrpsee = { version = "0.15.1", optional = true, default-features = false }
+jsonrpsee = { version = "0.15.1", default-features = false }
 anyhow = { workspace = true }
 tokio = { workspace = true }
 async-trait = { workspace = true }
+snarkd_storage = { workspace = true }
 
 [features]
 default = ["client", "server"]

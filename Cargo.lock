@@ -2193,6 +2193,7 @@ dependencies = [
  "clap",
  "lazy_static",
  "log",
+ "serde_json",
  "snarkd_client",
  "snarkd_common",
  "tokio",
@@ -2342,6 +2343,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "jsonrpsee",
+ "snarkd_storage",
  "tokio",
 ]
 

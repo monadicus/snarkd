@@ -3,8 +3,13 @@ use snarkd_rpc::{
     common::{RpcError, RpcServer},
     server::RpcModule,
 };
+use snarkd_storage::PeerData;
 
-pub struct SnarkdRpc;
+use crate::peer_book::PeerBook;
+
+pub struct SnarkdRpc {
+    pub peer_book: PeerBook,
+}
 
 #[async_trait]
 impl RpcServer for SnarkdRpc {
@@ -19,8 +24,18 @@ impl RpcServer for SnarkdRpc {
             Ok(arg)
         }
     }
+
+    async fn list_peers(&self) -> Result<Vec<PeerData>, RpcError> {
+        Ok(self
+            .peer_book
+            .connected_peers()
+            .map(|kv| kv.value().data)
+            .collect())
+    }
 }
 
-pub(crate) fn module() -> RpcModule<SnarkdRpc> {
-    SnarkdRpc.into_rpc()
+impl SnarkdRpc {
+    pub(crate) fn module(self) -> RpcModule<SnarkdRpc> {
+        self.into_rpc()
+    }
 }
