@@ -27,7 +27,7 @@ impl EpochChallenge {
         let product_domain = CoinbasePuzzle::product_domain(degree)?;
 
         let epoch_polynomial = hash_to_polynomial(&input, degree);
-        if !u32::try_from(epoch_polynomial.degree()).is_ok() {
+        if u32::try_from(epoch_polynomial.degree()).is_err() {
             return Err(anyhow!("Degree is too large"));
         }
 

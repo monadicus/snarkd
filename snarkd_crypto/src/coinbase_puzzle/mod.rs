@@ -155,7 +155,7 @@ impl CoinbasePuzzle {
         // Check that the minimum target is met.
         if let Some(minimum_target) = minimum_proof_target {
             let proof_target = partial_solution.to_target()?;
-            if !proof_target >= minimum_target {
+            if proof_target < minimum_target {
                 return Err(anyhow!("Prover solution was below the necessary proof target ({proof_target} < {minimum_target})"));
             }
         }
@@ -249,7 +249,7 @@ impl CoinbasePuzzle {
                 .iter()
                 .map(|solution| *solution.commitment()),
         )?;
-        if !challenges.len() == partial_solutions.len() + 1 {
+        if challenges.len() != partial_solutions.len() + 1 {
             return Err(anyhow!("Invalid number of challenge points"));
         }
 
@@ -371,7 +371,7 @@ impl CoinbasePuzzle {
                 .iter()
                 .map(|solution| *solution.commitment()),
         )?;
-        if !challenge_points.len() == coinbase_solution.partial_solutions().len() + 1 {
+        if challenge_points.len() != coinbase_solution.partial_solutions().len() + 1 {
             return Err(anyhow!("Invalid number of challenge points"));
         }
 
@@ -479,7 +479,7 @@ impl CoinbasePuzzle {
             let mut bytes = [0u8; 76];
             bytes[..4].copy_from_slice(&epoch_challenge.epoch_number().to_le_bytes());
             bytes[4..36].copy_from_slice(&epoch_challenge.epoch_block_hash().0.to_le_bytes::<32>());
-            bytes[36..68].copy_from_slice(&address.0.x.0.to_le_bytes::<48>());
+            bytes[36..68].copy_from_slice(&address.0.x.0.to_le_bytes::<48>()[0..32]);
             bytes[68..].copy_from_slice(&nonce.to_le_bytes());
             bytes
         };

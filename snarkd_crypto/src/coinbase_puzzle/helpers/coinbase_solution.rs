@@ -1,5 +1,6 @@
 use super::*;
 use anyhow::{anyhow, Result};
+use ruint::Uint;
 
 /// The coinbase puzzle solution constructed by accumulating the individual prover solutions.
 #[derive(Clone, Eq, PartialEq, Hash)]
@@ -63,7 +64,7 @@ impl CoinbaseSolution {
                 .iter()
                 .map(|solution| *solution.commitment()),
         )?;
-        if !challenge_points.len() == self.partial_solutions.len() + 1 {
+        if challenge_points.len() != self.partial_solutions.len() + 1 {
             return Err(anyhow!("Invalid number of challenge points"));
         }
 

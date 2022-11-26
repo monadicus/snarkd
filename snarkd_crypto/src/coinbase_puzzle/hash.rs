@@ -33,7 +33,7 @@ pub fn hash_commitment(commitment: &Commitment) -> Result<Scalar> {
     let mut bytes = Vec::with_capacity(96);
     bytes.extend(commitment.0.x.0.to_le_bytes::<48>().into_iter());
     bytes.extend(commitment.0.y.0.to_le_bytes::<48>().into_iter());
-    if !bytes.len() == 96 {
+    if bytes.len() != 96 {
         return Err(anyhow!("Invalid commitment byte length for hashing"));
     }
 
@@ -70,7 +70,7 @@ pub fn hash_commitments(
             bytes
         })
         .collect::<Vec<_>>();
-    if !bytes.len() == 96 * usize::try_from(num_commitments)? {
+    if bytes.len() != 96 * usize::try_from(num_commitments)? {
         return Err(anyhow!("Invalid commitment byte length for hashing"));
     }
 
