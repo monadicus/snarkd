@@ -15,3 +15,4 @@ chrono = { workspace = true }
 strum = { workspace = true }
 
 snarkd_common = { path = "../snarkd_common", features = ["rusqlite"] }
+snarkd_crypto = { path = "../snarkd_crypto" }

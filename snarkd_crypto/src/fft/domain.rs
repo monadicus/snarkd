@@ -389,6 +389,21 @@ impl EvaluationDomain {
         self.fft_helper_in_place_with_pc(x_s, FFTOrder::II, &pc)
     }
 
+    pub fn in_order_fft_with_pc<
+        T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Copy + Send + Sync + Default,
+    >(
+        &self,
+        x_s: &[T],
+        pc: &FFTPrecomputation,
+    ) -> Vec<T> {
+        let mut x_s = x_s.to_vec();
+        if self.size() != x_s.len() {
+            x_s.extend(core::iter::repeat(T::default()).take(self.size() - x_s.len()));
+        }
+        self.fft_helper_in_place_with_pc(&mut x_s, FFTOrder::II, pc);
+        x_s
+    }
+
     pub(crate) fn in_order_ifft_in_place<
         T: MulAssign<Scalar> + AddAssign<T> + Sub<T, Output = T> + Copy + Send + Sync,
     >(

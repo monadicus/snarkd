@@ -1,5 +1,5 @@
 use super::{Address, PrivateKey};
-use snarkd_crypto::{
+use crate::{
     bls12_377::{Affine, G1Affine, Projective, Scalar},
     utils::*,
 };
