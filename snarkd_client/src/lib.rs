@@ -1,13 +1,14 @@
 use anyhow::{anyhow, Result};
 use snarkd_rpc::{
     client::{websocket_client, Client},
-    common::{PeerData, RpcClient},
+    common::{PeerData, PeerMessage, RpcClient, RpcError},
+    jsonrpsee::core::client::Subscription,
 };
 use url::Url;
 
 pub struct SnarkdClient {
     url: Url,
-    rpc: Client,
+    pub rpc: Client,
 }
 
 impl SnarkdClient {
@@ -23,15 +24,19 @@ impl SnarkdClient {
         self.url.clone()
     }
 
-    pub async fn foo(&self) -> Result<String> {
-        Ok(self.rpc.foo().await?)
+    pub async fn foo(&self) -> Result<String, RpcError> {
+        self.rpc.foo().await
     }
 
-    pub async fn bar(&self, arg: String) -> Result<String> {
-        Ok(self.rpc.bar(arg).await?)
+    pub async fn bar(&self, arg: String) -> Result<String, RpcError> {
+        self.rpc.bar(arg).await
     }
 
-    pub async fn list_peers(&self) -> Result<Vec<PeerData>> {
-        Ok(self.rpc.list_peers().await?)
+    pub async fn list_peers(&self) -> Result<Vec<PeerData>, RpcError> {
+        self.rpc.list_peers().await
+    }
+
+    pub async fn subscribe_peers(&self) -> Result<Subscription<PeerMessage>, RpcError> {
+        self.rpc.subscribe_peers().await
     }
 }

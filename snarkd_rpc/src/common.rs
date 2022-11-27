@@ -1,5 +1,8 @@
+use std::net::SocketAddr;
+
 pub use jsonrpsee::core::Error as RpcError;
 use jsonrpsee::proc_macros::rpc;
+use serde::{Deserialize, Serialize};
 pub use snarkd_storage::PeerData;
 
 #[rpc(server, client, namespace = "snarkd")]
@@ -16,4 +19,16 @@ pub trait Rpc {
     #[method(name = "list_peers")]
     /// Returns a list of peer data
     async fn list_peers(&self) -> Result<Vec<PeerData>, RpcError>;
+
+    #[subscription(name = "subscribe_peers", item = PeerMessage)]
+    /// Subscription that produces a PeerMessage.
+    fn subscribe_peers(&self);
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+pub enum PeerMessage {
+    Connect(SocketAddr),
+    Handshake(PeerData),
+    Update(PeerData),
+    Disconnect(SocketAddr),
 }

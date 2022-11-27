@@ -9,6 +9,7 @@ anyhow = { workspace = true }
 tokio = { workspace = true }
 async-trait = { workspace = true }
 snarkd_storage = { workspace = true }
+serde = { workspace = true }
 
 [features]
 default = ["client", "server"]

@@ -18,6 +18,7 @@ struct Args {
 #[derive(Debug, Subcommand)]
 enum PeersCommands {
     List,
+    Listen,
 }
 
 #[derive(Debug, Subcommand)]
@@ -69,6 +70,16 @@ async fn main() {
                     "{}",
                     json!(client.list_peers().await.expect("error listing peers"))
                 )
+            }
+            PeersCommands::Listen => {
+                let mut subscription = client
+                    .subscribe_peers()
+                    .await
+                    .expect("error subscribing to peers");
+
+                while let Some(Ok(msg)) = subscription.next().await {
+                    println!("{}", json!(msg));
+                }
             }
         },
     }
