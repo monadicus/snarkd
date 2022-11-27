@@ -7,6 +7,7 @@ use core::{
 use ruint::uint;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct Fp12 {
     pub c0: Fp6,
     pub c1: Fp6,

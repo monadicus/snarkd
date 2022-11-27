@@ -10,11 +10,12 @@ members = [
     "snarkd_storage",
     "snarkd_peer",
     "tools/coverage",
+    "tools/test-runner",
 ]
 
 [workspace.dependencies]
 always_cell = "0.1"
-anyhow = "=1.0.65"
+anyhow = "1.0.66"
 arc-swap = "1.0"
 async-trait = "0.1"
 bech32 = "0.9.1"
@@ -27,7 +28,7 @@ dashmap = "5.4"
 env_logger = "0.9"
 error-stack = "0.2"
 fxhash = "0.2.1"
-hashbrown = "0.12"
+hashbrown = "0.13.1"
 hex = "0.4"
 indexmap = { version = "1.9.1", features = ["serde"] }
 itertools = "0.10"
@@ -35,6 +36,7 @@ lazy_static = "1.4"
 log = "0.4"
 num-bigint = "0.4"
 num_enum = "0.5.7"
+open = "3.2"
 parking_lot = "0.12"
 prost = "0.11.0"
 prost-build = "0.11.1"
@@ -49,6 +51,7 @@ refinery = { version = "0.8.6", features = [
 rusqlite = { version = "0.28", features = ["bundled"] }
 serde = { version = "1.0.147", features = ["derive"] }
 serde_yaml = "0.9.14"
+serde_json = "1.0"
 sha2 = { version = "0.10", default-features = false }
 smallvec = "1.10"
 strum = { version = "0.24", features = ["derive"] }
@@ -57,9 +60,11 @@ tokio = { version = "1.0", features = ["full"] }
 # we need a new release for rusqlite 0.28 support
 tokio-rusqlite = "0.3.0"
 uuid = { version = "1.2", features = ["serde", "v4"] }
+walkdir = "2.3"
+
 snarkd_common = { path = "./snarkd_common" }
 snarkd_errors = { path = "./snarkd_errors" }
-open = "3.2.0"
+test-runner = { path = "./tools/test-runner" }
 
 [profile.test]
 opt-level = 3

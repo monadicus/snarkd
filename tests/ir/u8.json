@@ -1,0 +1,22 @@
+{
+    "namespace": "IR",
+    "method": "u8_deserialize_serialize",
+    "tests": {
+        "simple": {
+            "input": 1,
+            "expectation": "Pass"
+        },
+        "max": {
+            "input": 255,
+            "expectation": "Pass"
+        },
+        "not_u8": {
+            "input": "fail",
+            "expectation": "Fail"
+        },
+        "skipped": {
+            "input": 255,
+            "expectation": "Skip"
+        }
+    }
+}

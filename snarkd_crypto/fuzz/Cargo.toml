@@ -1,0 +1,79 @@
+[package]
+name = "snarkd_crypto-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+snarkd_crypto = { path = "..", features = ["arbitrary"] }
+
+# Prevent this from interfering with workspaces
+[workspace]
+members = ["."]
+
+[profile.release]
+debug = 1
+
+[[bin]]
+name = "fp"
+path = "fuzz_targets/bls12_377/fp.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fp2"
+path = "fuzz_targets/bls12_377/fp2.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fp6"
+path = "fuzz_targets/bls12_377/fp6.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fp12"
+path = "fuzz_targets/bls12_377/fp12.rs"
+test = false
+doc = false
+[[bin]]
+name = "g1"
+path = "fuzz_targets/bls12_377/g1.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "g2"
+path = "fuzz_targets/bls12_377/g2.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "mod"
+path = "fuzz_targets/bls12_377/mod.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "scalar"
+path = "fuzz_targets/bls12_377/scalar.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "sw_affine_g1"
+path = "fuzz_targets/bls12_377/sw_affine_g1.rs"
+test = false
+doc = false
+
+
+[[bin]]
+name = "sw_affine_g2"
+path = "fuzz_targets/bls12_377/sw_affine_g2.rs"
+test = false
+doc = false

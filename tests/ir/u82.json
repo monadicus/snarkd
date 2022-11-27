@@ -1,0 +1,10 @@
+{
+    "namespace": "IR",
+    "method": "u8_deserialize_serialize",
+    "tests": {
+        "nah": {
+            "input": 255,
+            "expectation": "Skip"
+        }
+    }
+}
