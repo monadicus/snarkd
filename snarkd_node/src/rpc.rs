@@ -15,20 +15,27 @@ use tokio_stream::wrappers::BroadcastStream;
 
 use crate::peer_book::PeerBook;
 
-pub struct RpcChannels {
-    peer_broadcast: Sender<PeerMessage>,
+pub enum RpcChannels {
+    Disabled,
+    Enabled { peer_broadcast: Sender<PeerMessage> },
 }
 
 impl RpcChannels {
-    pub fn new() -> Self {
-        Self {
-            peer_broadcast: tokio::sync::broadcast::channel(16).0,
+    pub fn new(enabled: bool) -> Self {
+        if enabled {
+            Self::Enabled {
+                peer_broadcast: tokio::sync::broadcast::channel(16).0,
+            }
+        } else {
+            Self::Disabled
         }
     }
 
     pub fn peer_message(&self, msg: PeerMessage) {
-        if let Err(e) = self.peer_broadcast.send(msg) {
-            debug!("failed to broadcast rpc peer message: {}", e.to_string());
+        if let Self::Enabled { peer_broadcast, .. } = self {
+            if let Err(e) = peer_broadcast.send(msg) {
+                debug!("failed to broadcast rpc peer message: {}", e.to_string());
+            }
         }
     }
 }
@@ -61,7 +68,12 @@ impl RpcServer for SnarkdRpc {
     }
 
     fn subscribe_peers(&self, mut sink: SubscriptionSink) -> SubscriptionResult {
-        let rx = BroadcastStream::new(self.channels.peer_broadcast.clone().subscribe());
+        let channel = match &*self.channels {
+            RpcChannels::Enabled { peer_broadcast, .. } => peer_broadcast,
+            _ => unreachable!("rpc server was provided disabled channels"),
+        };
+
+        let rx = BroadcastStream::new(channel.clone().subscribe());
 
         tokio::spawn(async move {
             match sink.pipe_from_try_stream(rx).await {

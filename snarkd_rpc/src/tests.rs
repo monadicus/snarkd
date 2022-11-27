@@ -33,7 +33,7 @@ async fn test_snarkd_rpc() -> anyhow::Result<()> {
         }
 
         fn subscribe_peers(&self, mut sink: SubscriptionSink) -> SubscriptionResult {
-            let _ = sink.send(&PeerMessage::Connect("0.0.0.0:0".parse().unwrap()));
+            let _ = sink.send(&PeerMessage::Accept("0.0.0.0:0".parse().unwrap()));
             Ok(())
         }
     }

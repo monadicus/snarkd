@@ -70,7 +70,7 @@ async fn main() {
     lazy_static::initialize(&CONFIG);
 
     let config = CONFIG.load();
-    let has_rpc = config.rpc_port != 0;
+    let rpc_enabled = config.rpc_port != 0;
 
     match config.verbosity {
         Verbosity::None => {}
@@ -111,9 +111,9 @@ async fn main() {
         }
     };
     let database = Arc::new(database);
-    let rpc_channels = Arc::new(rpc::RpcChannels::new());
+    let rpc_channels = Arc::new(rpc::RpcChannels::new(rpc_enabled));
 
-    let peer_book = PeerBook::new();
+    let peer_book = PeerBook::new(rpc_channels.clone());
 
     // spawn network listener
     {
@@ -145,10 +145,6 @@ async fn main() {
                     }
                 };
 
-                if has_rpc {
-                    rpc_channels.peer_message(rpc::PeerMessage::Connect(address));
-                }
-
                 let (intro_sender, intro_receiver) =
                     oneshot::channel::<snarkd_network::proto::Introduction>();
                 let handler = InboundHandler::new(address, peer_book.clone(), Some(intro_sender));
@@ -158,47 +154,37 @@ async fn main() {
                 let peer_book = peer_book.clone();
                 let database = database.clone();
 
-                let on_disconnect = {
-                    let rpc_channels = rpc_channels.clone();
-                    move || {
-                        if has_rpc {
-                            rpc_channels.peer_message(rpc::PeerMessage::Disconnect(address));
-                        }
-                    }
-                };
-
                 tokio::spawn(async move {
                     let introduction = match intro_receiver.await {
                         Ok(x) => x,
                         Err(_) => {
                             debug!("failed to receive introduction from inbound peer");
-                            on_disconnect();
                             return;
                         }
                     };
                     if introduction.instance_id == NODE_ID.as_bytes() {
                         debug!("self referential connection closing");
-                        on_disconnect();
                         drop(connection);
                         return;
                     }
                     let mut remote_addr = connection.remote_addr();
                     remote_addr.set_port(introduction.inbound_port as u16);
                     info!("received connection from {}", remote_addr);
+                    rpc_channels.peer_message(rpc::PeerMessage::Accept(address));
 
                     if let Err(e) = peer_book.discovered_peers(&database, [remote_addr]).await {
                         error!(
                             "failed to discover received peer {}: {e:?}",
                             connection.remote_addr()
                         );
-                        on_disconnect();
                         return;
                     }
                     if let Some(mut peer) = peer_book.peer_mut(&remote_addr) {
                         peer.register_connection(PeerDirection::Inbound, connection);
-                        if has_rpc {
-                            rpc_channels.peer_message(rpc::PeerMessage::Handshake(peer.data));
-                        }
+                        rpc_channels.peer_message(rpc::PeerMessage::Handshake {
+                            address,
+                            peer: peer.data,
+                        });
 
                         if let Err(e) = peer.save(&database).await {
                             error!("failed to save received peer: {e:?}");
@@ -301,7 +287,7 @@ async fn main() {
 
     //TODO: spawn peer syncer
 
-    let rpc_handle = if has_rpc {
+    let rpc_handle = if rpc_enabled {
         let rpc_addr = SocketAddr::new(config.rpc_ip.into(), config.rpc_port);
         let rpc_module = rpc::SnarkdRpc {
             peer_book,

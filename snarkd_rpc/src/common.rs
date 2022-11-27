@@ -27,8 +27,10 @@ pub trait Rpc {
 
 #[derive(Clone, Serialize, Deserialize)]
 pub enum PeerMessage {
-    Connect(SocketAddr),
-    Handshake(PeerData),
-    Update(PeerData),
+    Attempt(SocketAddr),
+    Accept(SocketAddr),
+    Connect { address: SocketAddr, peer: PeerData },
+    Handshake { address: SocketAddr, peer: PeerData },
+    Update { address: SocketAddr, peer: PeerData },
     Disconnect(SocketAddr),
 }

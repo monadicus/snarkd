@@ -1,6 +1,7 @@
 use std::{net::SocketAddr, sync::Arc, time::Duration};
 
 use crate::config::{CONFIG, NODE_ID};
+use crate::rpc::RpcChannels;
 use crate::{inbound_handler::InboundHandler, peer_book::PeerBook};
 use anyhow::Result;
 use chrono::{DateTime, Utc};
@@ -10,6 +11,7 @@ use snarkd_network::{
     proto::{packet::PacketBody, CommandId, Introduction, ResponseCode},
     Connection,
 };
+use snarkd_rpc::common::PeerMessage;
 use snarkd_storage::{Database, PeerData, PeerDirection};
 use tokio::task::JoinHandle;
 
@@ -26,6 +28,7 @@ pub struct Peer {
     // if true, we have not saved state to disk yet
     pub dirty: bool,
     recent_failures: Vec<DateTime<Utc>>,
+    rpc_channels: Arc<RpcChannels>,
 }
 
 const FAILURE_EXPIRY_TIME: Duration = Duration::from_secs(15 * 60);
@@ -45,13 +48,14 @@ pub fn form_introduction(address: SocketAddr) -> PacketBody {
 }
 
 impl Peer {
-    pub fn new(address: SocketAddr, data: PeerData) -> Self {
+    pub fn new(address: SocketAddr, data: PeerData, rpc_channels: Arc<RpcChannels>) -> Self {
         Self {
             address,
             connection: ConnectionState::Disconnected,
             data,
             recent_failures: vec![],
             dirty: false,
+            rpc_channels,
         }
     }
 
@@ -94,6 +98,8 @@ impl Peer {
         }
         info!("disconnecting from {}", self.address);
         self.connection = ConnectionState::Disconnected;
+        self.rpc_channels
+            .peer_message(PeerMessage::Disconnect(self.address))
     }
 
     pub fn connect(
@@ -112,6 +118,10 @@ impl Peer {
                 }
             }
         });
+        if !matches!(self.connection, ConnectionState::Connecting(_)) {
+            self.rpc_channels
+                .peer_message(PeerMessage::Attempt(address));
+        }
         self.connection = ConnectionState::Connecting(handle);
     }
 
@@ -144,6 +154,11 @@ impl Peer {
         self.data.last_connected = Some(Utc::now());
         self.data.last_seen = self.data.last_connected;
         self.dirty = true;
+
+        self.rpc_channels.peer_message(PeerMessage::Connect {
+            address: self.address,
+            peer: self.data,
+        });
     }
 
     pub fn judge_bad(&mut self) -> bool {
