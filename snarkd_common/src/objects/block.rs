@@ -1,8 +1,9 @@
 use sha2::{Digest, Sha256};
+use snarkd_crypto::keys::Signature;
 
 use crate::Digest32;
 
-use super::{Field, Scalar, Signature, Transaction};
+use super::{Field, Scalar, Transaction};
 
 type BlockHash = Digest32;
 

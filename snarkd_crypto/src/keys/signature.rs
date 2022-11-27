@@ -1,5 +1,5 @@
 use super::{Address, ComputeKey};
-use snarkd_crypto::bls12_377::Scalar;
+use crate::bls12_377::Scalar;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Signature {
