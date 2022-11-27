@@ -1,6 +1,4 @@
-use std::assert_matches::{self, assert_matches};
-
-use jsonrpsee::{core::client::SubscriptionClientT, types::SubscriptionResult, SubscriptionSink};
+use jsonrpsee::{types::SubscriptionResult, SubscriptionSink};
 use snarkd_storage::PeerData;
 
 use crate::{
@@ -47,9 +45,9 @@ async fn test_snarkd_rpc() -> anyhow::Result<()> {
     assert_eq!(rpc.foo().await?, "foo");
     assert_eq!(rpc.bar("bar".to_string()).await?, "bar");
     assert_eq!(rpc.list_peers().await?.len(), 0);
-    let subscription = rpc.subscribe_peers().await?;
-    assert_eq!(subscription.next().await.is_some(), true);
-    assert_eq!(subscription.next().await.is_none(), true);
+    let mut subscription = rpc.subscribe_peers().await?;
+    assert!(subscription.next().await.is_some());
+    subscription.unsubscribe().await?;
 
     server.stop()?;
 
