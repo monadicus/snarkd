@@ -62,8 +62,24 @@ impl PartialSolution {
     /// Returns the target of the solution.
     pub fn to_target(&self) -> Result<u64> {
         let mut bytes = Vec::with_capacity(96);
-        bytes.extend(self.commitment.0.x.0.to_le_bytes::<48>().into_iter());
-        bytes.extend(self.commitment.0.y.0.to_le_bytes::<48>().into_iter());
+        bytes.extend(
+            self.commitment
+                .commitment
+                .0
+                .x
+                .0
+                .to_le_bytes::<48>()
+                .into_iter(),
+        );
+        bytes.extend(
+            self.commitment
+                .commitment
+                .0
+                .y
+                .0
+                .to_le_bytes::<48>()
+                .into_iter(),
+        );
         let hash_to_u64 = sha256d_to_u64(&bytes);
         if hash_to_u64 == 0 {
             Ok(u64::MAX)

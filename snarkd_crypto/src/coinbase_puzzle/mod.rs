@@ -12,7 +12,7 @@ use crate::{
     fft::{DensePolynomial, EvaluationDomain},
     keys::Address,
     msm::VariableBase,
-    polycommit::kzg10::{Commitment, UniversalParams as SRS, KZG10},
+    polycommit::kzg10::{KZGCommitment, UniversalParams as SRS, KZG10},
     utils::*,
 };
 use anyhow::{anyhow, Result};
@@ -57,12 +57,7 @@ impl CoinbasePuzzle {
         // The SRS must support committing to the product of two degree `n` polynomials.
         // Thus, the SRS must support committing to a polynomial of degree `2n - 1`.
         let total_degree = (2 * config.degree - 1).try_into()?;
-        let srs = KZG10::setup(
-            total_degree,
-            &crate::kzg10::KZG10DegreeBoundsConfig::MARLIN,
-            true,
-            &mut rand::thread_rng(),
-        )?;
+        let srs = KZG10::load_srs(total_degree)?;
         Ok(srs)
     }
 
@@ -71,12 +66,7 @@ impl CoinbasePuzzle {
         let max_degree = COINBASE_PUZZLE_DEGREE;
         // Load the universal SRS.
         // TODO: This needs to be loaded from disk.
-        let universal_srs = KZG10::setup(
-            max_degree as usize,
-            &crate::kzg10::KZG10DegreeBoundsConfig::MARLIN,
-            true,
-            &mut rand::thread_rng(),
-        )?;
+        let universal_srs = SRS::load()?;
         // Trim the universal SRS to the maximum degree.
         Self::trim(&universal_srs, PuzzleConfig { degree: max_degree })
     }
@@ -98,7 +88,7 @@ impl CoinbasePuzzle {
             g: srs.power_of_beta_g(0)?,
             gamma_g: G1Affine::ZERO, // We don't use gamma_g later on since we are not hiding.
             h: srs.h,
-            beta_h: srs.beta_h,
+            beta_h: srs.beta_h(),
             prepared_h: srs.prepared_h.clone(),
             prepared_beta_h: srs.prepared_beta_h.clone(),
         };
@@ -397,14 +387,14 @@ impl CoinbasePuzzle {
 
         // Compute the accumulator commitment.
         let commitments: Vec<_> = cfg_iter!(coinbase_solution.partial_solutions())
-            .map(|solution| solution.commitment().0)
+            .map(|solution| solution.commitment().commitment.0)
             .collect();
         let fs_challenges = challenge_points
             .into_iter()
             .map(|f| f.0)
             .collect::<Vec<_>>();
         let accumulator_commitment =
-            Commitment(VariableBase::msm(&commitments, &fs_challenges).into());
+            KZGCommitment(VariableBase::msm(&commitments, &fs_challenges).into());
 
         // Retrieve the coinbase verifying key.
         let coinbase_verifying_key = match self {

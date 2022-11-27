@@ -18,7 +18,7 @@ use crate::{
     bls12_377::{G1Affine, Scalar},
     fft::{domain::FFTPrecomputation, DensePolynomial, EvaluationDomain},
     keys::Address,
-    polycommit::kzg10::{Commitment, LagrangeBasis, Proof, VerifierKey, KZG10},
+    polycommit::kzg10::{KZGCommitment, KZGProof, LagrangeBasis, VerifierKey, KZG10},
 };
 use anyhow::Result;
 use std::{
@@ -27,7 +27,7 @@ use std::{
 };
 
 /// The proof of opening the polynomial, for the solution.
-pub type PuzzleProof = Proof;
+pub type PuzzleProof = KZGProof;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct PuzzleConfig {

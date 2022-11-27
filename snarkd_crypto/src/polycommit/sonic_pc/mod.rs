@@ -1,6 +1,6 @@
 use crate::{
     bls12_377::{
-        product_of_pairings, Affine, Field, Fp, G1Prepared, G1Projective, G2Affine, G2Prepared,
+        product_of_pairings, Affine, Field, G1Prepared, G1Projective, G2Affine, G2Prepared,
         Projective, Scalar,
     },
     fft::DensePolynomial,
@@ -8,16 +8,20 @@ use crate::{
     polycommit::{kzg10, optional_rng::OptionalRng, PCError},
     utils::*,
 };
+use hashbrown::HashMap;
+use itertools::Itertools;
+
 use core::{
     convert::TryInto,
     marker::PhantomData,
     ops::Mul,
     sync::atomic::{AtomicBool, Ordering},
 };
-use hashbrown::HashMap;
-use itertools::Itertools;
 use rand_core::{RngCore, SeedableRng};
-use std::collections::{BTreeMap, BTreeSet};
+use std::{
+    borrow::Borrow,
+    collections::{BTreeMap, BTreeSet},
+};
 
 mod data_structures;
 pub use data_structures::*;
@@ -39,14 +43,8 @@ pub use polynomial::*;
 pub struct SonicKZG10;
 
 impl SonicKZG10 {
-    pub fn setup<R: RngCore>(max_degree: usize, rng: &mut R) -> Result<UniversalParams, PCError> {
-        kzg10::KZG10::setup(
-            max_degree,
-            &kzg10::KZG10DegreeBoundsConfig::MARLIN,
-            true,
-            rng,
-        )
-        .map_err(Into::into)
+    pub fn load_srs(max_degree: usize) -> Result<UniversalParams, PCError> {
+        kzg10::KZG10::load_srs(max_degree).map_err(Into::into)
     }
 
     pub fn trim(
@@ -58,7 +56,7 @@ impl SonicKZG10 {
     ) -> Result<(CommitterKey, VerifierKey), PCError> {
         let mut max_degree = pp.max_degree();
         if supported_degree > max_degree {
-            pp.download_up_to(supported_degree)
+            pp.download_powers_for(0..supported_degree)
                 .map_err(|_| PCError::TrimmingDegreeTooLarge)?;
             max_degree = pp.max_degree();
         }
@@ -89,7 +87,6 @@ impl SonicKZG10 {
                         .to_vec();
                     let mut shifted_powers_of_beta_times_gamma_g = BTreeMap::new();
                     // Also add degree 0.
-                    let _max_gamma_g = pp.get_powers_times_gamma_g().keys().last().unwrap();
                     for degree_bound in enforced_degree_bounds {
                         let shift_degree = max_degree - degree_bound;
                         let mut powers_for_degree_bound =
@@ -98,7 +95,7 @@ impl SonicKZG10 {
                             // We have an additional degree in `powers_of_beta_times_gamma_g` beyond `powers_of_beta_g`.
                             if shift_degree + i < max_degree + 2 {
                                 powers_for_degree_bound
-                                    .push(pp.get_powers_times_gamma_g()[&(shift_degree + i)]);
+                                    .push(pp.powers_of_beta_times_gamma_g()[&(shift_degree + i)]);
                             }
                         }
                         shifted_powers_of_beta_times_gamma_g
@@ -115,9 +112,16 @@ impl SonicKZG10 {
             };
 
         let powers_of_beta_g = pp.powers_of_beta_g(0, supported_degree + 1)?.to_vec();
-        let powers_of_beta_times_gamma_g = (0..=supported_hiding_bound + 1)
-            .map(|i| pp.get_powers_times_gamma_g()[&i])
-            .collect();
+        let powers_of_beta_times_gamma_g = (0..=(supported_hiding_bound + 1))
+            .map(|i| {
+                pp.powers_of_beta_times_gamma_g().get(&i).copied().ok_or(
+                    PCError::HidingBoundToolarge {
+                        hiding_poly_degree: supported_hiding_bound,
+                        num_powers: 0,
+                    },
+                )
+            })
+            .collect::<Result<Vec<_>, _>>()?;
 
         let mut lagrange_bases_at_beta_g = BTreeMap::new();
         for size in supported_lagrange_sizes {
@@ -145,16 +149,16 @@ impl SonicKZG10 {
 
         let g = pp.power_of_beta_g(0)?;
         let h = pp.h;
-        let beta_h = pp.beta_h;
-        let gamma_g = pp.get_powers_times_gamma_g()[&0];
+        let beta_h = pp.beta_h();
+        let gamma_g = pp.powers_of_beta_times_gamma_g()[&0];
         let prepared_h = pp.prepared_h.clone();
         let prepared_beta_h = pp.prepared_beta_h.clone();
 
-        let degree_bounds_and_neg_powers_of_h = if pp.inverse_neg_powers_of_beta_h.is_empty() {
+        let degree_bounds_and_neg_powers_of_h = if pp.neg_powers_of_beta_h().is_empty() {
             None
         } else {
             Some(
-                pp.inverse_neg_powers_of_beta_h
+                pp.neg_powers_of_beta_h()
                     .iter()
                     .map(|(d, affine)| (*d, *affine))
                     .collect::<Vec<(usize, G2Affine)>>(),
@@ -195,7 +199,7 @@ impl SonicKZG10 {
     /// `rng` should not be `None` if `polynomials[i].is_hiding() == true` for any `i`.
     ///
     /// If for some `i`, `polynomials[i].is_hiding() == false`, then the
-    /// corresponding randomness is `Randomness::empty()`.
+    /// corresponding randomness is `Randomness<E>::empty()`.
     ///
     /// If for some `i`, `polynomials[i].degree_bound().is_some()`, then that
     /// polynomial will have the corresponding degree bound enforced.
@@ -244,7 +248,6 @@ impl SonicKZG10 {
 
             pool.add_job(move || {
                 let mut rng = seed.map(rand::rngs::StdRng::from_seed);
-
                 #[allow(clippy::or_fun_call)]
                 let (comm, rand) = p
                     .sum()
@@ -296,7 +299,7 @@ impl SonicKZG10 {
                         a.1 += (Scalar::ONE, &b.1);
                         a
                     });
-                let comm = kzg10::Commitment(comm.to_affine());
+                let comm = kzg10::KZGCommitment(comm.to_affine());
 
                 Ok((
                     LabeledCommitment::new(label.to_string(), comm, degree_bound),
@@ -336,7 +339,7 @@ impl SonicKZG10 {
                 )
                 .unwrap();
                 let challenge = fs_rng.squeeze_short_nonnative_field_element();
-                (challenge, p.polynomial().as_dense().unwrap(), r)
+                (challenge, p.polynomial().into_dense(), r)
             }),
         ))
     }
@@ -646,12 +649,13 @@ impl SonicKZG10 {
 }
 
 impl SonicKZG10 {
-    fn combine_polynomials<'a>(
-        coeffs_polys_rands: impl IntoIterator<Item = (Scalar, &'a DensePolynomial, &'a Randomness)>,
+    fn combine_polynomials<'a, B: Borrow<DensePolynomial>>(
+        coeffs_polys_rands: impl IntoIterator<Item = (Scalar, B, &'a Randomness)>,
     ) -> (DensePolynomial, Randomness) {
         let mut combined_poly = DensePolynomial::zero();
         let mut combined_rand = Randomness::empty();
         for (coeff, poly, rand) in coeffs_polys_rands {
+            let poly = poly.borrow();
             if coeff.is_one() {
                 combined_poly += poly;
                 combined_rand += rand;
@@ -678,7 +682,7 @@ impl SonicKZG10 {
         let mut comms = commitments;
         G1Projective::batch_normalization(&mut comms);
         let comms = comms.iter().map(|c| (*c).into()).collect::<Vec<_>>();
-        comms.into_iter().map(|c| kzg10::Commitment(c))
+        comms.into_iter().map(|c| kzg10::KZGCommitment(c))
     }
 }
 
@@ -692,7 +696,7 @@ impl SonicKZG10 {
         commitments: impl IntoIterator<Item = &'a LabeledCommitment>,
         point: Scalar,
         values: impl IntoIterator<Item = Scalar>,
-        proof: &kzg10::Proof,
+        proof: &kzg10::KZGProof,
         randomizer: Option<Scalar>,
         fs_rng: &mut PoseidonSponge,
     ) {
@@ -732,7 +736,7 @@ impl SonicKZG10 {
             proof.w.to_projective()
         };
         let coeffs = coeffs.into_iter().map(|c| c.0).collect::<Vec<_>>();
-        *combined_adjusted_witness += VariableBase::msm(&bases, &coeffs);
+        *combined_adjusted_witness += VariableBase::msm(&bases, coeffs.as_slice());
     }
 
     #[allow(clippy::type_complexity)]
@@ -777,75 +781,124 @@ impl SonicKZG10 {
 
 #[cfg(test)]
 mod tests {
+    #![allow(non_camel_case_types)]
+
     use super::{CommitterKey, SonicKZG10};
-    use crate::{bls12_377::Field, polycommit::test_templates::*, utils::PoseidonSponge};
+    use crate::{crypto_hash::PoseidonSponge, polycommit::test_templates::*};
+    use snarkvm_curves::bls12_377::{Bls12_377, Fq};
+    use snarkvm_utilities::{rand::TestRng, FromBytes, ToBytes};
 
     use rand::distributions::Distribution;
 
+    type Sponge = PoseidonSponge<Fq, 2, 1>;
+    type PC_Bls12_377 = SonicKZG10<Bls12_377, Sponge>;
+
+    #[test]
+    fn test_committer_key_serialization() {
+        let rng = &mut TestRng::default();
+        let max_degree = rand::distributions::Uniform::from(8..=64).sample(rng);
+        let supported_degree = rand::distributions::Uniform::from(1..=max_degree).sample(rng);
+
+        let lagrange_size = |d: usize| {
+            if d.is_power_of_two() {
+                d
+            } else {
+                d.next_power_of_two() >> 1
+            }
+        };
+
+        let pp = PC_Bls12_377::load_srs(max_degree).unwrap();
+
+        let (ck, _vk) = PC_Bls12_377::trim(
+            &pp,
+            supported_degree,
+            [lagrange_size(supported_degree)],
+            0,
+            None,
+        )
+        .unwrap();
+
+        let ck_bytes = ck.to_bytes_le().unwrap();
+        let ck_recovered: CommitterKey<Bls12_377> = FromBytes::read_le(&ck_bytes[..]).unwrap();
+        let ck_recovered_bytes = ck_recovered.to_bytes_le().unwrap();
+
+        assert_eq!(&ck_bytes, &ck_recovered_bytes);
+    }
+
     #[test]
     fn test_single_poly() {
-        single_poly_test().expect("test failed for bls12-377");
+        single_poly_test::<Bls12_377, Sponge>().expect("test failed for bls12-377");
     }
 
     #[test]
     fn test_quadratic_poly_degree_bound_multiple_queries() {
-        quadratic_poly_degree_bound_multiple_queries_test().expect("test failed for bls12-377");
+        quadratic_poly_degree_bound_multiple_queries_test::<Bls12_377, Sponge>()
+            .expect("test failed for bls12-377");
     }
 
     #[test]
     fn test_linear_poly_degree_bound() {
-        linear_poly_degree_bound_test().expect("test failed for bls12-377");
+        linear_poly_degree_bound_test::<Bls12_377, Sponge>().expect("test failed for bls12-377");
     }
 
     #[test]
     fn test_single_poly_degree_bound() {
-        single_poly_degree_bound_test().expect("test failed for bls12-377");
+        single_poly_degree_bound_test::<Bls12_377, Sponge>().expect("test failed for bls12-377");
     }
 
     #[test]
     fn test_single_poly_degree_bound_multiple_queries() {
-        single_poly_degree_bound_multiple_queries_test().expect("test failed for bls12-377");
+        single_poly_degree_bound_multiple_queries_test::<Bls12_377, Sponge>()
+            .expect("test failed for bls12-377");
     }
 
     #[test]
     fn test_two_polys_degree_bound_single_query() {
-        two_polys_degree_bound_single_query_test().expect("test failed for bls12-377");
+        two_polys_degree_bound_single_query_test::<Bls12_377, Sponge>()
+            .expect("test failed for bls12-377");
     }
 
     #[test]
     fn test_full_end_to_end() {
-        full_end_to_end_test().expect("test failed for bls12-377");
+        full_end_to_end_test::<Bls12_377, Sponge>().expect("test failed for bls12-377");
+        println!("Finished bls12-377");
     }
 
     #[test]
     fn test_single_equation() {
-        single_equation_test().expect("test failed for bls12-377");
+        single_equation_test::<Bls12_377, Sponge>().expect("test failed for bls12-377");
+        println!("Finished bls12-377");
     }
 
     #[test]
     fn test_two_equation() {
-        two_equation_test().expect("test failed for bls12-377");
+        two_equation_test::<Bls12_377, Sponge>().expect("test failed for bls12-377");
+        println!("Finished bls12-377");
     }
 
     #[test]
     fn test_two_equation_degree_bound() {
-        two_equation_degree_bound_test().expect("test failed for bls12-377");
+        two_equation_degree_bound_test::<Bls12_377, Sponge>().expect("test failed for bls12-377");
+        println!("Finished bls12-377");
     }
 
     #[test]
     fn test_full_end_to_end_equation() {
-        full_end_to_end_equation_test().expect("test failed for bls12-377");
+        full_end_to_end_equation_test::<Bls12_377, Sponge>().expect("test failed for bls12-377");
+        println!("Finished bls12-377");
     }
 
     #[test]
     #[should_panic]
     fn test_bad_degree_bound() {
-        bad_degree_bound_test().expect("test failed for bls12-377");
+        bad_degree_bound_test::<Bls12_377, Sponge>().expect("test failed for bls12-377");
+        println!("Finished bls12-377");
     }
 
     #[test]
     fn test_lagrange_commitment() {
-        crate::polycommit::test_templates::lagrange_test_template()
+        crate::polycommit::test_templates::lagrange_test_template::<Bls12_377, Sponge>()
             .expect("test failed for bls12-377");
+        println!("Finished bls12-377");
     }
 }

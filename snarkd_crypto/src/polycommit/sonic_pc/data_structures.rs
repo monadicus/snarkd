@@ -1,9 +1,10 @@
 use super::{LabeledPolynomial, PolynomialInfo};
 use crate::{
-    bls12_377::{Field, Fp, G1Affine, G1Projective, G2Affine, G2Prepared, Projective, Scalar},
+    bls12_377::{Field, G1Affine, G1Projective, G2Affine, G2Prepared, Projective, Scalar},
     fft::EvaluationDomain,
     polycommit::kzg10,
-    utils::sha256::sha256,
+    utils::*,
+    Prepare,
 };
 use hashbrown::HashMap;
 use std::{
@@ -17,15 +18,17 @@ use std::{
 pub type UniversalParams = kzg10::UniversalParams;
 
 /// `Randomness` is the randomness for the KZG10 scheme.
-pub type Randomness = kzg10::Randomness;
+pub type Randomness = kzg10::KZGRandomness;
 
 /// `Commitment` is the commitment for the KZG10 scheme.
-pub type Commitment = kzg10::Commitment;
+pub type Commitment = kzg10::KZGCommitment;
 
 /// `PreparedCommitment` is the prepared commitment for the KZG10 scheme.
-pub type PreparedCommitment = kzg10::PreparedCommitment;
+pub type PreparedCommitment = kzg10::PreparedKZGCommitment;
 
-impl Commitment {
+impl Prepare for Commitment {
+    type Prepared = PreparedCommitment;
+
     /// prepare `PreparedCommitment` from `Commitment`
     fn prepare(&self) -> PreparedCommitment {
         let mut prepared_comm = Vec::<G1Affine>::new();
@@ -35,17 +38,17 @@ impl Commitment {
             cur.double_in_place();
         }
 
-        kzg10::PreparedCommitment(prepared_comm)
+        kzg10::PreparedKZGCommitment(prepared_comm)
     }
 }
 
 /// `CommitterKey` is used to commit to, and create evaluation proofs for, a given polynomial.
-#[derive(Clone, Debug, Default, Hash)]
+#[derive(Clone, Debug, Default, Hash, PartialEq, Eq)]
 pub struct CommitterKey {
     /// The key used to commit to polynomials.
     pub powers_of_beta_g: Vec<G1Affine>,
 
-    /// The key used to commit to polynomials.
+    /// The key used to commit to polynomials in Lagrange basis.
     pub lagrange_bases_at_beta_g: BTreeMap<usize, Vec<G1Affine>>,
 
     /// The key used to commit to hiding polynomials.
@@ -226,7 +229,9 @@ impl PreparedVerifierKey {
     }
 }
 
-impl VerifierKey {
+impl Prepare for VerifierKey {
+    type Prepared = PreparedVerifierKey;
+
     /// prepare `PreparedVerifierKey` from `VerifierKey`
     fn prepare(&self) -> PreparedVerifierKey {
         let prepared_vk = kzg10::PreparedVerifierKey::prepare(&self.vk);
@@ -244,7 +249,7 @@ impl VerifierKey {
 
 /// Evaluation proof at a query set.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
-pub struct BatchProof(pub(crate) Vec<kzg10::Proof>);
+pub struct BatchProof(pub(crate) Vec<kzg10::KZGProof>);
 
 impl BatchProof {
     pub fn is_hiding(&self) -> bool {

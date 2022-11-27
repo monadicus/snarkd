@@ -19,6 +19,7 @@ arc-swap = "1.0"
 async-trait = "0.1"
 bech32 = "0.9.1"
 blake2 = "0.10"
+bincode = "1.3"
 bitvec = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4.0", features = ["derive"] }
@@ -42,7 +43,7 @@ rand = "0.8"
 rand_core = { version = "0.6", default-features = false }
 rand_xorshift = "0.3"
 rayon = "1.5"
-ruint = { version = "1.7", features = ["rand"] }
+ruint = { version = "1.7", features = ["rand", "serde"] }
 refinery = { version = "0.8.6", features = [
     "rusqlite-bundled",
 ], git = "https://github.com/rust-db/refinery.git" }

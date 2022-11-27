@@ -21,6 +21,8 @@ pub mod kzg10;
 /// [marlin]: https://eprint.iacr.org/2019/1047
 pub mod sonic_pc;
 
+pub mod powers;
+
 /// Errors pertaining to query sets.
 pub mod error;
 pub use error::*;
@@ -31,5 +33,3 @@ pub mod optional_rng;
 
 #[cfg(test)]
 pub mod test_templates;
-
-pub mod powers;

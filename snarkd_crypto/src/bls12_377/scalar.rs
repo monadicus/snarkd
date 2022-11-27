@@ -7,6 +7,7 @@ use core::{
 };
 use rand::{distributions::Standard, Rng};
 use ruint::{uint, Uint};
+use serde::{Deserialize, Serialize};
 
 /// BLS12-377 scalar field.
 ///
@@ -31,12 +32,20 @@ use ruint::{uint, Uint};
 /// print("2-adic gen (g2 * R % q): ", g2 * R % q)
 /// print("2-adic gen into_chunks(g2 * R % q): ", into_chunks(g2 * R % q, 64, 4))
 /// ```
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(
+    Copy, Clone, Debug, Default, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize,
+)]
 pub struct Scalar(pub Uint<256, 4>);
 
 impl From<Uint<256, 4>> for Scalar {
     fn from(v: Uint<256, 4>) -> Self {
         Self(v)
+    }
+}
+
+impl From<u128> for Scalar {
+    fn from(v: u128) -> Self {
+        Self(Uint::from(v))
     }
 }
 

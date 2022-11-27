@@ -5,25 +5,25 @@ use std::ops::Deref;
 #[derive(Copy, Clone, Eq, PartialEq, Hash)]
 pub struct PuzzleCommitment {
     /// The commitment for the solution.
-    commitment: Commitment,
+    pub commitment: KZGCommitment,
 }
 
 impl PuzzleCommitment {
     /// Initializes a new instance of the puzzle commitment.
-    pub const fn new(commitment: Commitment) -> Self {
+    pub const fn new(commitment: KZGCommitment) -> Self {
         Self { commitment }
     }
 }
 
-impl From<Commitment> for PuzzleCommitment {
+impl From<KZGCommitment> for PuzzleCommitment {
     /// Initializes a new instance of the puzzle commitment.
-    fn from(commitment: Commitment) -> Self {
+    fn from(commitment: KZGCommitment) -> Self {
         Self::new(commitment)
     }
 }
 
 impl Deref for PuzzleCommitment {
-    type Target = Commitment;
+    type Target = KZGCommitment;
 
     fn deref(&self) -> &Self::Target {
         &self.commitment

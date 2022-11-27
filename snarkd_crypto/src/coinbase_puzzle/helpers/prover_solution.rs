@@ -44,7 +44,7 @@ impl ProverSolution {
             .to_prover_polynomial(epoch_challenge)?;
 
         // Compute the challenge point.
-        let challenge_point = hash_commitment(&self.commitment())?;
+        let challenge_point = hash_commitment(&self.commitment().commitment)?;
 
         // Evaluate the epoch and prover polynomials at the challenge point.
         let epoch_evaluation = epoch_challenge.epoch_polynomial().evaluate(challenge_point);
@@ -56,7 +56,7 @@ impl ProverSolution {
         // Check the KZG proof.
         Ok(KZG10::check(
             verifying_key,
-            &self.commitment(),
+            &self.commitment().commitment,
             challenge_point,
             claimed_value,
             self.proof(),

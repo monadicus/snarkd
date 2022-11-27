@@ -7,8 +7,9 @@ use core::{
 };
 use rand::{distributions::Standard, Rng};
 use ruint::{uint, Uint};
+use serde::{Deserialize, Serialize};
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct Fp(pub Uint<384, 6>);
 
 impl From<Uint<384, 6>> for Fp {

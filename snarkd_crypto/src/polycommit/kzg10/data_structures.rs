@@ -1,16 +1,14 @@
 use crate::{
-    bls12_377::{
-        scalar, Affine, Fp, G1Affine, G1Projective, G2Affine, G2Prepared, Projective, Scalar,
-    },
+    bls12_377::{scalar, Affine, G1Affine, G1Projective, G2Affine, G2Prepared, Projective, Scalar},
     fft::{DensePolynomial, EvaluationDomain},
     polycommit::powers::PowersOfG,
-    utils::PoseidonSponge,
+    utils::*,
 };
 use anyhow::Result;
 use core::ops::{Add, AddAssign};
 use parking_lot::RwLock;
 use rand_core::RngCore;
-use std::{borrow::Cow, collections::BTreeMap, io, sync::Arc};
+use std::{borrow::Cow, collections::BTreeMap, io, ops::Range, sync::Arc};
 
 /// `UniversalParams` are the universal parameters for the KZG10 scheme.
 #[derive(Clone, Debug)]
@@ -19,16 +17,11 @@ pub struct UniversalParams {
     /// and group elements of the form `{ \beta^i \gamma G }`, where `i` ranges from 0 to `degree`.
     /// This struct provides an abstraction over the powers which are located on-disk
     /// to reduce memory usage.
-    pub powers: Arc<RwLock<PowersOfG>>,
+    powers: Arc<RwLock<PowersOfG>>,
     /// The generator of G2.
     pub h: G2Affine,
-    /// \beta times the above generator of G2.
-    pub beta_h: G2Affine,
     /// Supported degree bounds.
-    pub supported_degree_bounds: Vec<usize>,
-    /// Group elements of the form `{ \beta^{max_degree -i} G2 }`, where `i` is the supported degree bound.
-    /// This one is used for deriving the verifying key.
-    pub inverse_neg_powers_of_beta_h: BTreeMap<usize, G2Affine>,
+    supported_degree_bounds: Vec<usize>,
     /// The generator of G2, prepared for use in pairings.
     pub prepared_h: G2Prepared,
     /// \beta times the above generator of G2, prepared for use in pairings.
@@ -36,13 +29,34 @@ pub struct UniversalParams {
 }
 
 impl UniversalParams {
+    pub fn load() -> Result<Self> {
+        let powers = Arc::new(RwLock::new(PowersOfG::load()?));
+        let h = G2Affine::prime_subgroup_generator();
+        let prepared_h = G2Prepared::from_affine(h);
+        let beta_h = (*powers.read()).beta_h();
+        let prepared_beta_h = G2Prepared::from_affine(beta_h);
+        let supported_degree_bounds = vec![1 << 10, 1 << 15, 1 << 20, 1 << 25, 1 << 30];
+
+        Ok(Self {
+            powers,
+            h,
+            supported_degree_bounds,
+            prepared_h,
+            prepared_beta_h,
+        })
+    }
+
+    pub fn download_powers_for(&self, range: Range<usize>) -> Result<()> {
+        self.powers.write().download_powers_for(range)
+    }
+
     pub fn lagrange_basis(&self, domain: EvaluationDomain) -> Result<Vec<G1Affine>> {
-        let mut basis = domain.ifft_projective(
-            self.powers_of_beta_g(0, domain.size())?
+        let basis = domain.ifft_projective(
+            &self
+                .powers_of_beta_g(0, domain.size())?
                 .iter()
                 .map(|e| (*e).to_projective())
-                .collect::<Vec<_>>()
-                .as_slice(),
+                .collect::<Vec<_>>(),
         );
         G1Projective::batch_normalization(&mut basis);
         Ok(basis.iter().map(|e| (*e).into()).collect())
@@ -53,29 +67,27 @@ impl UniversalParams {
     }
 
     pub fn powers_of_beta_g(&self, lower: usize, upper: usize) -> Result<Vec<G1Affine>> {
-        self.powers.write().powers_of_beta_g(lower, upper)
+        Ok(self.powers.write().powers_of_beta_g(lower..upper)?.to_vec())
     }
 
-    pub fn get_powers_times_gamma_g(&self) -> BTreeMap<usize, G1Affine> {
-        self.powers.read().powers_times_gamma_g().clone()
+    pub fn powers_of_beta_times_gamma_g(&self) -> BTreeMap<usize, G1Affine> {
+        self.powers.read().powers_of_beta_gamma_g()
     }
 
-    pub fn download_up_to(&self, degree: usize) -> Result<()> {
-        self.powers.write().download_up_to(degree)
+    pub fn beta_h(&self) -> G2Affine {
+        self.powers.read().beta_h()
     }
-}
 
-impl UniversalParams {
+    pub fn neg_powers_of_beta_h(&self) -> BTreeMap<usize, G2Affine> {
+        self.powers.read().negative_powers_of_beta_h()
+    }
+
     pub fn max_degree(&self) -> usize {
-        self.powers.read().degree() - 1
+        self.powers.read().max_num_powers() - 1
     }
 
     pub fn supported_degree_bounds(&self) -> &[usize] {
         &self.supported_degree_bounds
-    }
-
-    pub fn increase_degree(&self, degree: usize) -> Result<()> {
-        self.download_up_to(degree)
     }
 }
 
@@ -172,17 +184,17 @@ impl PreparedVerifierKey {
     }
 }
 
-/// `Commitment` commits to a polynomial. It is output by `KZG10::commit`.
+/// `KZGCommitment` commits to a polynomial. It is output by `KZG10::commit`.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Hash)]
-pub struct Commitment(
+pub struct KZGCommitment(
     /// The commitment is a group element.
     pub G1Affine,
 );
 
-impl Commitment {
+impl KZGCommitment {
     #[inline]
     pub fn empty() -> Self {
-        Commitment(G1Affine::ZERO)
+        KZGCommitment(G1Affine::ZERO)
     }
 
     pub fn has_degree_bound(&self) -> bool {
@@ -194,16 +206,16 @@ impl Commitment {
     }
 }
 
-/// `PreparedCommitment` commits to a polynomial and prepares for mul_bits.
+/// `PreparedKZGCommitment` commits to a polynomial and prepares for mul_bits.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
-pub struct PreparedCommitment(
+pub struct PreparedKZGCommitment(
     /// The commitment is a group element.
     pub Vec<G1Affine>,
 );
 
-impl PreparedCommitment {
-    /// prepare `PreparedCommitment` from `Commitment`
-    pub fn prepare(comm: &Commitment) -> Self {
+impl PreparedKZGCommitment {
+    /// prepare `PreparedKZGCommitment` from `KZGCommitment`
+    pub fn prepare(comm: &KZGCommitment) -> Self {
         let mut prepared_comm = Vec::<G1Affine>::new();
         let mut cur = G1Projective::from(comm.0);
 
@@ -218,14 +230,14 @@ impl PreparedCommitment {
     }
 }
 
-/// `Randomness` hides the polynomial inside a commitment. It is output by `KZG10::commit`.
+/// `KZGRandomness` hides the polynomial inside a commitment. It is output by `KZG10::commit`.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
-pub struct Randomness {
+pub struct KZGRandomness {
     /// For KZG10, the commitment randomness is a random polynomial.
     pub blinding_polynomial: DensePolynomial,
 }
 
-impl Randomness {
+impl KZGRandomness {
     /// Does `self` provide any hiding properties to the corresponding commitment?
     /// `self.is_hiding() == true` only if the underlying polynomial is non-zero.
     #[inline]
@@ -240,7 +252,7 @@ impl Randomness {
     }
 }
 
-impl Randomness {
+impl KZGRandomness {
     pub fn empty() -> Self {
         Self {
             blinding_polynomial: DensePolynomial::zero(),
@@ -248,14 +260,14 @@ impl Randomness {
     }
 
     pub fn rand<R: RngCore>(hiding_bound: usize, _: bool, rng: &mut R) -> Self {
-        let mut randomness = Randomness::empty();
+        let mut randomness = KZGRandomness::empty();
         let hiding_poly_degree = Self::calculate_hiding_polynomial_degree(hiding_bound);
         randomness.blinding_polynomial = DensePolynomial::rand(hiding_poly_degree, rng);
         randomness
     }
 }
 
-impl<'a> Add<&'a Randomness> for Randomness {
+impl<'a> Add<&'a KZGRandomness> for KZGRandomness {
     type Output = Self;
 
     #[inline]
@@ -265,33 +277,33 @@ impl<'a> Add<&'a Randomness> for Randomness {
     }
 }
 
-impl<'a> Add<(Scalar, &'a Randomness)> for Randomness {
+impl<'a> Add<(Scalar, &'a KZGRandomness)> for KZGRandomness {
     type Output = Self;
 
     #[inline]
-    fn add(mut self, other: (Scalar, &'a Randomness)) -> Self {
+    fn add(mut self, other: (Scalar, &'a KZGRandomness)) -> Self {
         self += other;
         self
     }
 }
 
-impl<'a> AddAssign<&'a Randomness> for Randomness {
+impl<'a> AddAssign<&'a KZGRandomness> for KZGRandomness {
     #[inline]
     fn add_assign(&mut self, other: &'a Self) {
         self.blinding_polynomial += &other.blinding_polynomial;
     }
 }
 
-impl<'a> AddAssign<(Scalar, &'a Randomness)> for Randomness {
+impl<'a> AddAssign<(Scalar, &'a KZGRandomness)> for KZGRandomness {
     #[inline]
-    fn add_assign(&mut self, (f, other): (Scalar, &'a Randomness)) {
+    fn add_assign(&mut self, (f, other): (Scalar, &'a KZGRandomness)) {
         self.blinding_polynomial += (f, &other.blinding_polynomial);
     }
 }
 
-/// `Proof` is an evaluation proof that is output by `KZG10::open`.
+/// `KZGProof` is an evaluation proof that is output by `KZG10::open`.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Hash)]
-pub struct Proof {
+pub struct KZGProof {
     /// This is a commitment to the witness polynomial; see [\[KZG10\]][kzg] for more details.
     ///
     /// [kzg]: http://cacr.uwaterloo.ca/techreports/2010/cacr2010-10.pdf
@@ -301,7 +313,7 @@ pub struct Proof {
     pub random_v: Option<Scalar>,
 }
 
-impl Proof {
+impl KZGProof {
     pub fn absorb_into_sponge(&self, sponge: &mut PoseidonSponge) {
         sponge.absorb_native_field_elements(&[self.w.x, self.w.y]);
         if let Some(random_v) = self.random_v {
@@ -310,7 +322,7 @@ impl Proof {
     }
 }
 
-impl Proof {
+impl KZGProof {
     pub fn is_hiding(&self) -> bool {
         self.random_v.is_some()
     }

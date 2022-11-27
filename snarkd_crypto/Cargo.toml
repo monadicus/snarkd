@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = { workspace = true }
+bincode = { workspace = true }
 bitvec = { workspace = true }
 blake2 = { workspace = true }
 fxhash = { workspace = true }
@@ -12,6 +13,7 @@ hashbrown = { workspace = true }
 hex = { workspace = true }
 indexmap = { workspace = true }
 itertools = { workspace = true }
+lazy_static = { workspace = true }
 num-bigint = { workspace = true }
 num_cpus = "1.0"
 parking_lot = {workspace = true }

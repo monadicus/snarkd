@@ -1,4 +1,4 @@
-use crate::{bls12_377::Scalar, fft::DensePolynomial, polycommit::kzg10::Commitment, utils::*};
+use crate::{bls12_377::Scalar, fft::DensePolynomial, polycommit::kzg10::KZGCommitment, utils::*};
 use anyhow::{anyhow, Result};
 use blake2::Digest;
 use rayon::prelude::*;
@@ -28,7 +28,7 @@ pub fn hash_to_polynomial(input: &[u8], degree: u32) -> DensePolynomial {
     DensePolynomial::from_coefficients_vec(coefficients)
 }
 
-pub fn hash_commitment(commitment: &Commitment) -> Result<Scalar> {
+pub fn hash_commitment(commitment: &KZGCommitment) -> Result<Scalar> {
     // Convert the commitment into bytes.
     let mut bytes = Vec::with_capacity(96);
     bytes.extend(commitment.0.x.0.to_le_bytes::<48>().into_iter());
@@ -45,7 +45,7 @@ pub fn hash_commitment(commitment: &Commitment) -> Result<Scalar> {
 }
 
 pub fn hash_commitments(
-    commitments: impl ExactSizeIterator<Item = Commitment>,
+    commitments: impl ExactSizeIterator<Item = KZGCommitment>,
 ) -> Result<Vec<Scalar>> {
     // Retrieve the number of commitments.
     let num_commitments = match u32::try_from(commitments.len()) {

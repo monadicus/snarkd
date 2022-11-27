@@ -69,7 +69,7 @@ impl MarlinSNARK {
         let index = AHPForR1CS::index(circuit, mode)?;
         if universal_srs.max_degree() < index.max_degree() {
             universal_srs
-                .increase_degree(index.max_degree())
+                .download_powers_for(0..index.max_degree())
                 .map_err(|_| {
                     MarlinError::IndexTooLarge(universal_srs.max_degree(), index.max_degree())
                 })?;
@@ -193,7 +193,7 @@ impl SNARK for MarlinSNARK {
         max_degree: usize,
         rng: &mut R,
     ) -> Result<UniversalParams, SNARKError> {
-        let srs = SonicKZG10::setup(max_degree, rng).map_err(Into::into);
+        let srs = SonicKZG10::load_srs(max_degree).map_err(Into::into);
         srs
     }
 
