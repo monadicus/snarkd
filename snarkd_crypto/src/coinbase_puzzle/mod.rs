@@ -59,7 +59,7 @@ impl CoinbasePuzzle {
         let total_degree = (2 * config.degree - 1).try_into()?;
         let srs = KZG10::setup(
             total_degree,
-            &crate::kzg10::KZG10DegreeBoundsConfig::MARLIN,
+            &crate::kzg10::KZG10DegreeBoundsConfig::NONE,
             true,
             &mut rand::thread_rng(),
         )?;
@@ -73,7 +73,7 @@ impl CoinbasePuzzle {
         // TODO: This needs to be loaded from disk.
         let universal_srs = KZG10::setup(
             max_degree as usize,
-            &crate::kzg10::KZG10DegreeBoundsConfig::MARLIN,
+            &crate::kzg10::KZG10DegreeBoundsConfig::NONE,
             true,
             &mut rand::thread_rng(),
         )?;

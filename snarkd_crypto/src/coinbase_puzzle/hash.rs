@@ -16,7 +16,9 @@ pub fn hash_to_coefficients(input: &[u8], num_coefficients: u32) -> Vec<Scalar> 
             let digest = blake2::Blake2b512::digest(input_with_counter);
             let mut arr = [0u8; 32];
             arr.copy_from_slice(&digest[..32]);
-            Scalar(Uint::from_le_bytes(arr))
+            let mut hash = Scalar(Uint::from_le_bytes(arr));
+            hash.reduce();
+            hash
         })
         .collect()
 }
@@ -41,7 +43,9 @@ pub fn hash_commitment(commitment: &Commitment) -> Result<Scalar> {
     let mut arr = [0u8; 32];
     arr.copy_from_slice(&digest[..32]);
     // Return the hash of the commitment.
-    Ok(Scalar(Uint::from_le_bytes(arr)))
+    let mut hash = Scalar(Uint::from_le_bytes(arr));
+    hash.reduce();
+    Ok(hash)
 }
 
 pub fn hash_commitments(
