@@ -1,6 +1,6 @@
-use snarkd_crypto::bls12_377::G1Affine;
+use crate::bls12_377::G1Affine;
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Address(pub G1Affine);
 
 impl Address {

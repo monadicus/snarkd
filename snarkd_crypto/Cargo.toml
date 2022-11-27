@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 anyhow = { workspace = true }
 bitvec = { workspace = true }
+blake2 = { workspace = true }
 fxhash = { workspace = true }
 hashbrown = { workspace = true }
 hex = { workspace = true }

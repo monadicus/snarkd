@@ -19,6 +19,7 @@ anyhow = "1.0.66"
 arc-swap = "1.0"
 async-trait = "0.1"
 bech32 = "0.9.1"
+blake2 = "0.10"
 bitvec = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4.0", features = ["derive"] }

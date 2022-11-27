@@ -340,7 +340,7 @@ impl Scalar {
         }
     }
 
-    fn reduce(&mut self) {
+    pub fn reduce(&mut self) {
         while self.0 >= MODULUS {
             self.0 -= MODULUS;
         }

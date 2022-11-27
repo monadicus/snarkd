@@ -15,6 +15,7 @@ use crate::{
     polycommit::{powers::PowersOfG, PCError},
     utils::*,
 };
+use anyhow::{anyhow, Result};
 use bitvec::prelude::*;
 use core::{
     marker::PhantomData,
@@ -396,6 +397,56 @@ impl KZG10 {
         Ok(Proof {
             w: w.to_affine(),
             random_v,
+        })
+    }
+
+    /// On input a polynomial `p` in Lagrange basis, and a point `point`,
+    /// outputs an evaluation proof for the same.
+    pub fn open_lagrange(
+        lagrange_basis: &LagrangeBasis,
+        domain_elements: &[Scalar],
+        evaluations: &[Scalar],
+        point: Scalar,
+        evaluation_at_point: Scalar,
+    ) -> Result<Proof, PCError> {
+        Self::check_degree_is_too_large(evaluations.len() - 1, lagrange_basis.size())?;
+        // Ensure that the point is not in the domain
+        if lagrange_basis
+            .domain
+            .evaluate_vanishing_polynomial(point)
+            .is_zero()
+        {
+            Err(anyhow!("Point cannot be in the domain"))?;
+        }
+        if evaluations
+            .len()
+            .checked_next_power_of_two()
+            .ok_or_else(|| anyhow!("Evaluations length is too large"))?
+            != lagrange_basis.size()
+        {
+            Err(anyhow!("`evaluations.len()` must equal `domain.size()`"))?;
+        }
+
+        let mut divisor_evals = cfg_iter!(domain_elements)
+            .map(|&e| e - point)
+            .collect::<Vec<_>>();
+        Scalar::batch_inversion(&mut divisor_evals);
+        cfg_iter_mut!(divisor_evals)
+            .zip_eq(evaluations)
+            .for_each(|(divisor_eval, &eval)| {
+                *divisor_eval *= eval - evaluation_at_point;
+            });
+        let (witness_comm, _) = Self::commit_lagrange(
+            lagrange_basis,
+            &divisor_evals,
+            None,
+            &AtomicBool::new(false),
+            None,
+        )?;
+
+        Ok(Proof {
+            w: witness_comm.0,
+            random_v: None,
         })
     }
 

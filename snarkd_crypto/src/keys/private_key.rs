@@ -1,5 +1,5 @@
 use super::{ComputeKey, Signature};
-use snarkd_crypto::{
+use crate::{
     bls12_377::{Affine, Field, Fp, G1Affine, Projective, Scalar},
     utils::*,
 };
