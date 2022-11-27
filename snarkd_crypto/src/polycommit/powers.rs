@@ -329,19 +329,19 @@ impl PowersOfBetaG {
 
             // Download the universal SRS powers if they're not already on disk.
             let additional_bytes = match *num_powers {
-                NUM_POWERS_16 => Degree16::load_bytes()?,
-                NUM_POWERS_17 => Degree17::load_bytes()?,
-                NUM_POWERS_18 => Degree18::load_bytes()?,
-                NUM_POWERS_19 => Degree19::load_bytes()?,
-                NUM_POWERS_20 => Degree20::load_bytes()?,
-                NUM_POWERS_21 => Degree21::load_bytes()?,
-                NUM_POWERS_22 => Degree22::load_bytes()?,
-                NUM_POWERS_23 => Degree23::load_bytes()?,
-                NUM_POWERS_24 => Degree24::load_bytes()?,
-                NUM_POWERS_25 => Degree25::load_bytes()?,
-                NUM_POWERS_26 => Degree26::load_bytes()?,
-                NUM_POWERS_27 => Degree27::load_bytes()?,
-                NUM_POWERS_28 => Degree28::load_bytes()?,
+                NUM_POWERS_16 => download_powers("16", false),
+                NUM_POWERS_17 => download_powers("17", false),
+                NUM_POWERS_18 => download_powers("18", false),
+                NUM_POWERS_19 => download_powers("19", false),
+                NUM_POWERS_20 => download_powers("20", false),
+                NUM_POWERS_21 => download_powers("21", false),
+                NUM_POWERS_22 => download_powers("22", false),
+                NUM_POWERS_23 => download_powers("23", false),
+                NUM_POWERS_24 => download_powers("24", false),
+                NUM_POWERS_25 => download_powers("25", false),
+                NUM_POWERS_26 => download_powers("26", false),
+                NUM_POWERS_27 => download_powers("27", false),
+                NUM_POWERS_28 => download_powers("28", false),
                 _ => bail!("Cannot download an invalid degree of '{num_powers}'"),
             };
 
@@ -413,18 +413,18 @@ impl PowersOfBetaG {
 
             // Download the universal SRS powers if they're not already on disk.
             let additional_bytes = match *num_powers {
-                NUM_POWERS_16 => ShiftedDegree16::load_bytes()?,
-                NUM_POWERS_17 => ShiftedDegree17::load_bytes()?,
-                NUM_POWERS_18 => ShiftedDegree18::load_bytes()?,
-                NUM_POWERS_19 => ShiftedDegree19::load_bytes()?,
-                NUM_POWERS_20 => ShiftedDegree20::load_bytes()?,
-                NUM_POWERS_21 => ShiftedDegree21::load_bytes()?,
-                NUM_POWERS_22 => ShiftedDegree22::load_bytes()?,
-                NUM_POWERS_23 => ShiftedDegree23::load_bytes()?,
-                NUM_POWERS_24 => ShiftedDegree24::load_bytes()?,
-                NUM_POWERS_25 => ShiftedDegree25::load_bytes()?,
-                NUM_POWERS_26 => ShiftedDegree26::load_bytes()?,
-                NUM_POWERS_27 => ShiftedDegree27::load_bytes()?,
+                NUM_POWERS_16 => download_powers("16", true),
+                NUM_POWERS_17 => download_powers("17", true),
+                NUM_POWERS_18 => download_powers("18", true),
+                NUM_POWERS_19 => download_powers("19", true),
+                NUM_POWERS_20 => download_powers("20", true),
+                NUM_POWERS_21 => download_powers("21", true),
+                NUM_POWERS_22 => download_powers("22", true),
+                NUM_POWERS_23 => download_powers("23", true),
+                NUM_POWERS_24 => download_powers("24", true),
+                NUM_POWERS_25 => download_powers("25", true),
+                NUM_POWERS_26 => download_powers("26", true),
+                NUM_POWERS_27 => download_powers("27", true),
                 _ => bail!("Cannot download an invalid degree of '{num_powers}'"),
             };
 
@@ -446,4 +446,30 @@ impl PowersOfBetaG {
         );
         Ok(())
     }
+}
+
+fn download_powers(degree: &str, shifted: bool) -> Vec<u8> {
+    let mut url = String::from("https://vm.aleo.org/testnet3/parameters/resources/");
+    if shifted {
+        url.push_str("shifted-");
+    }
+    url.push_str("powers-of-beta-");
+    url.push_str(degree);
+    url.push_str(".usrs");
+
+    let mut easy = curl::easy::Easy::new();
+    easy.follow_location(true).unwrap();
+    easy.url(&url).unwrap();
+
+    let mut buffer = vec![];
+    let mut transfer = easy.transfer();
+    transfer
+        .write_function(|data| {
+            buffer.extend_from_slice(data);
+            Ok(data.len())
+        })
+        .unwrap();
+    transfer.perform().unwrap();
+    drop(transfer);
+    buffer
 }

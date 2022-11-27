@@ -24,6 +24,7 @@ bitvec = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4.0", features = ["derive"] }
 colored = "2.0"
+curl = "0.4"
 dashmap = "5.4"
 env_logger = "0.9"
 error-stack = "0.2"

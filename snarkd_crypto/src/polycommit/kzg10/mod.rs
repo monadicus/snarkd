@@ -502,21 +502,18 @@ mod tests {
     #![allow(non_camel_case_types)]
     #![allow(clippy::needless_borrow)]
     use super::*;
-    use snarkvm_curves::bls12_377::{Bls12_377, Fr};
-    use snarkvm_utilities::{rand::TestRng, FromBytes, ToBytes};
-
     use std::borrow::Cow;
 
-    type KZG_Bls12_377 = KZG10<Bls12_377>;
+    type KZG_Bls12_377 = KZG10;
 
-    impl<E: PairingEngine> KZG10<E> {
+    impl KZG10 {
         /// Specializes the public parameters for a given maximum degree `d` for polynomials
         /// `d` should be less that `pp.max_degree()`.
         pub(crate) fn trim(
-            pp: &UniversalParams<E>,
+            pp: &UniversalParams,
             mut supported_degree: usize,
             hiding_bound: Option<usize>,
-        ) -> (Powers<E>, VerifierKey<E>) {
+        ) -> (Powers, VerifierKey) {
             if supported_degree == 1 {
                 supported_degree += 1;
             }
@@ -549,30 +546,18 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_kzg10_universal_params_serialization() {
-        let degree = 4;
-        let pp = KZG_Bls12_377::load_srs(degree).unwrap();
-
-        let pp_bytes = pp.to_bytes_le().unwrap();
-        let pp_recovered: UniversalParams<Bls12_377> = FromBytes::read_le(&pp_bytes[..]).unwrap();
-        let pp_recovered_bytes = pp_recovered.to_bytes_le().unwrap();
-
-        assert_eq!(&pp_bytes, &pp_recovered_bytes);
-    }
-
     fn end_to_end_test_template() -> Result<(), PCError> {
-        let rng = &mut TestRng::default();
+        let rng = &mut rand::thread_rng();
         for _ in 0..100 {
             let mut degree = 0;
             while degree <= 1 {
-                degree = usize::rand(rng) % 20;
+                degree = rng.gen::<usize>() % 20;
             }
-            let pp = KZG10::<E>::load_srs(degree)?;
+            let pp = KZG10::load_srs(degree)?;
             let hiding_bound = Some(1);
             let (ck, vk) = KZG10::trim(&pp, degree, hiding_bound);
             let p = DensePolynomial::rand(degree, rng);
-            let (comm, rand) = KZG10::<E>::commit(
+            let (comm, rand) = KZG10::commit(
                 &ck,
                 &(&p).into(),
                 hiding_bound,
@@ -583,7 +568,7 @@ mod tests {
             let value = p.evaluate(point);
             let proof = KZG10::open(&ck, &p, point, &rand)?;
             assert!(
-                KZG10::<E>::check(&vk, &comm, point, value, &proof)?,
+                KZG10::check(&vk, &comm, point, value, &proof)?,
                 "proof was incorrect for max_degree = {}, polynomial_degree = {}, hiding_bound = {:?}",
                 degree,
                 p.degree(),
@@ -593,26 +578,26 @@ mod tests {
         Ok(())
     }
 
-    fn linear_polynomial_test_template<E: PairingEngine>() -> Result<(), PCError> {
-        let rng = &mut TestRng::default();
+    fn linear_polynomial_test_template() -> Result<(), PCError> {
+        let rng = &mut rand::thread_rng();
         for _ in 0..100 {
             let degree = 50;
-            let pp = KZG10::<E>::load_srs(degree)?;
+            let pp = KZG10::load_srs(degree)?;
             let hiding_bound = Some(1);
             let (ck, vk) = KZG10::trim(&pp, 2, hiding_bound);
             let p = DensePolynomial::rand(1, rng);
-            let (comm, rand) = KZG10::<E>::commit(
+            let (comm, rand) = KZG10::commit(
                 &ck,
                 &(&p).into(),
                 hiding_bound,
                 &AtomicBool::new(false),
                 Some(rng),
             )?;
-            let point = E::Fr::rand(rng);
+            let point = Scalar::rand();
             let value = p.evaluate(point);
-            let proof = KZG10::<E>::open(&ck, &p, point, &rand)?;
+            let proof = KZG10::open(&ck, &p, point, &rand)?;
             assert!(
-                KZG10::<E>::check(&vk, &comm, point, value, &proof)?,
+                KZG10::check(&vk, &comm, point, value, &proof)?,
                 "proof was incorrect for max_degree = {}, polynomial_degree = {}, hiding_bound = {:?}",
                 degree,
                 p.degree(),
@@ -622,15 +607,15 @@ mod tests {
         Ok(())
     }
 
-    fn batch_check_test_template<E: PairingEngine>() -> Result<(), PCError> {
-        let rng = &mut TestRng::default();
+    fn batch_check_test_template() -> Result<(), PCError> {
+        let rng = &mut rand::thread_rng();
         for _ in 0..10 {
             let hiding_bound = Some(1);
             let mut degree = 0;
             while degree <= 1 {
-                degree = usize::rand(rng) % 20;
+                degree = rng.gen::<usize>() % 20;
             }
-            let pp = KZG10::<E>::load_srs(degree)?;
+            let pp = KZG10::load_srs(degree)?;
             let (ck, vk) = KZG10::trim(&pp, degree, hiding_bound);
 
             let mut comms = Vec::new();
@@ -651,7 +636,7 @@ mod tests {
                 let value = p.evaluate(point);
                 let proof = KZG10::open(&ck, &p, point, &rand)?;
 
-                assert!(KZG10::<E>::check(&vk, &comm, point, value, &proof)?);
+                assert!(KZG10::check(&vk, &comm, point, value, &proof)?);
                 comms.push(comm);
                 values.push(value);
                 points.push(point);
@@ -666,28 +651,28 @@ mod tests {
 
     #[test]
     fn test_end_to_end() {
-        end_to_end_test_template::<Bls12_377>().expect("test failed for bls12-377");
+        end_to_end_test_template().expect("test failed for bls12-377");
     }
 
     #[test]
     fn test_linear_polynomial() {
-        linear_polynomial_test_template::<Bls12_377>().expect("test failed for bls12-377");
+        linear_polynomial_test_template().expect("test failed for bls12-377");
     }
 
     #[test]
     fn test_batch_check() {
-        batch_check_test_template::<Bls12_377>().expect("test failed for bls12-377");
+        batch_check_test_template().expect("test failed for bls12-377");
     }
 
     #[test]
     fn test_degree_is_too_large() {
-        let rng = &mut TestRng::default();
+        let rng = &mut rand::thread_rng();
 
         let max_degree = 123;
         let pp = KZG_Bls12_377::load_srs(max_degree).unwrap();
         let (powers, _) = KZG_Bls12_377::trim(&pp, max_degree, None);
 
-        let p = DensePolynomial::<Fr>::rand(max_degree + 1, rng);
+        let p = DensePolynomial::rand(max_degree + 1, rng);
         assert!(p.degree() > max_degree);
         assert!(KZG_Bls12_377::check_degree_is_too_large(p.degree(), powers.size()).is_err());
     }

@@ -51,7 +51,7 @@ impl UniversalParams {
     }
 
     pub fn lagrange_basis(&self, domain: EvaluationDomain) -> Result<Vec<G1Affine>> {
-        let basis = domain.ifft_projective(
+        let mut basis = domain.ifft_projective(
             &self
                 .powers_of_beta_g(0, domain.size())?
                 .iter()
