@@ -1,22 +1,20 @@
 use crate::{
     bls12_377::{
-        product_of_pairings, Affine, Field, Fp, G1Prepared, G1Projective, G2Affine, G2Prepared,
+        product_of_pairings, Affine, Field, G1Prepared, G1Projective, G2Affine, G2Prepared,
         Projective, Scalar,
     },
     fft::DensePolynomial,
     msm::variable_base::VariableBase,
-    polycommit::{kzg10, optional_rng::OptionalRng, PCError},
+    polycommit::{kzg10, PCError},
     utils::*,
 };
 use core::{
     convert::TryInto,
-    marker::PhantomData,
     ops::Mul,
     sync::atomic::{AtomicBool, Ordering},
 };
 use hashbrown::HashMap;
 use itertools::Itertools;
-use rand_core::{RngCore, SeedableRng};
 use std::collections::{BTreeMap, BTreeSet};
 
 mod data_structures;
@@ -39,14 +37,9 @@ pub use polynomial::*;
 pub struct SonicKZG10;
 
 impl SonicKZG10 {
-    pub fn setup<R: RngCore>(max_degree: usize, rng: &mut R) -> Result<UniversalParams, PCError> {
-        kzg10::KZG10::setup(
-            max_degree,
-            &kzg10::KZG10DegreeBoundsConfig::MARLIN,
-            true,
-            rng,
-        )
-        .map_err(Into::into)
+    pub fn setup(max_degree: usize) -> Result<UniversalParams, PCError> {
+        kzg10::KZG10::setup(max_degree, &kzg10::KZG10DegreeBoundsConfig::MARLIN, true)
+            .map_err(Into::into)
     }
 
     pub fn trim(
@@ -203,9 +196,8 @@ impl SonicKZG10 {
     pub fn commit<'b>(
         ck: &CommitterKey,
         polynomials: impl IntoIterator<Item = LabeledPolynomialWithBasis<'b>>,
-        rng: Option<&mut dyn RngCore>,
     ) -> Result<(Vec<LabeledCommitment>, Vec<Randomness>), PCError> {
-        Self::commit_with_terminator(ck, polynomials, &AtomicBool::new(false), rng)
+        Self::commit_with_terminator(ck, polynomials, &AtomicBool::new(false))
     }
 
     /// Outputs a commitment to `polynomial`.
@@ -215,9 +207,7 @@ impl SonicKZG10 {
         ck: &CommitterKey,
         polynomials: impl IntoIterator<Item = LabeledPolynomialWithBasis<'a>>,
         terminator: &AtomicBool,
-        rng: Option<&mut dyn RngCore>,
     ) -> Result<(Vec<LabeledCommitment>, Vec<Randomness>), PCError> {
-        let rng = &mut OptionalRng(rng);
         let mut labeled_comms: Vec<LabeledCommitment> = Vec::new();
         let mut randomness: Vec<Randomness> = Vec::new();
 
@@ -226,11 +216,6 @@ impl SonicKZG10 {
             if terminator.load(Ordering::Relaxed) {
                 return Err(PCError::Terminated);
             }
-            let seed = rng.0.as_mut().map(|r| {
-                let mut seed = [0u8; 32];
-                r.fill_bytes(&mut seed);
-                seed
-            });
 
             kzg10::KZG10::check_degrees_and_bounds(
                 ck.supported_degree(),
@@ -243,50 +228,37 @@ impl SonicKZG10 {
             let label = p.label().to_string();
 
             pool.add_job(move || {
-                let mut rng = seed.map(rand::rngs::StdRng::from_seed);
-
                 #[allow(clippy::or_fun_call)]
                 let (comm, rand) = p
                     .sum()
-                    .map(move |p| {
-                        let rng_ref = rng.as_mut().map(|s| s as _);
-                        match p {
-                            PolynomialWithBasis::Lagrange { evaluations } => {
-                                let domain = crate::fft::EvaluationDomain::new(
-                                    evaluations.evaluations.len(),
-                                )
-                                .unwrap();
-                                let lagrange_basis = ck
-                                    .lagrange_basis(domain)
-                                    .ok_or(PCError::UnsupportedLagrangeBasisSize(domain.size()))?;
-                                assert!(domain.size().is_power_of_two());
-                                assert!(lagrange_basis.size().is_power_of_two());
-                                kzg10::KZG10::commit_lagrange(
-                                    &lagrange_basis,
-                                    &evaluations.evaluations,
-                                    hiding_bound,
-                                    terminator,
-                                    rng_ref,
-                                )
-                            }
-                            PolynomialWithBasis::Monomial {
-                                polynomial,
-                                degree_bound,
-                            } => {
-                                let powers = if let Some(degree_bound) = degree_bound {
-                                    ck.shifted_powers_of_beta_g(degree_bound).unwrap()
-                                } else {
-                                    ck.powers()
-                                };
+                    .map(move |p| match p {
+                        PolynomialWithBasis::Lagrange { evaluations } => {
+                            let domain =
+                                crate::fft::EvaluationDomain::new(evaluations.evaluations.len())
+                                    .unwrap();
+                            let lagrange_basis = ck
+                                .lagrange_basis(domain)
+                                .ok_or(PCError::UnsupportedLagrangeBasisSize(domain.size()))?;
+                            assert!(domain.size().is_power_of_two());
+                            assert!(lagrange_basis.size().is_power_of_two());
+                            kzg10::KZG10::commit_lagrange(
+                                &lagrange_basis,
+                                &evaluations.evaluations,
+                                hiding_bound,
+                                terminator,
+                            )
+                        }
+                        PolynomialWithBasis::Monomial {
+                            polynomial,
+                            degree_bound,
+                        } => {
+                            let powers = if let Some(degree_bound) = degree_bound {
+                                ck.shifted_powers_of_beta_g(degree_bound).unwrap()
+                            } else {
+                                ck.powers()
+                            };
 
-                                kzg10::KZG10::commit(
-                                    &powers,
-                                    &polynomial,
-                                    hiding_bound,
-                                    terminator,
-                                    rng_ref,
-                                )
-                            }
+                            kzg10::KZG10::commit(&powers, &polynomial, hiding_bound, terminator)
                         }
                     })
                     .collect::<Result<Vec<_>, _>>()?
@@ -777,10 +749,7 @@ impl SonicKZG10 {
 
 #[cfg(test)]
 mod tests {
-    use super::{CommitterKey, SonicKZG10};
-    use crate::{bls12_377::Field, polycommit::test_templates::*, utils::PoseidonSponge};
-
-    use rand::distributions::Distribution;
+    use crate::polycommit::test_templates::*;
 
     #[test]
     fn test_single_poly() {

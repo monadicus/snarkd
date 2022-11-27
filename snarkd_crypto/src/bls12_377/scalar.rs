@@ -264,21 +264,6 @@ impl Scalar {
         Some(omega)
     }
 
-    /// Calculates the k-adicity of n, i.e., the number of trailing 0s in a base-k
-    /// representation.
-    fn k_adicity(k: usize, mut n: usize) -> u32 {
-        let mut r = 0;
-        while n > 1 {
-            if n % k == 0 {
-                r += 1;
-                n /= k;
-            } else {
-                return r;
-            }
-        }
-        r
-    }
-
     // Given a vector of field elements {v_i}, compute the vector {v_i^(-1)}
     // NOTE: there exists a faster algorithm that we should explore
     pub fn batch_inversion(v: &mut [Self]) {

@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use crate::{
     marlin::{
         ahp::{verifier, AHPError, AHPForR1CS},
-        prover, MarlinMode,
+        prover,
     },
     polycommit::sonic_pc::{LabeledPolynomial, PolynomialInfo, PolynomialLabel},
 };

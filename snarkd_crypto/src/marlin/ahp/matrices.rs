@@ -6,7 +6,6 @@ use crate::{
     marlin::ahp::{indexer::Matrix, UnnormalizedBivariateLagrangePoly},
     polycommit::sonic_pc::LabeledPolynomial,
     r1cs::{ConstraintSystem, Index as VarIndex},
-    utils::*,
 };
 use hashbrown::HashMap;
 use itertools::Itertools;

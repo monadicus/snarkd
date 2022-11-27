@@ -6,11 +6,11 @@ use crate::{
     },
     marlin::{
         ahp::{matrices, verifier, AHPError, CircuitInfo},
-        prover, MarlinMode,
+        prover,
     },
     polycommit::sonic_pc::{LCTerm, LabeledPolynomial, LinearCombination},
 };
-use core::{borrow::Borrow, marker::PhantomData};
+use core::borrow::Borrow;
 use itertools::Itertools;
 use std::collections::BTreeMap;
 
@@ -442,7 +442,6 @@ impl UnnormalizedBivariateLagrangePoly for EvaluationDomain {
         x: Scalar,
         domain: &EvaluationDomain,
     ) -> Vec<Scalar> {
-        use crate::utils::*;
         use rayon::prelude::*;
 
         let vanish_x = self.evaluate_vanishing_polynomial(x);
@@ -524,7 +523,6 @@ mod tests {
 
     #[test]
     fn domain_unnormalized_bivariate_lagrange_poly_diff_inputs() {
-        let rng = &mut rand::thread_rng();
         for domain_size in 1..10 {
             let domain = EvaluationDomain::new(1 << domain_size).unwrap();
             let x = Scalar::rand();
@@ -539,7 +537,6 @@ mod tests {
 
     #[test]
     fn domain_unnormalized_bivariate_lagrange_poly_diff_inputs_over_domain() {
-        let rng = &mut rand::thread_rng();
         for domain_size in 1..10 {
             let domain = EvaluationDomain::new(1 << domain_size).unwrap();
             let x = Scalar::rand();
@@ -564,11 +561,10 @@ mod tests {
 
     #[test]
     fn test_summation() {
-        let rng = &mut rand::thread_rng();
         let size = 1 << 4;
         let domain = EvaluationDomain::new(1 << 4).unwrap();
         let size_as_fe = domain.size_as_field_element;
-        let poly = DensePolynomial::rand(size, rng);
+        let poly = DensePolynomial::rand(size);
 
         let mut sum = Scalar::ZERO;
         for eval in domain.elements().map(|e| poly.evaluate(e)) {
@@ -585,13 +581,11 @@ mod tests {
 
     #[test]
     fn test_alternator_polynomial() {
-        let mut rng = rand::thread_rng();
-
         for i in 1..10 {
             for j in 1..i {
                 let domain_i = EvaluationDomain::new(1 << i).unwrap();
                 let domain_j = EvaluationDomain::new(1 << j).unwrap();
-                let point = domain_j.sample_element_outside_domain(&mut rng);
+                let point = domain_j.sample_element_outside_domain();
                 let j_elements = domain_j.elements().collect::<Vec<_>>();
                 let slow_selector = {
                     let evals = domain_i

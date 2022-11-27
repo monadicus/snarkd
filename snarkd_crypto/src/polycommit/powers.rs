@@ -1,7 +1,6 @@
 use crate::bls12_377::G1Affine;
-use anyhow::{anyhow, bail, ensure, Result};
-use itertools::Itertools;
-use std::{collections::BTreeMap, io::BufReader};
+use anyhow::{anyhow, Result};
+use std::collections::BTreeMap;
 
 /*
 const DEGREE_15: usize = 1 << 15;
@@ -29,8 +28,6 @@ const DEGREE_28: usize = 1 << 28;
 /// A vector of powers of beta G.
 #[derive(Debug)]
 pub struct PowersOfG {
-    /// A boolean indicator if the powers were from a setup.
-    is_setup: bool,
     /// The number of group elements in `powers_of_beta_g`.
     current_degree: usize,
     /// Group elements of form `[G, \beta * G, \beta^2 * G, ..., \beta^{d} G]`.
@@ -47,7 +44,6 @@ impl PowersOfG {
     ) -> Result<Self> {
         // Initialize the powers.
         let powers = Self {
-            is_setup: true,
             current_degree: powers_of_beta_g.len(),
             powers_of_beta_g,
             powers_of_beta_times_gamma_g,
@@ -98,15 +94,16 @@ impl PowersOfG {
 
     /// This method downloads the universal SRS powers up to the `next_power_of_two(target_degree)`,
     /// and updates `Self` in place with the new powers.
-    pub fn download_up_to(&mut self, target_degree: usize) -> Result<()> {
+    pub fn download_up_to(&mut self, _target_degree: usize) -> Result<()> {
         // TODO: we need to revamp parameters downloads
         unimplemented!()
     }
 }
 
 impl PowersOfG {
+    #[allow(dead_code)]
     fn regenerate_powers_of_beta_times_gamma_g(
-        current_degree: usize,
+        _current_degree: usize,
     ) -> Result<BTreeMap<usize, G1Affine>> {
         unimplemented!()
     }

@@ -15,16 +15,12 @@ use crate::{
     fft::SparsePolynomial,
     utils::*,
 };
-use rand::Rng;
 use rayon::prelude::*;
 use std::{
     borrow::Cow,
     fmt,
     ops::{AddAssign, MulAssign, Sub},
 };
-
-#[cfg(not(feature = "parallel"))]
-use itertools::Itertools;
 
 /// Returns the ceiling of the base-2 logarithm of `x`.
 ///
@@ -83,7 +79,7 @@ impl fmt::Debug for EvaluationDomain {
 
 impl EvaluationDomain {
     /// Sample an element that is *not* in the domain.
-    pub fn sample_element_outside_domain<R: Rng>(&self, rng: &mut R) -> Scalar {
+    pub fn sample_element_outside_domain(&self) -> Scalar {
         let mut t = Scalar::rand();
         while self.evaluate_vanishing_polynomial(t).is_zero() {
             t = Scalar::rand();
@@ -965,7 +961,6 @@ mod tests {
 
     #[test]
     fn vanishing_polynomial_evaluation() {
-        let rng = &mut rand::thread_rng();
         (0..10).into_par_iter().for_each(|coeffs| {
             let domain = EvaluationDomain::new(coeffs).unwrap();
             let z = domain.vanishing_polynomial();
@@ -1014,7 +1009,6 @@ mod tests {
     /// Test that lagrange interpolation for a random polynomial at a random point works.
     #[test]
     fn non_systematic_lagrange_coefficients_test() {
-        let mut rng = rand::thread_rng();
         for domain_dimension in 1..10 {
             let domain_size = 1 << domain_dimension;
             let domain = EvaluationDomain::new(domain_size).unwrap();
@@ -1023,7 +1017,7 @@ mod tests {
             let lagrange_coefficients = domain.evaluate_all_lagrange_coefficients(random_point);
 
             // Sample the random polynomial, evaluate it over the domain and the random point.
-            let random_polynomial = DensePolynomial::rand(domain_size - 1, &mut rng);
+            let random_polynomial = DensePolynomial::rand(domain_size - 1);
             let polynomial_evaluations = domain.fft(random_polynomial.coeffs());
             let actual_evaluations = random_polynomial.evaluate(random_point);
 
@@ -1088,12 +1082,10 @@ mod tests {
         // It tests consistency of FFT/IFFT, and coset_fft/coset_ifft,
         // along with testing that each individual evaluation is correct.
 
-        let mut rng = rand::thread_rng();
-
         // Runs in time O(degree^2)
         let log_degree = 5;
         let degree = 1 << log_degree;
-        let random_polynomial = DensePolynomial::rand(degree - 1, &mut rng);
+        let random_polynomial = DensePolynomial::rand(degree - 1);
 
         (log_degree..(log_degree + 2))
             .into_par_iter()

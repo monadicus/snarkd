@@ -21,10 +21,7 @@ use crate::{
     polycommit::kzg10::{Commitment, LagrangeBasis, Proof, VerifierKey, KZG10},
 };
 use anyhow::Result;
-use std::{
-    borrow::Cow,
-    io::{Read, Result as IoResult, Write},
-};
+use std::borrow::Cow;
 
 /// The proof of opening the polynomial, for the solution.
 pub type PuzzleProof = Proof;

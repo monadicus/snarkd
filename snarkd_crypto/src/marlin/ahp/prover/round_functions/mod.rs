@@ -5,7 +5,6 @@ use crate::{
         prover,
     },
     r1cs::ConstraintSynthesizer,
-    utils::*,
 };
 use itertools::Itertools;
 
