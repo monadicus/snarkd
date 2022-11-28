@@ -91,13 +91,13 @@ test = false
 doc = false
 
 [[bin]]
-name = "random_addition_test_g1"
-path = "fuzz_targets/bls12_377/random_addition_test_g1.rs"
+name = "add_g1"
+path = "fuzz_targets/bls12_377/add_g1.rs"
 test = false
 doc = false
 
 [[bin]]
-name = "random_addition_test_g2"
-path = "fuzz_targets/bls12_377/random_addition_test_g2.rs"
+name = "add_g2"
+path = "fuzz_targets/bls12_377/add_g2.rs"
 test = false
 doc = false
