@@ -12,8 +12,10 @@ use rand::{distributions::Standard, Rng};
 use ruint::{uint, Uint};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[cfg_attr(test, derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    any(test, feature = "fuzz"),
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub struct Fp(pub Uint<384, 6>);
 
 impl From<Uint<384, 6>> for Fp {
@@ -478,6 +480,15 @@ impl Display for Fp {
 }
 
 impl Testable for Fp {}
+
+#[cfg(feature = "fuzz")]
+impl<'a> arbitrary::Arbitrary<'a> for Fp {
+    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+        let mut f = Self(Uint::arbitrary(u)?);
+        f.reduce();
+        Ok(f)
+    }
+}
 
 #[cfg(test)]
 mod tests {

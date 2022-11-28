@@ -9,7 +9,7 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.4"
-snarkd_crypto = { path = "..", features = ["arbitrary"] }
+snarkd_crypto = { path = "..", features = ["fuzz"] }
 
 # Prevent this from interfering with workspaces
 [workspace]

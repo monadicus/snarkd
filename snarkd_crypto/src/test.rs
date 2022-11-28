@@ -1,4 +1,4 @@
-#[cfg(not(test))]
+#[cfg(not(any(test, feature = "fuzz")))]
 pub trait Testable {}
-#[cfg(test)]
+#[cfg(any(test, feature = "fuzz"))]
 pub trait Testable: serde::Serialize + serde::de::DeserializeOwned {}

@@ -5,11 +5,11 @@ use core::{
 };
 
 pub trait Parameters: Hash + Clone + Copy + Debug + PartialEq + Eq {
-    #[cfg(feature = "arbitrary")]
+    #[cfg(feature = "fuzz")]
     type BaseField: Field + Ord + Display + for<'a> arbitrary::Arbitrary<'a>;
-    #[cfg(feature = "test")]
+    #[cfg(test)]
     type BaseField: Field + Ord + Display + serde::Serialize + serde::de::DeserializeOwned;
-    #[cfg(not(feature = "arbitrary"))]
+    #[cfg(not(any(test, feature = "fuzz")))]
     type BaseField: Field + Ord + Display;
 
     const COFACTOR: &'static [u64];

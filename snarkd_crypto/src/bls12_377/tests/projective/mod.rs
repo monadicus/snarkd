@@ -8,7 +8,7 @@ use serde_json::Value;
 
 use crate::bls12_377::{field::Field, Affine, Projective, Scalar};
 
-fn add<G: Projective>(a: G, b: G, c: G) -> Result<Value, String> {
+pub fn add<G: Projective>(a: G, b: G, c: G) -> Result<Value, String> {
     let mut outputs = Vec::new();
 
     let a_affine = a.to_affine();
@@ -33,44 +33,67 @@ fn add<G: Projective>(a: G, b: G, c: G) -> Result<Value, String> {
         assert_eq!(aplusa, aplusamixed);
     }
 
-    let mut tmp: G;
+    let mut tmp = vec![G::ZERO; 6];
 
     // (a + b) + c
-    tmp = (a + b) + c;
-    outputs.push(tmp.to_string());
+    tmp[0] = (a + b) + c;
+    outputs.push(tmp[0].to_string());
 
     // a + (b + c)
-    tmp = a + (b + c);
-    outputs.push(tmp.to_string());
+    tmp[1] = a + (b + c);
+    outputs.push(tmp[1].to_string());
 
     // (a + c) + b
-    tmp = (a + c) + b;
-    outputs.push(tmp.to_string());
+    tmp[2] = (a + c) + b;
+    outputs.push(tmp[2].to_string());
 
     // Mixed addition
 
     // (a + b) + c
-    tmp = a_affine.to_projective();
-    tmp.add_assign_mixed(&b_affine);
-    tmp.add_assign_mixed(&c_affine);
-    outputs.push(tmp.to_string());
+    tmp[3] = a_affine.to_projective();
+    tmp[3].add_assign_mixed(&b_affine);
+    tmp[3].add_assign_mixed(&c_affine);
+    outputs.push(tmp[3].to_string());
 
     // a + (b + c)
-    tmp = b_affine.to_projective();
-    tmp.add_assign_mixed(&c_affine);
-    tmp.add_assign_mixed(&a_affine);
-    outputs.push(tmp.to_string());
+    tmp[4] = b_affine.to_projective();
+    tmp[4].add_assign_mixed(&c_affine);
+    tmp[4].add_assign_mixed(&a_affine);
+    outputs.push(tmp[4].to_string());
 
     // (a + c) + b
-    tmp = a_affine.to_projective();
-    tmp.add_assign_mixed(&c_affine);
-    tmp.add_assign_mixed(&b_affine);
-    outputs.push(tmp.to_string());
+    tmp[5] = a_affine.to_projective();
+    tmp[5].add_assign_mixed(&c_affine);
+    tmp[5].add_assign_mixed(&b_affine);
+    outputs.push(tmp[5].to_string());
+
+    // Comparisons
+    for i in 0..6 {
+        for j in 0..6 {
+            if tmp[i] != tmp[j] {
+                println!("{} \n{}", tmp[i], tmp[j]);
+            }
+            assert_eq!(tmp[i], tmp[j], "Associativity failed {} {}", i, j);
+            assert_eq!(
+                tmp[i].to_affine(),
+                tmp[j].to_affine(),
+                "Associativity failed"
+            );
+        }
+
+        assert!(tmp[i] != a);
+        assert!(tmp[i] != b);
+        assert!(tmp[i] != c);
+
+        assert!(a != tmp[i]);
+        assert!(b != tmp[i]);
+        assert!(c != tmp[i]);
+    }
 
     Ok(Value::from(outputs))
 }
 
-fn mul<G: Projective>(mut a: G, mut b: G, s: Scalar) -> Result<Value, String> {
+pub fn mul<G: Projective>(mut a: G, mut b: G, s: Scalar) -> Result<Value, String> {
     let mut outputs = Vec::new();
 
     let a_affine = a.to_affine();
@@ -100,7 +123,7 @@ fn mul<G: Projective>(mut a: G, mut b: G, s: Scalar) -> Result<Value, String> {
     Ok(Value::from(outputs))
 }
 
-fn double<G: Projective>(mut a: G, mut b: G) -> Result<Value, String> {
+pub fn double<G: Projective>(mut a: G, mut b: G) -> Result<Value, String> {
     let mut outputs = Vec::new();
 
     // 2(a + b)
@@ -126,7 +149,7 @@ fn double<G: Projective>(mut a: G, mut b: G) -> Result<Value, String> {
     Ok(Value::from(outputs))
 }
 
-fn neg<G: Projective>(r: G, s: Scalar) -> Result<Value, String> {
+pub fn neg<G: Projective>(r: G, s: Scalar) -> Result<Value, String> {
     let mut outputs = Vec::new();
     let sneg = -s;
     assert!((s + sneg).is_zero());
@@ -155,7 +178,7 @@ fn neg<G: Projective>(r: G, s: Scalar) -> Result<Value, String> {
     Ok(Value::from(outputs))
 }
 
-fn transform<G: Projective>(g: G) -> Result<Value, String> {
+pub fn transform<G: Projective>(g: G) -> Result<Value, String> {
     let g_affine = g.to_affine();
     let g_projective = g_affine.to_projective();
     assert_eq!(g, g_projective);
@@ -163,7 +186,7 @@ fn transform<G: Projective>(g: G) -> Result<Value, String> {
     Ok(Value::from(g_projective.to_string()))
 }
 
-fn batch_normalization<G: Projective>(mut batch: Vec<G>) -> Result<Value, String> {
+pub fn batch_normalization<G: Projective>(mut batch: Vec<G>) -> Result<Value, String> {
     for i in &batch {
         assert!(!i.is_normalized());
     }

@@ -1,6 +1,9 @@
-use crate::bls12_377::{
-    field::Field, parameters::Parameters, sw_affine::SWAffine, Affine, Projective, Scalar, B1, B2,
-    HALF_R, Q1, Q2, R128,
+use crate::{
+    bls12_377::{
+        field::Field, parameters::Parameters, sw_affine::SWAffine, Affine, Projective, Scalar, B1,
+        B2, HALF_R, Q1, Q2, R128,
+    },
+    test::Testable,
 };
 use bitvec::prelude::*;
 use core::{
@@ -17,8 +20,10 @@ use rayon::prelude::*;
 use ruint::{uint, Uint};
 
 #[derive(Copy, Clone, Debug)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[cfg_attr(test, derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    any(test, feature = "fuzz"),
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub struct SWProjective<P: Parameters> {
     pub x: P::BaseField,
     pub y: P::BaseField,
@@ -104,6 +109,27 @@ impl<P: Parameters> Distribution<SWProjective<P>> for Standard {
                         .rev()
                         .collect::<Vec<bool>>(),
                 );
+            }
+        }
+    }
+}
+
+#[cfg(feature = "fuzz")]
+impl<'a, P: Parameters> arbitrary::Arbitrary<'a> for SWProjective<P> {
+    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+        loop {
+            let x = P::BaseField::arbitrary(u)?;
+            let greatest = bool::arbitrary(u)?;
+
+            if let Some(p) = SWAffine::from_x_coordinate(x, greatest) {
+                return Ok(p.mul_bits(
+                    P::COFACTOR
+                        .iter()
+                        .flat_map(|limb| limb.view_bits::<Lsb0>())
+                        .map(|b| *b)
+                        .rev()
+                        .collect::<Vec<bool>>(),
+                ));
             }
         }
     }

@@ -34,8 +34,10 @@ use ruint::{uint, Uint};
 /// print("2-adic gen into_chunks(g2 * R % q): ", into_chunks(g2 * R % q, 64, 4))
 /// ```
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[cfg_attr(test, derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    any(test, feature = "fuzz"),
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub struct Scalar(pub Uint<256, 4>);
 
 impl From<Uint<256, 4>> for Scalar {
@@ -695,6 +697,15 @@ impl rusqlite::types::ToSql for Scalar {
 }
 
 impl Testable for Scalar {}
+
+#[cfg(feature = "fuzz")]
+impl<'a> arbitrary::Arbitrary<'a> for Scalar {
+    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+        let mut f = Self(Uint::arbitrary(u)?);
+        f.reduce();
+        Ok(f)
+    }
+}
 
 #[cfg(test)]
 mod tests {

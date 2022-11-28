@@ -43,12 +43,12 @@ pub use sw_projective::*;
 pub mod to_scalar;
 pub use to_scalar::*;
 
-#[cfg(test)]
+#[cfg(any(test, feature = "fuzz"))]
 #[path = ""]
-mod test {
+pub mod test {
 
     mod old;
-    mod tests;
+    pub mod tests;
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]

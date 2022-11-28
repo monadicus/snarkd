@@ -7,8 +7,8 @@ use bitvec::prelude::*;
 use ruint::{uint, Uint};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[cfg_attr(test, derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "fuzz", derive(arbitrary::Arbitrary))]
+#[cfg_attr(any(test, feature = "fuzz"), derive(serde::Serialize, serde::Deserialize))]
 pub struct G1Parameters;
 
 impl Parameters for G1Parameters {

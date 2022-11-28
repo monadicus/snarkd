@@ -1,6 +1,6 @@
-mod affine;
-mod field;
-mod projective;
+pub mod affine;
+pub mod field;
+pub mod projective;
 
 use test_runner::{run_tests, Namespace, Runner};
 
