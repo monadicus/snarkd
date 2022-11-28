@@ -7,16 +7,14 @@ use crate::{
     },
     marlin::{
         ahp::{AHPError, AHPForR1CS},
-        prover, witness_label, MarlinMode,
+        prover, witness_label,
     },
     polycommit::sonic_pc::{
         LabeledPolynomial, LabeledPolynomialWithBasis, PolynomialInfo, PolynomialLabel,
         PolynomialWithBasis,
     },
-    utils::*,
 };
 use itertools::Itertools;
-use rand_core::RngCore;
 use rayon::prelude::*;
 
 impl AHPForR1CS {
@@ -60,10 +58,9 @@ impl AHPForR1CS {
 
     /// Output the first round message and the next state.
     #[allow(clippy::type_complexity)]
-    pub fn prover_first_round<'a, R: RngCore>(
+    pub fn prover_first_round<'a>(
         &self,
         mut state: prover::State<'a>,
-        rng: &mut R,
     ) -> Result<prover::State<'a>, AHPError> {
         let constraint_domain = state.constraint_domain;
         let batch_size = state.batch_size;
@@ -116,7 +113,7 @@ impl AHPForR1CS {
             .collect::<Vec<_>>();
         assert_eq!(batches.len(), batch_size);
 
-        let mask_poly = self.calculate_mask_poly(constraint_domain, rng);
+        let mask_poly = self.calculate_mask_poly(constraint_domain);
 
         let oracles = prover::FirstOracles { batches, mask_poly };
         assert!(oracles.matches_info(&self.first_round_polynomial_info(batch_size)));
@@ -126,21 +123,20 @@ impl AHPForR1CS {
         Ok(state)
     }
 
-    fn calculate_mask_poly<R: RngCore>(
+    fn calculate_mask_poly(
         &self,
         constraint_domain: EvaluationDomain,
-        rng: &mut R,
     ) -> Option<LabeledPolynomial> {
         self.mode
             .then(|| {
                 // We'll use the masking technique from Lunar (https://eprint.iacr.org/2020/1069.pdf, pgs 20-22).
-                let h_1_mask = DensePolynomial::rand(3, rng).coeffs; // selected arbitrarily.
+                let h_1_mask = DensePolynomial::rand(3).coeffs; // selected arbitrarily.
                 let h_1_mask =
                     SparsePolynomial::from_coefficients(h_1_mask.into_iter().enumerate())
                         .mul(&constraint_domain.vanishing_polynomial());
                 assert_eq!(h_1_mask.degree(), constraint_domain.size() + 3);
                 // multiply g_1_mask by X
-                let mut g_1_mask = DensePolynomial::rand(5, rng);
+                let mut g_1_mask = DensePolynomial::rand(5);
                 g_1_mask.coeffs[0] = Scalar::ZERO;
                 let g_1_mask = SparsePolynomial::from_coefficients(
                     g_1_mask

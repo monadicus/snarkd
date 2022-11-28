@@ -2,11 +2,12 @@ use anyhow::{anyhow, Result};
 use rusqlite::{params, Connection, OptionalExtension, ToSql};
 use snarkd_common::{
     objects::{
-        Block, BlockHeader, ComputeKey, DeployTransaction, ExecuteTransaction, Execution, Metadata,
-        Signature, Transaction, Transition,
+        Block, BlockHeader, DeployTransaction, ExecuteTransaction, Execution, Metadata,
+        Transaction, Transition,
     },
     Digest,
 };
+use snarkd_crypto::keys::{ComputeKey, Signature};
 
 use crate::Database;
 

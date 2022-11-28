@@ -11,7 +11,7 @@ use crate::{
     marlin::{
         ahp::{indexer::CircuitInfo, verifier, AHPError, AHPForR1CS},
         matrices::MatrixArithmetization,
-        prover, MarlinMode,
+        prover,
     },
     polycommit::sonic_pc::{LabeledPolynomial, PolynomialInfo, PolynomialLabel},
     utils::*,
@@ -19,11 +19,6 @@ use crate::{
 use rayon::prelude::*;
 
 use rand_core::RngCore;
-
-#[cfg(not(feature = "parallel"))]
-use itertools::Itertools;
-#[cfg(feature = "parallel")]
-use rayon::prelude::*;
 
 impl AHPForR1CS {
     /// Output the number of oracles sent by the prover in the third round.

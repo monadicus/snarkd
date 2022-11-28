@@ -81,6 +81,8 @@ pub enum PCError {
     Terminated,
 }
 
+impl std::error::Error for PCError {}
+
 impl From<anyhow::Error> for PCError {
     fn from(other: anyhow::Error) -> Self {
         Self::AnyhowError(other)

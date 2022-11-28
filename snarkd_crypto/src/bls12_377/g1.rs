@@ -7,6 +7,7 @@ use bitvec::prelude::*;
 use ruint::{uint, Uint};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct G1Parameters;
 
 impl Parameters for G1Parameters {

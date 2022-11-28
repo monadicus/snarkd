@@ -9,8 +9,6 @@ use crate::{
 use hashbrown::HashMap;
 use std::borrow::Cow;
 
-#[cfg(not(feature = "parallel"))]
-use itertools::Itertools;
 use rayon::prelude::*;
 
 #[derive(Clone, Debug, Eq, PartialEq)]

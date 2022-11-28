@@ -9,6 +9,7 @@ use rand::{distributions::Standard, Rng};
 use ruint::{uint, Uint};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct Fp(pub Uint<384, 6>);
 
 impl From<Uint<384, 6>> for Fp {

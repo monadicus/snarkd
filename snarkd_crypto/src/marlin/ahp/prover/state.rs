@@ -8,7 +8,7 @@ use crate::{
     },
     marlin::{
         ahp::{indexer::Circuit, verifier},
-        AHPError, MarlinMode,
+        AHPError,
     },
 };
 use anyhow::anyhow;

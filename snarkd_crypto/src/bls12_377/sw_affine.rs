@@ -12,6 +12,7 @@ use rand::{
 };
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct SWAffine<P: Parameters> {
     pub x: P::BaseField,
     pub y: P::BaseField,

@@ -32,6 +32,7 @@ use ruint::{uint, Uint};
 /// print("2-adic gen into_chunks(g2 * R % q): ", into_chunks(g2 * R % q, 64, 4))
 /// ```
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct Scalar(pub Uint<256, 4>);
 
 impl From<Uint<256, 4>> for Scalar {
@@ -263,21 +264,6 @@ impl Scalar {
         Some(omega)
     }
 
-    /// Calculates the k-adicity of n, i.e., the number of trailing 0s in a base-k
-    /// representation.
-    fn k_adicity(k: usize, mut n: usize) -> u32 {
-        let mut r = 0;
-        while n > 1 {
-            if n % k == 0 {
-                r += 1;
-                n /= k;
-            } else {
-                return r;
-            }
-        }
-        r
-    }
-
     // Given a vector of field elements {v_i}, compute the vector {v_i^(-1)}
     // NOTE: there exists a faster algorithm that we should explore
     pub fn batch_inversion(v: &mut [Self]) {
@@ -339,7 +325,7 @@ impl Scalar {
         }
     }
 
-    fn reduce(&mut self) {
+    pub fn reduce(&mut self) {
         while self.0 >= MODULUS {
             self.0 -= MODULUS;
         }

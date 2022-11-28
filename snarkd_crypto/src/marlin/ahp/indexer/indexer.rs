@@ -8,7 +8,7 @@ use crate::{
             AHPError, AHPForR1CS,
         },
         matrices::{matrix_evals, precomputation_for_matrix_evals, MatrixEvals},
-        num_non_zero, MarlinMode,
+        num_non_zero,
     },
     polycommit::sonic_pc::{PolynomialInfo, PolynomialLabel},
     r1cs::ConstraintSystem,
@@ -16,7 +16,6 @@ use crate::{
 };
 use anyhow::anyhow;
 
-use core::marker::PhantomData;
 use std::collections::BTreeMap;
 
 use rayon::prelude::*;

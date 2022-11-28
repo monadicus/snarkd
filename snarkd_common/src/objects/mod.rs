@@ -10,9 +10,6 @@ type Certificate = Digest32;
 type Instruction = ();
 type LiteralType = ();
 
-pub mod keys;
-pub use keys::*;
-
 mod block;
 pub use block::*;
 mod identifier;

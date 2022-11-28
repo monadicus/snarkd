@@ -1,7 +1,4 @@
-use crate::{
-    bls12_377::{scalar, Affine, Field, Parameters, Projective},
-    utils::*,
-};
+use crate::bls12_377::{scalar, Affine, Field, Parameters, Projective};
 use bitvec::prelude::*;
 use core::ops::Deref;
 use rayon::prelude::*;
