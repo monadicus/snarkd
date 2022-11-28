@@ -546,4 +546,10 @@ impl Sum<Fp12> for Fp12 {
     }
 }
 
+impl std::fmt::Display for Fp12 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Fp12({} + {})", self.c0, self.c1)
+    }
+}
+
 impl Testable for Fp12 {}

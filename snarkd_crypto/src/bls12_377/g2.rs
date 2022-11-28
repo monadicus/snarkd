@@ -7,7 +7,10 @@ use ruint::uint;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "fuzz", derive(arbitrary::Arbitrary))]
-#[cfg_attr(any(test, feature = "fuzz"), derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    any(test, feature = "fuzz"),
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub struct G2Parameters;
 
 impl Parameters for G2Parameters {
