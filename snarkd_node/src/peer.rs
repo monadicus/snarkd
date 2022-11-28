@@ -60,7 +60,7 @@ impl Peer {
     }
 
     pub async fn save(&mut self, db: &Database) -> Result<()> {
-        self.data.save(db).await?;
+        db.save_peer(self.data).await?;
         self.dirty = false;
         Ok(())
     }

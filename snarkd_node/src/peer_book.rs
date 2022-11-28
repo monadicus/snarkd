@@ -31,7 +31,7 @@ impl PeerBook {
     }
 
     pub async fn load_saved_peers(&self, db: &Database) -> Result<()> {
-        for peer_data in PeerData::load_all(db).await? {
+        for peer_data in db.load_all_peers().await? {
             let mut peer = self.peers.entry(peer_data.address).or_insert_with(|| {
                 Peer::new(peer_data.address, peer_data, self.rpc_channels.clone())
             });
@@ -54,7 +54,7 @@ impl PeerBook {
                     debug!("peer {address} discovered");
                     let peer_data = PeerData::new(address);
                     slot.insert(Peer::new(address, peer_data, self.rpc_channels.clone()));
-                    peer_data.save(db).await?;
+                    db.save_peer(peer_data).await?;
                 }
             }
         }
