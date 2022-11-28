@@ -118,7 +118,7 @@ pub fn mul<G: Projective>(mut a: G, mut b: G, s: Scalar) -> Result<Value, String
 
     // Affine multiplication
     let mut tmp3 = a_affine * s;
-    tmp3.add_assign(b_affine * s);
+    tmp3 += b_affine * s;
     outputs.push(tmp3.to_string());
 
     assert_eq!(tmp1, tmp2);
@@ -131,7 +131,7 @@ pub fn double<G: Projective>(mut a: G, mut b: G) -> Result<Value, String> {
 
     // 2(a + b)
     let mut tmp1 = a;
-    tmp1.add_assign(b);
+    tmp1 += b;
     tmp1.double_in_place();
     outputs.push(tmp1.to_string());
 
@@ -140,7 +140,7 @@ pub fn double<G: Projective>(mut a: G, mut b: G) -> Result<Value, String> {
     b.double_in_place();
 
     let mut tmp2 = a;
-    tmp2.add_assign(b);
+    tmp2 += b;
     outputs.push(tmp2.to_string());
 
     let mut tmp3 = a;
@@ -158,15 +158,15 @@ pub fn neg<G: Projective>(r: G, s: Scalar) -> Result<Value, String> {
     assert!((s + sneg).is_zero());
 
     let mut t1 = r;
-    t1.mul_assign(s);
+    t1 *= s;
     outputs.push(t1.to_string());
 
     let mut t2 = r;
-    t2.mul_assign(sneg);
+    t2 *= sneg;
     outputs.push(t2.to_string());
 
     let mut t3 = t1;
-    t3.add_assign(t2);
+    t3 += t2;
     assert!(t3.is_zero());
     outputs.push(t3.to_string());
 
