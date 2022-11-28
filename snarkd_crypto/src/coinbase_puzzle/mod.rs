@@ -13,24 +13,23 @@ use crate::{
     keys::Address,
     msm::VariableBase,
     polycommit::kzg10::{Commitment, UniversalParams as SRS, KZG10},
-    utils::*,
 };
 use anyhow::{anyhow, Result};
 use rayon::prelude::*;
 use std::{collections::HashSet, hash::Hash, sync::Arc};
 
 /// The genesis block coinbase target.
-const GENESIS_COINBASE_TARGET: u64 = (1u64 << 10).saturating_sub(1); // 11 1111 1111
+pub const GENESIS_COINBASE_TARGET: u64 = (1u64 << 10).saturating_sub(1); // 11 1111 1111
 /// The genesis block proof target.
-const GENESIS_PROOF_TARGET: u64 = 8; // 00 0000 1000
+pub const GENESIS_PROOF_TARGET: u64 = 8; // 00 0000 1000
 /// The anchor time per block in seconds, which must be greater than the round time per block.
-const ANCHOR_TIME: u16 = 25;
+pub const ANCHOR_TIME: u16 = 25;
 /// The coinbase puzzle degree.
-const COINBASE_PUZZLE_DEGREE: u32 = (1 << 13) - 1; // 8,191
+pub const COINBASE_PUZZLE_DEGREE: u32 = (1 << 13) - 1; // 8,191
 /// The maximum number of prover solutions that can be included per block.
-const MAX_PROVER_SOLUTIONS: usize = 1 << 20; // 1,048,576 prover solutions
+pub const MAX_PROVER_SOLUTIONS: usize = 1 << 20; // 1,048,576 prover solutions
 /// The number of blocks per epoch (1 hour).
-const NUM_BLOCKS_PER_EPOCH: u32 = 1 << 8; // 256 blocks == ~1 hour
+pub const NUM_BLOCKS_PER_EPOCH: u32 = 1 << 8; // 256 blocks == ~1 hour
 
 /// Returns true if the given iterator has duplicate elements.
 fn has_duplicates<T>(iter: T) -> bool
@@ -61,7 +60,6 @@ impl CoinbasePuzzle {
             total_degree,
             &crate::kzg10::KZG10DegreeBoundsConfig::NONE,
             true,
-            &mut rand::thread_rng(),
         )?;
         Ok(srs)
     }
@@ -75,7 +73,6 @@ impl CoinbasePuzzle {
             max_degree as usize,
             &crate::kzg10::KZG10DegreeBoundsConfig::NONE,
             true,
-            &mut rand::thread_rng(),
         )?;
         // Trim the universal SRS to the maximum degree.
         Self::trim(&universal_srs, PuzzleConfig { degree: max_degree })
@@ -147,7 +144,6 @@ impl CoinbasePuzzle {
             &product_evaluations,
             None,
             &Default::default(),
-            None,
         )?;
 
         let partial_solution = PartialSolution::new(address, nonce, commitment);

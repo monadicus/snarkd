@@ -1,4 +1,4 @@
-use crate::{bls12_377::Scalar, fft::DensePolynomial, polycommit::kzg10::Commitment, utils::*};
+use crate::{bls12_377::Scalar, fft::DensePolynomial, polycommit::kzg10::Commitment};
 use anyhow::{anyhow, Result};
 use blake2::Digest;
 use rayon::prelude::*;

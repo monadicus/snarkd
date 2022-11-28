@@ -2,11 +2,10 @@ use crate::{
     bls12_377::{Field, Scalar},
     marlin::SNARK,
     r1cs::ConstraintSystem,
-    utils::{PoseidonParameters, PoseidonSponge},
+    utils::PoseidonParameters,
     ConstraintSynthesizer,
 };
 use anyhow::{anyhow, Result};
-use rayon::prelude::*;
 use std::ops::MulAssign;
 
 #[derive(Copy, Clone)]
@@ -71,9 +70,7 @@ mod marlin {
     use super::*;
     use crate::{
         bls12_377::{Field, Scalar},
-        marlin::{
-            AHPForR1CS, CircuitVerifyingKey, MarlinHidingMode, MarlinNonHidingMode, MarlinSNARK,
-        },
+        marlin::{AHPForR1CS, MarlinSNARK},
     };
 
     use core::ops::MulAssign;
@@ -82,21 +79,17 @@ mod marlin {
 
     type MarlinSonicPoswInst = MarlinSNARK;
 
-    type FS = crate::utils::PoseidonSponge;
-
     macro_rules! impl_marlin_test {
         ($test_struct: ident, $marlin_inst: tt, $marlin_mode: expr) => {
             struct $test_struct {}
             impl $test_struct {
                 pub(crate) fn test_circuit(num_constraints: usize, num_variables: usize) {
-                    let rng = &mut rand::thread_rng();
                     let ahp = AHPForR1CS { mode: $marlin_mode };
 
                     let max_degree = ahp.max_degree(100, 25, 300).unwrap();
-                    let universal_srs = $marlin_inst::universal_setup(max_degree, rng).unwrap();
+                    let universal_srs = $marlin_inst::universal_setup(max_degree).unwrap();
                     let fs_parameters = PoseidonParameters::default();
 
-                    let rng = &mut rand::thread_rng();
                     let a = Scalar::rand();
                     let b = Scalar::rand();
                     let mut c = a;
@@ -127,6 +120,7 @@ mod marlin {
 
                     let snark = $marlin_inst { mode: $marlin_mode };
 
+                    let rng = &mut rand::thread_rng();
                     let proof = snark.prove(&fs_parameters, &index_pk, &circ, rng).unwrap();
                     println!("Called prover");
 
@@ -139,7 +133,6 @@ mod marlin {
                         .verify::<[Scalar], _>(&fs_parameters, &index_vk, [a, a], &proof)
                         .unwrap());
 
-                    let rng = &mut rand::thread_rng();
                     for batch_size in (0..5).map(|i| 2usize.pow(i)) {
                         let (circuit_batch, input_batch): (Vec<_>, Vec<_>) = (0..batch_size)
                             .map(|_| {
@@ -255,24 +248,20 @@ mod marlin_recursion {
     use super::*;
     use crate::{
         bls12_377::Scalar,
-        marlin::{ahp::AHPForR1CS, CircuitVerifyingKey, MarlinSNARK},
+        marlin::{ahp::AHPForR1CS, MarlinSNARK},
     };
 
     use core::ops::MulAssign;
-    use std::str::FromStr;
 
     type MarlinInst = MarlinSNARK;
-    type FS = PoseidonSponge;
 
     fn test_circuit(num_constraints: usize, num_variables: usize) {
-        let rng = &mut rand::thread_rng();
         let ahp = AHPForR1CS { mode: true };
 
         let max_degree = ahp.max_degree(100, 25, 300).unwrap();
-        let universal_srs = MarlinInst::universal_setup(max_degree, rng).unwrap();
+        let universal_srs = MarlinInst::universal_setup(max_degree).unwrap();
         let fs_parameters = PoseidonParameters::default();
 
-        let rng = &mut rand::thread_rng();
         let a = Scalar::rand();
         let b = Scalar::rand();
         let mut c = a;
@@ -292,6 +281,7 @@ mod marlin_recursion {
         println!("Called circuit setup");
 
         let snark = MarlinInst { mode: true };
+        let rng = &mut rand::thread_rng();
         let proof = snark
             .prove(&fs_parameters, &index_pk, &circuit, rng)
             .unwrap();

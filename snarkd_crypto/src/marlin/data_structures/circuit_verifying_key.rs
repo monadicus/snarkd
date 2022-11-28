@@ -1,13 +1,9 @@
 use crate::{
-    bls12_377::Fp,
     fft::EvaluationDomain,
-    marlin::{ahp::indexer::*, CircuitProvingKey, MarlinMode, PreparedCircuitVerifyingKey},
+    marlin::{ahp::indexer::*, CircuitProvingKey, PreparedCircuitVerifyingKey},
     polycommit::sonic_pc,
     Prepare,
 };
-
-use anyhow::Result;
-use core::{fmt, marker::PhantomData, str::FromStr};
 
 /// Verification key for a specific index (i.e., R1CS matrices).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -70,36 +66,5 @@ impl CircuitVerifyingKey {
     /// Iterate over the commitments to indexed polynomials in `self`.
     pub fn iter(&self) -> impl Iterator<Item = &sonic_pc::Commitment> {
         self.circuit_commitments.iter()
-    }
-}
-
-impl CircuitVerifyingKey {
-    fn to_field_elements(&self) -> Vec<Fp> {
-        let constraint_domain_size =
-            EvaluationDomain::compute_size_of_domain(self.circuit_info.num_constraints).unwrap()
-                as u128;
-        let non_zero_a_domain_size =
-            EvaluationDomain::compute_size_of_domain(self.circuit_info.num_non_zero_a).unwrap()
-                as u128;
-        let non_zero_b_domain_size =
-            EvaluationDomain::compute_size_of_domain(self.circuit_info.num_non_zero_b).unwrap()
-                as u128;
-        let non_zero_c_domain_size =
-            EvaluationDomain::compute_size_of_domain(self.circuit_info.num_non_zero_c).unwrap()
-                as u128;
-
-        let mut res = Vec::new();
-        res.append(&mut vec![Fp::from(constraint_domain_size)]);
-        res.append(&mut vec![Fp::from(non_zero_a_domain_size)]);
-        res.append(&mut vec![Fp::from(non_zero_b_domain_size)]);
-        res.append(&mut vec![Fp::from(non_zero_c_domain_size)]);
-        for comm in self.circuit_commitments.iter() {
-            res.append(&mut vec![comm.0.x]);
-            res.append(&mut vec![comm.0.y]);
-        }
-
-        // Intentionally ignore the appending of the PC verifier key.
-
-        res
     }
 }

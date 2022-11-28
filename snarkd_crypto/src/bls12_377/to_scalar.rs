@@ -1,5 +1,5 @@
 use crate::bls12_377::{Field, Scalar};
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 
 pub trait ToScalar {
     fn to_scalar(&self) -> Result<Vec<Scalar>>;

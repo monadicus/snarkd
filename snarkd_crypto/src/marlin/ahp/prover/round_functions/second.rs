@@ -13,7 +13,7 @@ use crate::{
             indexer::{CircuitInfo, Matrix},
             verifier, AHPForR1CS, UnnormalizedBivariateLagrangePoly,
         },
-        prover, MarlinMode,
+        prover,
     },
     polycommit::sonic_pc::{LabeledPolynomial, PolynomialInfo, PolynomialLabel},
     utils::*,

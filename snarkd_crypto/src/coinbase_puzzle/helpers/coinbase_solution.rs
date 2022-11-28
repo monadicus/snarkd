@@ -1,6 +1,5 @@
 use super::*;
 use anyhow::{anyhow, Result};
-use ruint::Uint;
 
 /// The coinbase puzzle solution constructed by accumulating the individual prover solutions.
 #[derive(Clone, Eq, PartialEq, Hash)]

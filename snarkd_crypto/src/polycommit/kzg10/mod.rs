@@ -13,12 +13,10 @@ use crate::{
     fft::{DensePolynomial, Polynomial},
     msm::{FixedBase, VariableBase},
     polycommit::{powers::PowersOfG, PCError},
-    utils::*,
 };
 use anyhow::{anyhow, Result};
 use bitvec::prelude::*;
 use core::{
-    marker::PhantomData,
     ops::{Deref, Mul},
     sync::atomic::{AtomicBool, Ordering},
 };
@@ -84,11 +82,10 @@ pub struct KZG10;
 impl KZG10 {
     /// Constructs public parameters when given as input the maximum degree `degree`
     /// for the polynomial commitment scheme.
-    pub fn setup<R: RngCore>(
+    pub fn setup(
         max_degree: usize,
         supported_degree_bounds_config: &KZG10DegreeBoundsConfig,
         produce_g2_powers: bool,
-        rng: &mut R,
     ) -> Result<UniversalParams, PCError> {
         if max_degree < 1 {
             return Err(PCError::DegreeIsZero);
@@ -229,7 +226,6 @@ impl KZG10 {
         polynomial: &Polynomial<'_>,
         hiding_bound: Option<usize>,
         terminator: &AtomicBool,
-        rng: Option<&mut dyn RngCore>,
     ) -> Result<(Commitment, Randomness), PCError> {
         Self::check_degree_is_too_large(polynomial.degree(), powers.size())?;
 
@@ -265,9 +261,7 @@ impl KZG10 {
 
         let mut randomness = Randomness::empty();
         if let Some(hiding_degree) = hiding_bound {
-            let mut rng = rng.ok_or(PCError::MissingRng)?;
-
-            randomness = Randomness::rand(hiding_degree, false, &mut rng);
+            randomness = Randomness::rand(hiding_degree, false);
             Self::check_hiding_bound(
                 randomness.blinding_polynomial.degree(),
                 powers.powers_of_beta_times_gamma_g.len(),
@@ -294,7 +288,6 @@ impl KZG10 {
         evaluations: &[Scalar],
         hiding_bound: Option<usize>,
         terminator: &AtomicBool,
-        rng: Option<&mut dyn RngCore>,
     ) -> Result<(Commitment, Randomness), PCError> {
         Self::check_degree_is_too_large(evaluations.len() - 1, lagrange_basis.size())?;
         assert_eq!(
@@ -315,9 +308,7 @@ impl KZG10 {
 
         let mut randomness = Randomness::empty();
         if let Some(hiding_degree) = hiding_bound {
-            let mut rng = rng.ok_or(PCError::MissingRng)?;
-
-            randomness = Randomness::rand(hiding_degree, false, &mut rng);
+            randomness = Randomness::rand(hiding_degree, false);
             Self::check_hiding_bound(
                 randomness.blinding_polynomial.degree(),
                 lagrange_basis.powers_of_beta_times_gamma_g.len(),
@@ -441,7 +432,6 @@ impl KZG10 {
             &divisor_evals,
             None,
             &AtomicBool::new(false),
-            None,
         )?;
 
         Ok(Proof {
@@ -682,16 +672,15 @@ mod tests {
             while degree <= 1 {
                 degree = rng.gen::<usize>() % 20;
             }
-            let pp = KZG10::setup(degree, &KZG10DegreeBoundsConfig::NONE, false, rng).unwrap();
+            let pp = KZG10::setup(degree, &KZG10DegreeBoundsConfig::NONE, false).unwrap();
             let (ck, vk) = KZG10::trim(&pp, degree);
-            let p = DensePolynomial::rand(degree, rng);
+            let p = DensePolynomial::rand(degree);
             let hiding_bound = Some(1);
             let (comm, rand) = KZG10::commit(
                 &ck,
                 &(&p).into(),
                 hiding_bound,
                 &AtomicBool::new(false),
-                Some(rng),
             ).unwrap();
             let point = Scalar::rand();
             let value = p.evaluate(point);
@@ -709,18 +698,16 @@ mod tests {
 
     fn linear_polynomial_test_template() -> Result<(), PCError> {
         (0..10).into_par_iter().for_each(|_| {
-            let rng = &mut rand::thread_rng();
             let degree = 50;
-            let pp = KZG10::setup(degree, &KZG10DegreeBoundsConfig::NONE, false, rng).unwrap();
+            let pp = KZG10::setup(degree, &KZG10DegreeBoundsConfig::NONE, false).unwrap();
             let (ck, vk) = KZG10::trim(&pp, 2);
-            let p = DensePolynomial::rand(1, rng);
+            let p = DensePolynomial::rand(1);
             let hiding_bound = Some(1);
             let (comm, rand) = KZG10::commit(
                 &ck,
                 &(&p).into(),
                 hiding_bound,
                 &AtomicBool::new(false),
-                Some(rng),
             )
             .unwrap();
             let point = Scalar::rand();
@@ -744,7 +731,7 @@ mod tests {
             while degree <= 1 {
                 degree = rng.gen::<usize>() % 20;
             }
-            let pp = KZG10::setup(degree, &KZG10DegreeBoundsConfig::NONE, false, rng).unwrap();
+            let pp = KZG10::setup(degree, &KZG10DegreeBoundsConfig::NONE, false).unwrap();
             let (ck, vk) = KZG10::trim(&pp, degree);
 
             let mut comms = Vec::new();
@@ -753,16 +740,11 @@ mod tests {
             let mut proofs = Vec::new();
 
             for _ in 0..10 {
-                let p = DensePolynomial::rand(degree, rng);
+                let p = DensePolynomial::rand(degree);
                 let hiding_bound = Some(1);
-                let (comm, rand) = KZG10::commit(
-                    &ck,
-                    &(&p).into(),
-                    hiding_bound,
-                    &AtomicBool::new(false),
-                    Some(rng),
-                )
-                .unwrap();
+                let (comm, rand) =
+                    KZG10::commit(&ck, &(&p).into(), hiding_bound, &AtomicBool::new(false))
+                        .unwrap();
                 let point = Scalar::rand();
                 let value = p.evaluate(point);
                 let proof = KZG10::open(&ck, &p, point, &rand).unwrap();
@@ -795,13 +777,11 @@ mod tests {
 
     #[test]
     fn test_degree_is_too_large() {
-        let rng = &mut rand::thread_rng();
-
         let max_degree = 123;
-        let pp = KZG10::setup(max_degree, &KZG10DegreeBoundsConfig::NONE, false, rng).unwrap();
+        let pp = KZG10::setup(max_degree, &KZG10DegreeBoundsConfig::NONE, false).unwrap();
         let (powers, _) = KZG10::trim(&pp, max_degree);
 
-        let p = DensePolynomial::rand(max_degree + 1, rng);
+        let p = DensePolynomial::rand(max_degree + 1);
         assert!(p.degree() > max_degree);
         assert!(KZG10::check_degree_is_too_large(p.degree(), powers.size()).is_err());
     }

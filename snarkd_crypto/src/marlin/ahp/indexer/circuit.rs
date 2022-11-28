@@ -1,9 +1,6 @@
 use crate::{
-    fft::{
-        domain::{FFTPrecomputation, IFFTPrecomputation},
-        EvaluationDomain,
-    },
-    marlin::{ahp::matrices::MatrixArithmetization, AHPForR1CS, CircuitInfo, MarlinMode, Matrix},
+    fft::domain::{FFTPrecomputation, IFFTPrecomputation},
+    marlin::{ahp::matrices::MatrixArithmetization, CircuitInfo, Matrix},
     polycommit::sonic_pc::LabeledPolynomial,
 };
 

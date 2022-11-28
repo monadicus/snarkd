@@ -1,12 +1,7 @@
-use core::marker::PhantomData;
-
 use crate::{
     bls12_377::Scalar,
     fft::EvaluationDomain,
-    marlin::{
-        ahp::verifier::{FirstMessage, SecondMessage, ThirdMessage},
-        MarlinMode,
-    },
+    marlin::ahp::verifier::{FirstMessage, SecondMessage, ThirdMessage},
 };
 
 /// State of the AHP verifier.

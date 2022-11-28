@@ -1,9 +1,8 @@
 use super::{LabeledPolynomial, PolynomialInfo};
 use crate::{
-    bls12_377::{Field, Fp, G1Affine, G1Projective, G2Affine, G2Prepared, Projective, Scalar},
+    bls12_377::{Field, G1Affine, G1Projective, G2Affine, G2Prepared, Projective, Scalar},
     fft::EvaluationDomain,
     polycommit::kzg10,
-    utils::sha256::sha256,
 };
 use hashbrown::HashMap;
 use std::{
@@ -27,6 +26,7 @@ pub type PreparedCommitment = kzg10::PreparedCommitment;
 
 impl Commitment {
     /// prepare `PreparedCommitment` from `Commitment`
+    #[allow(dead_code)]
     fn prepare(&self) -> PreparedCommitment {
         let mut prepared_comm = Vec::<G1Affine>::new();
         let mut cur = G1Projective::from(self.0);
@@ -228,6 +228,7 @@ impl PreparedVerifierKey {
 
 impl VerifierKey {
     /// prepare `PreparedVerifierKey` from `VerifierKey`
+    #[allow(dead_code)]
     fn prepare(&self) -> PreparedVerifierKey {
         let prepared_vk = kzg10::PreparedVerifierKey::prepare(&self.vk);
 

@@ -135,7 +135,7 @@ pub(crate) mod native_cpuid {
     }
 
     #[allow(unreachable_code)]
-    pub fn cpuid_count(a: u32, c: u32) -> CpuIdResult {
+    pub fn cpuid_count() -> CpuIdResult {
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
         {
             #[cfg(all(target_arch = "x86", not(target_env = "sgx"), target_feature = "sse"))]
@@ -144,7 +144,7 @@ pub(crate) mod native_cpuid {
             use core::arch::x86_64 as arch;
 
             // Safety: CPUID is supported on all x86_64 CPUs and all x86 CPUs with SSE, but not by SGX.
-            let result = unsafe { arch::__cpuid_count(a, c) };
+            let result = unsafe { arch::__cpuid_count(0, 0) };
             return CpuIdResult {
                 eax: result.eax,
                 ebx: result.ebx,
@@ -207,7 +207,7 @@ pub fn get_cpu() -> Cpu {
     const EAX_VENDOR_INFO: u32 = 0x0;
 
     // Check if a non extended leaf  (`val`) is supported.
-    let vendor_leaf = native_cpuid::cpuid_count(EAX_VENDOR_INFO, 0);
+    let vendor_leaf = native_cpuid::cpuid_count();
     let is_leaf_supported = EAX_VENDOR_INFO <= vendor_leaf.eax;
 
     if is_leaf_supported {

@@ -8,9 +8,7 @@ mod cuda;
 pub mod prefetch;
 
 use crate::bls12_377::{Affine, G1Affine};
-use bitvec::prelude::*;
 use core::any::TypeId;
-use core::ops::Deref;
 use ruint::Uint;
 
 #[cfg(all(feature = "cuda", target_arch = "x86_64"))]
@@ -45,6 +43,8 @@ impl VariableBase {
 
     #[cfg(test)]
     fn msm_naive<A: Affine>(bases: &[A], scalars: &[Uint<256, 4>]) -> A::Projective {
+        use bitvec::prelude::*;
+        use core::ops::Deref;
         use itertools::Itertools;
 
         bases
@@ -66,6 +66,8 @@ impl VariableBase {
 
     #[cfg(test)]
     fn msm_naive_parallel<A: Affine>(bases: &[A], scalars: &[Uint<256, 4>]) -> A::Projective {
+        use bitvec::prelude::*;
+        use core::ops::Deref;
         use rayon::prelude::*;
 
         bases
@@ -89,9 +91,8 @@ impl VariableBase {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::bls12_377::{Field, Fp, G1Affine, Projective, Scalar};
+    use crate::bls12_377::{Field, G1Affine, Projective, Scalar};
     use rayon::prelude::{IntoParallelIterator, ParallelIterator};
-    use ruint::uint;
 
     fn create_scalar_bases(size: usize) -> (Vec<G1Affine>, Vec<Uint<256, 4>>) {
         let bases = (0..size).map(|_| G1Affine::rand()).collect::<Vec<_>>();
