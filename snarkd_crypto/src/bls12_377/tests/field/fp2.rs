@@ -1,7 +1,7 @@
 use serde_json::Value;
 use test_runner::{Namespace, Test};
 
-use crate::bls12_377::Fp2;
+use crate::{bls12_377::Fp2, frobenius};
 
 use super::{add, double, expansion, inversion, mul, neg, sqrt, square, sub};
 
@@ -43,6 +43,10 @@ impl Fp2Ns {
     pub fn sqrt(a: Fp2) -> Result<Value, String> {
         sqrt(a)
     }
+
+    pub fn frobenius(a: Fp2) -> Result<Value, String> {
+        frobenius!(a, Fp2)
+    }
 }
 
 impl Namespace for Fp2Ns {
@@ -79,6 +83,10 @@ impl Namespace for Fp2Ns {
             "expansion" => {
                 let (a, b, c, d) = serde_json::from_value(test.input).expect("failed to get input");
                 Self::expansion(a, b, c, d)
+            }
+            "frobenius" => {
+                let a = serde_json::from_value(test.input).expect("failed to get input");
+                Self::frobenius(a)
             }
             "sqrt" => {
                 let a = serde_json::from_value(test.input).expect("failed to get input");

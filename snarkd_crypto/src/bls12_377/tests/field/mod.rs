@@ -43,6 +43,27 @@ pub fn add<F: Field>(a: F, b: F, c: F) -> Result<Value, String> {
     Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
 }
 
+pub fn add_assign<F: Field>(a: F, b: F, c: F) -> Result<Value, String> {
+    let mut outputs = Vec::new();
+
+    let mut tmp1 = a;
+    tmp1.add_assign(b);
+    outputs.push(tmp1);
+    tmp1.add_assign(c);
+    outputs.push(tmp1);
+
+    let mut tmp2 = b;
+    tmp2.add_assign(c);
+    outputs.push(tmp2);
+    tmp2.add_assign(a);
+    outputs.push(tmp2);
+
+    // assert!(tmp1.is_valid());
+    // assert!(tmp2.is_valid());
+    assert_eq!(tmp1, tmp2);
+    Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
+}
+
 pub fn sub<F: Field>(a: F, b: F) -> Result<Value, String> {
     let mut outputs = Vec::new();
 
@@ -87,6 +108,45 @@ pub fn mul<F: Field>(a: F, b: F, c: F) -> Result<Value, String> {
     Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
 }
 
+pub fn mul_assign<F: Field>(a: F, b: F, c: F) -> Result<Value, String> {
+    let mut outputs = Vec::new();
+
+    let mut tmp1 = a;
+    tmp1.mul_assign(&b);
+    outputs.push(tmp1);
+    tmp1.mul_assign(&c);
+    outputs.push(tmp1);
+
+    let mut tmp2 = b;
+    tmp2.mul_assign(&c);
+    outputs.push(tmp2);
+    tmp2.mul_assign(&a);
+    outputs.push(tmp2);
+
+    assert_eq!(tmp1, tmp2);
+
+    // let r = Fp::rand();
+    //     let mut a = Fp::rand();
+    //     let mut b = Fp::rand();
+    //     let mut c = Fp::rand();
+
+    //     let mut tmp1 = a;
+    //     tmp1.add_assign(b);
+    //     tmp1.add_assign(c);
+    //     tmp1.mul_assign(&r);
+
+    //     a.mul_assign(&r);
+    //     b.mul_assign(&r);
+    //     c.mul_assign(&r);
+
+    //     a.add_assign(b);
+    //     a.add_assign(c);
+
+    //     assert_eq!(tmp1, a);
+
+    Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
+}
+
 pub fn inversion<F: Field>(mut a: F) -> Result<Value, String> {
     let mut outputs = Vec::new();
 
@@ -128,6 +188,7 @@ pub fn square<F: Field>(mut a: F) -> Result<Value, String> {
 pub fn expansion<F: Field>(a: F, b: F, c: F, d: F) -> Result<Value, String> {
     let mut outputs = Vec::new();
 
+    // Compare (a + b)(c + d) and (a*c + b*c + a*d + b*d)
     let mut t0 = a;
     t0 += &b;
     outputs.push(t0);
@@ -173,6 +234,34 @@ pub fn expansion<F: Field>(a: F, b: F, c: F, d: F) -> Result<Value, String> {
     Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
 }
 
+#[macro_export]
+macro_rules! frobenius {
+    ($a:expr, $field:ty) => {{
+        use $crate::bls12_377::field::Field;
+
+        let mut outputs = Vec::new();
+
+        let mut a_0 = $a;
+        a_0.frobenius_map(0);
+        outputs.push(a_0);
+
+        assert_eq!($a, a_0);
+
+        let mut a_q = $a.pow(&<$field>::characteristic());
+        outputs.push(a_q);
+        for power in 1..13 {
+            let mut a_qi = $a;
+            a_qi.frobenius_map(power);
+            outputs.push(a_qi);
+            assert_eq!(a_qi, a_q);
+
+            a_q = a_q.pow(&<$field>::characteristic());
+        }
+
+        Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
+    }};
+}
+
 pub fn sqrt<F: Field>(a: F) -> Result<Value, String> {
     let mut outputs = Vec::new();
 
@@ -187,4 +276,137 @@ pub fn sqrt<F: Field>(a: F) -> Result<Value, String> {
     }
 
     Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
+}
+
+pub fn sqrt_deterministic<F: Field>() {
+    let mut c = F::ONE;
+    for _ in 0..100 {
+        let mut b = c.square();
+        // assert_eq!(b.legendre(), LegendreSymbol::QuadraticResidue);
+
+        b = b.sqrt().unwrap();
+
+        if b != c {
+            b = -b;
+        }
+
+        assert_eq!(b, c);
+
+        c += &F::ONE;
+    }
+}
+
+#[allow(clippy::eq_op)]
+pub fn zero_one_two<F: Field>() {
+    let zero = F::ZERO;
+    assert!(zero == zero);
+    assert!(zero.is_zero()); // true
+    assert!(!zero.is_one()); // false
+
+    let one = F::ONE;
+    assert!(one == one);
+    assert!(!one.is_zero()); // false
+    assert!(one.is_one()); // true
+    assert_eq!(zero + one, one);
+
+    let two = one + one;
+    assert!(two == two);
+    assert_ne!(zero, two);
+    assert_ne!(one, two);
+}
+
+#[allow(clippy::eq_op)]
+pub fn ordering<F: Field>(a: F, b: F) {
+    let zero = F::ZERO;
+    let one = F::ONE;
+    let two = one + one;
+
+    // a == a
+    assert!(a == a);
+    // a + 0 = a
+    assert_eq!(a + zero, a);
+    // a - 0 = a
+    assert_eq!(a - zero, a);
+    // a - a = 0
+    assert_eq!(a - a, zero);
+    // 0 - a = -a
+    assert_eq!(zero - a, -a);
+    // a.double() = a + a
+    assert_eq!(a.double(), a + a);
+    // b.double() = b + b
+    assert_eq!(b.double(), b + b);
+    // a + b = b + a
+    assert_eq!(a + b, b + a);
+    // a - b = -(b - a)
+    assert_eq!(a - b, -(b - a));
+    // (a + b) + a = a + (b + a)
+    assert_eq!((a + b) + a, a + (b + a));
+    // (a + b).double() = (a + b) + (b + a)
+    assert_eq!((a + b).double(), (a + b) + (b + a));
+    // assert_eq!(F::half(), F::ONE.double().inverse().unwrap());
+
+    // a * 0 = 0
+    assert_eq!(a * zero, zero);
+    // a * 1 = a
+    assert_eq!(a * one, a);
+    // a * 2 = a.double()
+    assert_eq!(a * two, a.double());
+    // a * a^-1 = 1
+    assert_eq!(a * a.inverse().unwrap(), one);
+    // a * a = a^2
+    assert_eq!(a * a, a.square());
+    // a * a * a = a^3
+    assert_eq!(a * (a * a), a.pow(&[0x3, 0x0, 0x0, 0x0]));
+    // a * b = b * a
+    assert_eq!(a * b, b * a);
+    // (a * b) * a = a * (b * a)
+    assert_eq!((a * b) * a, a * (b * a));
+    // (a + b)^2 = a^2 + 2ab + b^2
+    assert_eq!(
+        (a + b).square(),
+        a.square() + ((a * b) + (a * b)) + b.square()
+    );
+    // (a - b)^2 = (-(b - a))^2
+    assert_eq!((a - b).square(), (-(b - a)).square());
+
+    let mut c = a;
+    c.inverse_in_place();
+    assert_eq!(a * c, one);
+
+    assert_eq!(a / a, one);
+
+    // (0..10).into_par_iter().for_each(|len| {
+    //     let mut a = Vec::new();
+    //     let mut b = Vec::new();
+    //     for _ in 0..len {
+    //         a.push(F::rand());
+    //         b.push(F::rand());
+    //         assert_eq!(
+    //             F::sum_of_products(a.clone().into_iter(), b.clone().into_iter()),
+    //             a.iter().zip(b.iter()).map(|(x, y)| *x * y).sum()
+    //         );
+    //     }
+    // });
+
+    assert!(F::ZERO.is_zero());
+    {
+        let z = -F::ZERO;
+        assert!(z.is_zero());
+    }
+
+    assert!(F::ZERO.inverse().is_none());
+
+    // Multiplication by zero
+    {
+        let a = F::rand() * F::ZERO;
+        assert!(a.is_zero());
+    }
+
+    // Addition by zero
+    {
+        let mut a = F::rand();
+        let copy = a;
+        a += &F::ZERO;
+        assert_eq!(a, copy);
+    }
 }

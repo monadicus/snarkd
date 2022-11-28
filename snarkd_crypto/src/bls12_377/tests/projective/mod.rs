@@ -194,6 +194,18 @@ pub fn batch_normalization<G: Projective>(mut batch: Vec<G>) -> Result<Value, St
         assert!(!i.is_normalized());
     }
 
+    use rand::distributions::{Distribution, Uniform};
+    let between = Uniform::from(0..batch.len());
+    let mut rng = rand::thread_rng();
+    // Sprinkle in some normalized points
+    for _ in 0..5 {
+        batch[between.sample(&mut rng)] = G::ZERO;
+    }
+    for _ in 0..5 {
+        let s = between.sample(&mut rng);
+        batch[s] = batch[s].to_affine().to_projective();
+    }
+
     let expected_v = batch
         .iter()
         .map(|v| v.to_affine().to_projective())
