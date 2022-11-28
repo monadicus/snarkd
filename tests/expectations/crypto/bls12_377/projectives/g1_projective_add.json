@@ -20,5 +20,16 @@
     "SWAffine(Infinity)",
     "SWAffine(Infinity)",
     "SWAffine(Infinity)"
+  ],
+  "fuzz_case_1": [
+    "SWAffine(Infinity)",
+    "SWAffine(Infinity)",
+    "SWAffine(Infinity)",
+    "SWAffine(Infinity)",
+    "SWAffine(Infinity)",
+    "SWAffine(Infinity)",
+    "SWAffine(Infinity)",
+    "SWAffine(Infinity)",
+    "SWAffine(Infinity)"
   ]
 }

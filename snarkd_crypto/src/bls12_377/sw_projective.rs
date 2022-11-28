@@ -1,9 +1,6 @@
-use crate::{
-    bls12_377::{
-        field::Field, parameters::Parameters, sw_affine::SWAffine, Affine, Projective, Scalar, B1,
-        B2, HALF_R, Q1, Q2, R128,
-    },
-    test::Testable,
+use crate::bls12_377::{
+    field::Field, parameters::Parameters, sw_affine::SWAffine, Affine, Projective, Scalar, B1, B2,
+    HALF_R, Q1, Q2, R128,
 };
 use bitvec::prelude::*;
 use core::{

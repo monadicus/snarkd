@@ -81,13 +81,16 @@ pub fn add<G: Projective>(a: G, b: G, c: G) -> Result<Value, String> {
             );
         }
 
-        assert!(tmp[i] != a);
-        assert!(tmp[i] != b);
-        assert!(tmp[i] != c);
+        // if all values were zero then the output will always be zero
+        if a.is_zero() as u8 + b.is_zero() as u8 + c.is_zero() as u8 <= 1 {
+            assert_ne!(tmp[i], a);
+            assert_ne!(tmp[i], b);
+            assert_ne!(tmp[i], c);
 
-        assert!(a != tmp[i]);
-        assert!(b != tmp[i]);
-        assert!(c != tmp[i]);
+            assert_ne!(a, tmp[i]);
+            assert_ne!(b, tmp[i]);
+            assert_ne!(c, tmp[i]);
+        }
     }
 
     Ok(Value::from(outputs))

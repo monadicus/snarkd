@@ -119,9 +119,9 @@ impl TestCases {
 }
 
 #[cfg(target_os = "windows")]
-const TESTS: &'static str = "tests\\";
+const TESTS: &str = "tests\\";
 #[cfg(not(target_os = "windows"))]
-const TESTS: &'static str = "tests/";
+const TESTS: &str = "tests/";
 
 pub fn run_tests<T: Runner>(runner: &T, expectation_category: &str) {
     let mut cases = TestCases::new(expectation_category);
@@ -142,20 +142,19 @@ pub fn run_tests<T: Runner>(runner: &T, expectation_category: &str) {
 
         let mut errors = vec![];
         if let Some(expectations) = expectations.as_ref() {
-            if config.tests.len()
+            let found = config.tests.len()
                 - config
                     .tests
                     .iter()
                     .filter(|(_, case)| case.expectation == TestExpectationMode::Skip)
-                    .count()
-                != expectations.0.len()
-            {
-                errors.push(TestError::MismatchedTestExpectationLength);
-            }
+                    .count();
+            let expected = expectations.0.len();
+            // TODO should we have it just add a new expectation to the json instead of panicking
+            assert_eq!(found, expected, "invalid number of test expectations");
         }
 
         let mut new_outputs = BTreeMap::new();
-        let mut expected_output = expectations.as_ref().map(|x| x.0.iter());
+        let expected_output = expectations.clone().unwrap_or_default().0;
 
         for (i, (test_name, test_case)) in config.tests.into_iter().enumerate() {
             if matches!(test_case.expectation, TestExpectationMode::Skip) {
@@ -177,7 +176,11 @@ pub fn run_tests<T: Runner>(runner: &T, expectation_category: &str) {
                 continue;
             }
 
-            let expected_output = expected_output.as_mut().and_then(|x| x.next());
+            let expected_output = expected_output.get(&test_name);
+            if expectations.is_some() && expected_output.is_none() {
+                // TODO should we have it just add a new expectation to the json instead of panicking
+                panic!("no test expectation for `{test_name}`");
+            }
             println!(
                 "{}",
                 format!(

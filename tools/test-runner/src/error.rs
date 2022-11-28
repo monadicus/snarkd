@@ -38,8 +38,6 @@ pub enum TestError {
         expected: String,
         output: String,
     },
-    MismatchedTestExpectationLength,
-    MissingTestConfig,
 }
 
 impl fmt::Display for TestError {
@@ -125,10 +123,6 @@ impl fmt::Display for TestError {
                     .red(),
                 )
             }
-            TestError::MismatchedTestExpectationLength => {
-                write!(f, "{}", "invalid number of test expectations".red())
-            }
-            TestError::MissingTestConfig => write!(f, "{}", "missing test config".red()),
         }
     }
 }
@@ -137,7 +131,7 @@ pub fn emit_errors(
     test: &str,
     output: &Result<Result<Value, String>, String>,
     mode: TestExpectationMode,
-    expected_output: Option<(&String, &Value)>,
+    expected_output: Option<&Value>,
     test_index: usize,
 ) -> Option<TestError> {
     match (output, mode) {
@@ -148,13 +142,13 @@ pub fn emit_errors(
         }),
         (Ok(Ok(output)), TestExpectationMode::Pass) => {
             // passed and should have
-            if let Some(expected_output) = expected_output.as_ref() {
-                if output != expected_output.1 {
+            if let Some(expected_output) = expected_output {
+                if output != expected_output {
                     // invalid output
                     return Some(TestError::UnexpectedOutput {
                         test: test.to_string(),
                         index: test_index,
-                        expected: expected_output.1.clone(),
+                        expected: expected_output.clone(),
                         output: output.clone(),
                     });
                 }
@@ -171,7 +165,7 @@ pub fn emit_errors(
             index: test_index,
         }),
         (Ok(Err(err)), TestExpectationMode::Fail) => {
-            if let Some((_, expected_output)) = expected_output {
+            if let Some(expected_output) = expected_output {
                 if err != expected_output {
                     // invalid output
                     return Some(TestError::UnexpectedError {
