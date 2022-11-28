@@ -1,6 +1,6 @@
-use crate::config::PeerConfig;
 use crate::torrent::{AnnounceRequest, Tracker, TrackerHTTP};
 use log::error;
+use snarkd_common::config::PeerConfig;
 use std::net::SocketAddr;
 use std::time::Duration;
 
