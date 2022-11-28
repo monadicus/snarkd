@@ -54,7 +54,7 @@ CREATE TABLE transitions(
     tpk BLOB NOT NULL,
     tcm BLOB NOT NULL,
     fee BIGINT NOT NULL,
-    deployment_id INTEGER REFERENCES deployments(id) ON DELETE CASCADE,
+    deployment_id INTEGER REFERENCES deployments(id) ON DELETE CASCADE
 );
 
 CREATE TABLE deployments (
