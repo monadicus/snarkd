@@ -113,3 +113,52 @@ name = "mul_g2"
 path = "fuzz_targets/bls12_377/mul_g2.rs"
 test = false
 doc = false
+
+[[bin]]
+name = "double_g1"
+path = "fuzz_targets/bls12_377/double_g1.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "double_g2"
+path = "fuzz_targets/bls12_377/double_g2.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "neg_g1"
+path = "fuzz_targets/bls12_377/neg_g1.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "neg_g2"
+path = "fuzz_targets/bls12_377/neg_g2.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "transform_g1"
+path = "fuzz_targets/bls12_377/transform_g1.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "transform_g2"
+path = "fuzz_targets/bls12_377/transform_g2.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "batch_normalization_g1"
+path = "fuzz_targets/bls12_377/batch_normalization_g1.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "batch_normalization_g2"
+path = "fuzz_targets/bls12_377/batch_normalization_g2.rs"
+test = false
+doc = false
+

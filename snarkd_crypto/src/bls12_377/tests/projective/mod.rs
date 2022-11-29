@@ -191,6 +191,10 @@ pub fn transform<G: Projective>(g: G) -> TestResult {
 }
 
 pub fn batch_normalization<G: Projective>(mut batch: Vec<G>) -> TestResult {
+    if batch.is_empty() {
+        return Ok(Value::default());
+    }
+
     for i in &batch {
         assert!(!i.is_normalized());
     }
