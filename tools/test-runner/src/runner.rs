@@ -111,7 +111,7 @@ impl TestCases {
                     .expect("failed to read expectations file");
                 (
                     expectation_path,
-                    Some(serde_json::from_str(&raw).expect("invalid yaml in expectations file")),
+                    Some(serde_json::from_str(&raw).expect("invalid json in expectations file")),
                 )
             }
         } else {
@@ -137,24 +137,20 @@ pub fn run_tests<T: Runner>(runner: &T, expectation_category: &str) {
     for config in configs {
         let namespace = match runner.resolve_namespace(&config.namespace) {
             Some(ns) => ns,
-            None => return,
+            None => {
+                cases.fail_categories.push(TestFailure {
+                    path: config.path.display().to_string(),
+                    errors: vec![TestError::UnknownNamespace {
+                        namespace: config.namespace,
+                    }],
+                });
+                continue;
+            }
         };
 
         let (expectation_path, expectations) = cases.load_expectations(&config.path);
 
         let mut errors = vec![];
-        if let Some(expectations) = expectations.as_ref() {
-            let found = config.tests.len()
-                - config
-                    .tests
-                    .iter()
-                    .filter(|(_, case)| case.expectation == TestExpectationMode::Skip)
-                    .count();
-            let expected = expectations.0.len();
-            // TODO should we have it just add a new expectation to the json instead of panicking
-            assert_eq!(found, expected, "invalid number of test expectations");
-        }
-
         let mut new_outputs = BTreeMap::new();
         let expected_output = expectations.clone().unwrap_or_default().0;
 
@@ -180,8 +176,11 @@ pub fn run_tests<T: Runner>(runner: &T, expectation_category: &str) {
 
             let expected_output = expected_output.get(&test_name);
             if expectations.is_some() && expected_output.is_none() {
-                // TODO should we have it just add a new expectation to the json instead of panicking
-                panic!("no test expectation for `{test_name}`");
+                errors.push(TestError::MissingExpectation {
+                    test: test_name,
+                    index: i,
+                });
+                continue;
             }
             println!(
                 "{}",
@@ -254,7 +253,7 @@ pub fn run_tests<T: Runner>(runner: &T, expectation_category: &str) {
                 println!("{error}");
             }
         }
-        panic!("failed {pass_tests}/{} tests", fail_tests + pass_tests,);
+        panic!("failed {fail_tests}/{} tests", fail_tests + pass_tests,);
     } else {
         for (path, new_expectation) in outputs {
             std::fs::create_dir_all(path.parent().unwrap())

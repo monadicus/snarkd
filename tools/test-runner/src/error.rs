@@ -5,6 +5,7 @@ use std::fmt;
 
 use crate::test::TestExpectationMode;
 
+#[derive(Debug)]
 pub struct TestFailure {
     pub path: String,
     pub errors: Vec<TestError>,
@@ -37,6 +38,13 @@ pub enum TestError {
         index: usize,
         expected: String,
         output: String,
+    },
+    UnknownNamespace {
+        namespace: String,
+    },
+    MissingExpectation {
+        test: String,
+        index: usize,
     },
 }
 
@@ -119,6 +127,25 @@ impl fmt::Display for TestError {
                         test.purple(),
                         expected.cyan(),
                         output.blue(),
+                    )
+                    .red(),
+                )
+            }
+            TestError::UnknownNamespace { namespace } => {
+                write!(
+                    f,
+                    "{}",
+                    format!("Test has an unknown namespace `{}`", namespace.cyan()).red()
+                )
+            }
+            TestError::MissingExpectation { test, index } => {
+                write!(
+                    f,
+                    "{}",
+                    format!(
+                        "test #{}: case `{}` has no expectation in the expectation file",
+                        index + 1,
+                        test.purple(),
                     )
                     .red(),
                 )

@@ -4,12 +4,12 @@ use crate::{
 };
 use bitvec::prelude::*;
 use core::{
-    fmt::{Display, Formatter, Result as FmtResult},
     iter::Sum,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 use rand::{distributions::Standard, Rng};
 use ruint::{uint, Uint};
+use std::fmt;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[cfg_attr(
@@ -473,9 +473,10 @@ impl Sum<Fp> for Fp {
     }
 }
 
-impl Display for Fp {
-    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        write!(f, "{}", self.0)
+impl fmt::Display for Fp {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = format!("{:X}", self.0);
+        write!(f, "0x{:0>1}", s.trim_start_matches('0'))
     }
 }
 

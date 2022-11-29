@@ -20,11 +20,11 @@ use crate::bls12_377::Field;
 pub fn neg<F: Field>(a: F) -> TestResult {
     let mut outputs = Vec::new();
     let mut b = -a;
-    outputs.push(b);
+    outputs.push(b.to_string());
     b += &a;
 
     assert!(b.is_zero());
-    outputs.push(b);
+    outputs.push(b.to_string());
     Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
 }
 
@@ -32,11 +32,11 @@ pub fn add<F: Field>(a: F, b: F, c: F) -> TestResult {
     let mut outputs = Vec::new();
 
     let t0 = (a + b) + c; // (a + b) + c
-    outputs.push(t0);
+    outputs.push(t0.to_string());
     let t1 = (a + c) + b; // (a + c) + b
-    outputs.push(t1);
+    outputs.push(t1.to_string());
     let t2 = (b + c) + a; // (b + c) + a
-    outputs.push(t2);
+    outputs.push(t2.to_string());
 
     assert_eq!(t0, t1);
     assert_eq!(t1, t2);
@@ -48,15 +48,15 @@ pub fn add_assign<F: Field>(a: F, b: F, c: F) -> TestResult {
 
     let mut tmp1 = a;
     tmp1.add_assign(b);
-    outputs.push(tmp1);
+    outputs.push(tmp1.to_string());
     tmp1.add_assign(c);
-    outputs.push(tmp1);
+    outputs.push(tmp1.to_string());
 
     let mut tmp2 = b;
     tmp2.add_assign(c);
-    outputs.push(tmp2);
+    outputs.push(tmp2.to_string());
     tmp2.add_assign(a);
-    outputs.push(tmp2);
+    outputs.push(tmp2.to_string());
 
     // assert!(tmp1.is_valid());
     // assert!(tmp2.is_valid());
@@ -68,15 +68,15 @@ pub fn sub<F: Field>(a: F, b: F) -> TestResult {
     let mut outputs = Vec::new();
 
     let t0 = a - b; // (a - b)
-    outputs.push(t0);
+    outputs.push(t0.to_string());
 
     let mut t1 = b; // (b - a)
     t1 -= &a;
-    outputs.push(t1);
+    outputs.push(t1.to_string());
 
     let mut t2 = t0; // (a - b) + (b - a) = 0
     t2 += &t1;
-    outputs.push(t2);
+    outputs.push(t2.to_string());
 
     assert!(t2.is_zero());
     Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
@@ -87,21 +87,21 @@ pub fn mul<F: Field>(a: F, b: F, c: F) -> TestResult {
 
     let mut t0 = a; // (a * b) * c
     t0 *= &b;
-    outputs.push(t0);
+    outputs.push(t0.to_string());
     t0 *= &c;
-    outputs.push(t0);
+    outputs.push(t0.to_string());
 
     let mut t1 = a; // (a * c) * b
     t1 *= &c;
-    outputs.push(t1);
+    outputs.push(t1.to_string());
     t1 *= &b;
-    outputs.push(t1);
+    outputs.push(t1.to_string());
 
     let mut t2 = b; // (b * c) * a
     t2 *= &c;
-    outputs.push(t2);
+    outputs.push(t2.to_string());
     t2 *= &a;
-    outputs.push(t2);
+    outputs.push(t2.to_string());
 
     assert_eq!(t0, t1);
     assert_eq!(t1, t2);
@@ -113,15 +113,15 @@ pub fn mul_assign<F: Field>(a: F, b: F, c: F) -> TestResult {
 
     let mut tmp1 = a;
     tmp1.mul_assign(&b);
-    outputs.push(tmp1);
+    outputs.push(tmp1.to_string());
     tmp1.mul_assign(&c);
-    outputs.push(tmp1);
+    outputs.push(tmp1.to_string());
 
     let mut tmp2 = b;
     tmp2.mul_assign(&c);
-    outputs.push(tmp2);
+    outputs.push(tmp2.to_string());
     tmp2.mul_assign(&a);
-    outputs.push(tmp2);
+    outputs.push(tmp2.to_string());
 
     assert_eq!(tmp1, tmp2);
 
@@ -153,7 +153,7 @@ pub fn inversion<F: Field>(mut a: F) -> TestResult {
     let b = a.inverse(); // probablistically nonzero
     match b {
         Some(b) => outputs.push(b.to_string()),
-        None => outputs.push("None".into()),
+        None => outputs.push("None".to_string()),
     }
     if let Some(b) = b {
         a *= &b;
@@ -169,9 +169,9 @@ pub fn double<F: Field>(mut a: F) -> TestResult {
 
     let mut b = a;
     a += &b;
-    outputs.push(a);
+    outputs.push(a.to_string());
     b.double_in_place();
-    outputs.push(b);
+    outputs.push(b.to_string());
 
     assert_eq!(a, b);
     Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
@@ -182,9 +182,9 @@ pub fn square<F: Field>(mut a: F) -> TestResult {
 
     let mut b = a;
     a *= &b;
-    outputs.push(a);
+    outputs.push(a.to_string());
     b.square_in_place();
-    outputs.push(b);
+    outputs.push(b.to_string());
 
     assert_eq!(a, b);
     Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
@@ -196,44 +196,44 @@ pub fn expansion<F: Field>(a: F, b: F, c: F, d: F) -> TestResult {
     // Compare (a + b)(c + d) and (a*c + b*c + a*d + b*d)
     let mut t0 = a;
     t0 += &b;
-    outputs.push(t0);
+    outputs.push(t0.to_string());
 
     let mut t1 = c;
     t1 += &d;
-    outputs.push(t1);
+    outputs.push(t1.to_string());
     t0 *= &t1;
-    outputs.push(t0);
+    outputs.push(t0.to_string());
 
     let mut t2 = a;
     t2 *= &c;
-    outputs.push(t2);
+    outputs.push(t2.to_string());
 
     let mut t3 = b;
     t3 *= &c;
-    outputs.push(t3);
+    outputs.push(t3.to_string());
 
     let mut t4 = a;
     t4 *= &d;
-    outputs.push(t4);
+    outputs.push(t4.to_string());
 
     let mut t5 = b;
     t5 *= &d;
-    outputs.push(t5);
+    outputs.push(t5.to_string());
 
     t2 += &t3;
-    outputs.push(t2);
+    outputs.push(t2.to_string());
     t2 += &t4;
-    outputs.push(t2);
+    outputs.push(t2.to_string());
     t2 += &t5;
-    outputs.push(t2);
+    outputs.push(t2.to_string());
 
     assert_eq!(t0, t2);
 
     // Compare (a + b)c and (a*c + b*c)
     let t0 = (a + b) * c;
-    outputs.push(t0);
+    outputs.push(t0.to_string());
     let t2 = a * c + (b * c);
-    outputs.push(t2);
+    outputs.push(t2.to_string());
 
     assert_eq!(t0, t2);
     Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
@@ -248,16 +248,16 @@ macro_rules! frobenius {
 
         let mut a_0 = $a;
         a_0.frobenius_map(0);
-        outputs.push(a_0);
+        outputs.push(a_0.to_string());
 
         assert_eq!($a, a_0);
 
         let mut a_q = $a.pow(&<$field>::characteristic());
-        outputs.push(a_q);
+        outputs.push(a_q.to_string());
         for power in 1..13 {
             let mut a_qi = $a;
             a_qi.frobenius_map(power);
-            outputs.push(a_qi);
+            outputs.push(a_qi.to_string());
             assert_eq!(a_qi, a_q);
 
             a_q = a_q.pow(&<$field>::characteristic());
@@ -271,12 +271,12 @@ pub fn sqrt<F: Field>(a: F) -> TestResult {
     let mut outputs = Vec::new();
 
     let square = a.square();
-    outputs.push(square);
+    outputs.push(square.to_string());
     let sqrt = square.sqrt().unwrap();
-    outputs.push(sqrt);
+    outputs.push(sqrt.to_string());
     assert!(sqrt == a || sqrt == -a);
     if let Some(sqrt) = a.sqrt() {
-        outputs.push(sqrt);
+        outputs.push(sqrt.to_string());
         assert!(sqrt.square() == a || sqrt.square() == -a);
     }
 
@@ -298,9 +298,9 @@ pub fn sum_of_products<F: Field>(a: Vec<F>, b: Vec<F>) -> TestResult {
     let mut outputs = Vec::new();
 
     let sum = F::sum_of_products(a.clone().into_iter(), b.clone().into_iter());
-    outputs.push(sum);
-    let actual = a.into_iter().zip(b).map(|(a, b)| a * b).sum();
-    outputs.push(actual);
+    outputs.push(sum.to_string());
+    let actual: F = a.into_iter().zip(b).map(|(a, b)| a * b).sum();
+    outputs.push(actual.to_string());
     assert_eq!(sum, actual);
 
     Ok(serde_json::to_value(outputs).expect("failed to serialize results"))

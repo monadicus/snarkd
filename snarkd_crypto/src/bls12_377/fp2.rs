@@ -379,7 +379,7 @@ impl Sum<Fp2> for Fp2 {
 
 impl std::fmt::Display for Fp2 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Fp2({} + {} * u)", self.c0, self.c1)
+        write!(f, "Fp2({} + {})", self.c0, self.c1)
     }
 }
 
