@@ -163,6 +163,12 @@ test = false
 doc = false
 
 [[bin]]
+name = "projective_glv_g1"
+path = "fuzz_targets/bls12_377/projective/projective_glv_g1.rs"
+test = false
+doc = false
+
+[[bin]]
 name = "neg_fp"
 path = "fuzz_targets/bls12_377/field/neg_fp.rs"
 test = false
@@ -421,31 +427,115 @@ test = false
 doc = false
 
 [[bin]]
-name = "ordering_fp"
-path = "fuzz_targets/bls12_377/field/ordering_fp.rs"
+name = "pow_fp"
+path = "fuzz_targets/bls12_377/field/pow_fp.rs"
 test = false
 doc = false
 
 [[bin]]
-name = "ordering_fp2"
-path = "fuzz_targets/bls12_377/field/ordering_fp2.rs"
+name = "pow_fp2"
+path = "fuzz_targets/bls12_377/field/pow_fp2.rs"
 test = false
 doc = false
 
 [[bin]]
-name = "ordering_fp6"
-path = "fuzz_targets/bls12_377/field/ordering_fp6.rs"
+name = "pow_fp6"
+path = "fuzz_targets/bls12_377/field/pow_fp6.rs"
 test = false
 doc = false
 
 [[bin]]
-name = "ordering_fp12"
-path = "fuzz_targets/bls12_377/field/ordering_fp12.rs"
+name = "pow_fp12"
+path = "fuzz_targets/bls12_377/field/pow_fp12.rs"
 test = false
 doc = false
 
 [[bin]]
-name = "ordering_scalar"
-path = "fuzz_targets/bls12_377/field/ordering_scalar.rs"
+name = "pow_scalar"
+path = "fuzz_targets/bls12_377/field/pow_scalar.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "sum_of_products_fp"
+path = "fuzz_targets/bls12_377/field/sum_of_products_fp.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "sum_of_products_fp2"
+path = "fuzz_targets/bls12_377/field/sum_of_products_fp2.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "sum_of_products_fp6"
+path = "fuzz_targets/bls12_377/field/sum_of_products_fp6.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "sum_of_products_fp12"
+path = "fuzz_targets/bls12_377/field/sum_of_products_fp12.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "sum_of_products_scalar"
+path = "fuzz_targets/bls12_377/field/sum_of_products_scalar.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "math_properties_fp"
+path = "fuzz_targets/bls12_377/field/math_properties_fp.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "math_properties_fp2"
+path = "fuzz_targets/bls12_377/field/math_properties_fp2.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "math_properties_fp6"
+path = "fuzz_targets/bls12_377/field/math_properties_fp6.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "math_properties_fp12"
+path = "fuzz_targets/bls12_377/field/math_properties_fp12.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "math_properties_scalar"
+path = "fuzz_targets/bls12_377/field/math_properties_scalar.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "mul_by_1_fp6"
+path = "fuzz_targets/bls12_377/field/mul_by_1_fp6.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "mul_by_01_fp6"
+path = "fuzz_targets/bls12_377/field/mul_by_01_fp6.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "mul_by_014_fp12"
+path = "fuzz_targets/bls12_377/field/mul_by_014_fp12.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "mul_by_034_fp12"
+path = "fuzz_targets/bls12_377/field/mul_by_034_fp12.rs"
 test = false
 doc = false

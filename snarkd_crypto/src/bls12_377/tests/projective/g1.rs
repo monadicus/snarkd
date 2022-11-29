@@ -34,7 +34,7 @@ impl G1ProjectiveNs {
         batch_normalization(batch)
     }
 
-    fn projective_glv(point: G1Projective, scalar: Scalar) -> TestResult {
+    pub fn projective_glv(point: G1Projective, scalar: Scalar) -> TestResult {
         let mut outputs = Vec::new();
 
         let affine = point.to_affine();

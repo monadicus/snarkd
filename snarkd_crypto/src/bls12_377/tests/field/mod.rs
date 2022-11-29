@@ -287,12 +287,9 @@ pub fn pow<F: Field>(a: F) -> TestResult {
     let mut outputs = Vec::new();
 
     let a_cubed = a * a * a;
-    let a_pow_3_one = a.pow(&[0x3, 0x0, 0x0, 0x0]);
-    outputs.push(a_pow_3_one);
-    let a_pow_3_two = a.pow(&[0x0, 0x3, 0x0, 0x0]);
-    outputs.push(a_pow_3_two);
-    assert_eq!(a_cubed, a_pow_3_one);
-    assert_eq!(a_pow_3_one, a_pow_3_two);
+    let a_pow_3 = a.pow(&[0x3, 0x0, 0x0, 0x0]);
+    outputs.push(a_pow_3);
+    assert_eq!(a_cubed, a_pow_3);
 
     Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
 }
