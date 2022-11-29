@@ -1,3 +1,6 @@
+mod bilinear;
+pub use bilinear::*;
+
 mod g1;
 pub use g1::*;
 
