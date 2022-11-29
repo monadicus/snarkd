@@ -92,73 +92,360 @@ doc = false
 
 [[bin]]
 name = "add_g1"
-path = "fuzz_targets/bls12_377/add_g1.rs"
+path = "fuzz_targets/bls12_377/projective/add_g1.rs"
 test = false
 doc = false
 
 [[bin]]
 name = "add_g2"
-path = "fuzz_targets/bls12_377/add_g2.rs"
+path = "fuzz_targets/bls12_377/projective/add_g2.rs"
 test = false
 doc = false
 
 [[bin]]
 name = "mul_g1"
-path = "fuzz_targets/bls12_377/mul_g1.rs"
+path = "fuzz_targets/bls12_377/projective/mul_g1.rs"
 test = false
 doc = false
 
 [[bin]]
 name = "mul_g2"
-path = "fuzz_targets/bls12_377/mul_g2.rs"
+path = "fuzz_targets/bls12_377/projective/mul_g2.rs"
 test = false
 doc = false
 
 [[bin]]
 name = "double_g1"
-path = "fuzz_targets/bls12_377/double_g1.rs"
+path = "fuzz_targets/bls12_377/projective/double_g1.rs"
 test = false
 doc = false
 
 [[bin]]
 name = "double_g2"
-path = "fuzz_targets/bls12_377/double_g2.rs"
+path = "fuzz_targets/bls12_377/projective/double_g2.rs"
 test = false
 doc = false
 
 [[bin]]
 name = "neg_g1"
-path = "fuzz_targets/bls12_377/neg_g1.rs"
+path = "fuzz_targets/bls12_377/projective/neg_g1.rs"
 test = false
 doc = false
 
 [[bin]]
 name = "neg_g2"
-path = "fuzz_targets/bls12_377/neg_g2.rs"
+path = "fuzz_targets/bls12_377/projective/neg_g2.rs"
 test = false
 doc = false
 
 [[bin]]
 name = "transform_g1"
-path = "fuzz_targets/bls12_377/transform_g1.rs"
+path = "fuzz_targets/bls12_377/projective/transform_g1.rs"
 test = false
 doc = false
 
 [[bin]]
 name = "transform_g2"
-path = "fuzz_targets/bls12_377/transform_g2.rs"
+path = "fuzz_targets/bls12_377/projective/transform_g2.rs"
 test = false
 doc = false
 
 [[bin]]
 name = "batch_normalization_g1"
-path = "fuzz_targets/bls12_377/batch_normalization_g1.rs"
+path = "fuzz_targets/bls12_377/projective/batch_normalization_g1.rs"
 test = false
 doc = false
 
 [[bin]]
 name = "batch_normalization_g2"
-path = "fuzz_targets/bls12_377/batch_normalization_g2.rs"
+path = "fuzz_targets/bls12_377/projective/batch_normalization_g2.rs"
 test = false
 doc = false
 
+[[bin]]
+name = "neg_fp"
+path = "fuzz_targets/bls12_377/field/neg_fp.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "neg_fp2"
+path = "fuzz_targets/bls12_377/field/neg_fp2.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "neg_fp6"
+path = "fuzz_targets/bls12_377/field/neg_fp6.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "neg_fp12"
+path = "fuzz_targets/bls12_377/field/neg_fp12.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "neg_scalar"
+path = "fuzz_targets/bls12_377/field/neg_scalar.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "add_fp"
+path = "fuzz_targets/bls12_377/field/add_fp.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "add_fp2"
+path = "fuzz_targets/bls12_377/field/add_fp2.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "add_fp6"
+path = "fuzz_targets/bls12_377/field/add_fp6.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "add_fp12"
+path = "fuzz_targets/bls12_377/field/add_fp12.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "add_scalar"
+path = "fuzz_targets/bls12_377/field/add_scalar.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "sub_fp"
+path = "fuzz_targets/bls12_377/field/sub_fp.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "sub_fp2"
+path = "fuzz_targets/bls12_377/field/sub_fp2.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "sub_fp6"
+path = "fuzz_targets/bls12_377/field/sub_fp6.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "sub_fp12"
+path = "fuzz_targets/bls12_377/field/sub_fp12.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "sub_scalar"
+path = "fuzz_targets/bls12_377/field/sub_scalar.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "mul_fp"
+path = "fuzz_targets/bls12_377/field/mul_fp.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "mul_fp2"
+path = "fuzz_targets/bls12_377/field/mul_fp2.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "mul_fp6"
+path = "fuzz_targets/bls12_377/field/mul_fp6.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "mul_fp12"
+path = "fuzz_targets/bls12_377/field/mul_fp12.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "mul_scalar"
+path = "fuzz_targets/bls12_377/field/mul_scalar.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "inversion_fp"
+path = "fuzz_targets/bls12_377/field/inversion_fp.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "inversion_fp2"
+path = "fuzz_targets/bls12_377/field/inversion_fp2.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "inversion_fp6"
+path = "fuzz_targets/bls12_377/field/inversion_fp6.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "inversion_fp12"
+path = "fuzz_targets/bls12_377/field/inversion_fp12.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "inversion_scalar"
+path = "fuzz_targets/bls12_377/field/inversion_scalar.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "double_fp"
+path = "fuzz_targets/bls12_377/field/double_fp.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "double_fp2"
+path = "fuzz_targets/bls12_377/field/double_fp2.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "double_fp6"
+path = "fuzz_targets/bls12_377/field/double_fp6.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "double_fp12"
+path = "fuzz_targets/bls12_377/field/double_fp12.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "double_scalar"
+path = "fuzz_targets/bls12_377/field/double_scalar.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "square_fp"
+path = "fuzz_targets/bls12_377/field/square_fp.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "square_fp2"
+path = "fuzz_targets/bls12_377/field/square_fp2.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "square_fp6"
+path = "fuzz_targets/bls12_377/field/square_fp6.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "square_fp12"
+path = "fuzz_targets/bls12_377/field/square_fp12.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "square_scalar"
+path = "fuzz_targets/bls12_377/field/square_scalar.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "expansion_fp"
+path = "fuzz_targets/bls12_377/field/expansion_fp.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "expansion_fp2"
+path = "fuzz_targets/bls12_377/field/expansion_fp2.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "expansion_fp6"
+path = "fuzz_targets/bls12_377/field/expansion_fp6.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "expansion_fp12"
+path = "fuzz_targets/bls12_377/field/expansion_fp12.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "expansion_scalar"
+path = "fuzz_targets/bls12_377/field/expansion_scalar.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "sqrt_fp"
+path = "fuzz_targets/bls12_377/field/sqrt_fp.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "sqrt_fp2"
+path = "fuzz_targets/bls12_377/field/sqrt_fp2.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "sqrt_scalar"
+path = "fuzz_targets/bls12_377/field/sqrt_scalar.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "ordering_fp"
+path = "fuzz_targets/bls12_377/field/ordering_fp.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "ordering_fp2"
+path = "fuzz_targets/bls12_377/field/ordering_fp2.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "ordering_fp6"
+path = "fuzz_targets/bls12_377/field/ordering_fp6.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "ordering_fp12"
+path = "fuzz_targets/bls12_377/field/ordering_fp12.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "ordering_scalar"
+path = "fuzz_targets/bls12_377/field/ordering_scalar.rs"
+test = false
+doc = false

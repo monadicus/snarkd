@@ -6,7 +6,7 @@ use snarkd_crypto::bls12_377::{
 };
 
 fuzz_target!(|data: Vec<SWProjective<G2Parameters>>| {
-    if data.iter().all(|v| !v.is_normalized()) {
+    if data.iter().all(|v| !v.is_normalized()) && !data.is_empty() {
         batch_normalization(data).unwrap();
     }
 });

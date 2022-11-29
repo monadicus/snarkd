@@ -357,7 +357,9 @@ pub fn ordering<F: Field>(a: F, b: F) {
     // a * 2 = a.double()
     assert_eq!(a * two, a.double());
     // a * a^-1 = 1
-    assert_eq!(a * a.inverse().unwrap(), one);
+    if !a.is_zero() {
+        assert_eq!(a * a.inverse().unwrap(), one);
+    }
     // a * a = a^2
     assert_eq!(a * a, a.square());
     // a * a * a = a^3
@@ -374,11 +376,12 @@ pub fn ordering<F: Field>(a: F, b: F) {
     // (a - b)^2 = (-(b - a))^2
     assert_eq!((a - b).square(), (-(b - a)).square());
 
-    let mut c = a;
-    c.inverse_in_place();
-    assert_eq!(a * c, one);
-
-    assert_eq!(a / a, one);
+    if !a.is_zero() {
+        let mut c = a;
+        c.inverse_in_place();
+        assert_eq!(a * c, one);
+        assert_eq!(a / a, one);
+    }
 
     // (0..10).into_par_iter().for_each(|len| {
     //     let mut a = Vec::new();
