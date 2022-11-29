@@ -530,6 +530,12 @@ impl Sum<Fp6> for Fp6 {
     }
 }
 
+impl std::fmt::Display for Fp6 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Fp6({} + {} + {})", self.c0, self.c1, self.c2)
+    }
+}
+
 impl Testable for Fp6 {}
 
 #[cfg(test)]

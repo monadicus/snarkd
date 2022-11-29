@@ -150,12 +150,17 @@ pub fn mul_assign<F: Field>(a: F, b: F, c: F) -> Result<Value, String> {
 pub fn inversion<F: Field>(mut a: F) -> Result<Value, String> {
     let mut outputs = Vec::new();
 
-    let b = a.inverse().unwrap(); // probablistically nonzero
-    outputs.push(b);
-    a *= &b;
-    outputs.push(a);
+    let b = a.inverse(); // probablistically nonzero
+    match b {
+        Some(b) => outputs.push(b.to_string()),
+        None => outputs.push("None".into()),
+    }
+    if let Some(b) = b {
+        a *= &b;
+        outputs.push(a.to_string());
+        assert_eq!(a, F::ONE);
+    }
 
-    assert_eq!(a, F::ONE);
     Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
 }
 
