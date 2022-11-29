@@ -5,10 +5,11 @@ mod g2;
 pub use g2::*;
 
 use serde_json::Value;
+use test_runner::TestResult;
 
 use crate::bls12_377::{field::Field, Affine, Projective, Scalar};
 
-pub fn add<G: Projective>(a: G, b: G, c: G) -> Result<Value, String> {
+pub fn add<G: Projective>(a: G, b: G, c: G) -> TestResult {
     let mut outputs = Vec::new();
 
     let a_affine = a.to_affine();
@@ -96,7 +97,7 @@ pub fn add<G: Projective>(a: G, b: G, c: G) -> Result<Value, String> {
     Ok(Value::from(outputs))
 }
 
-pub fn mul<G: Projective>(mut a: G, mut b: G, s: Scalar) -> Result<Value, String> {
+pub fn mul<G: Projective>(mut a: G, mut b: G, s: Scalar) -> TestResult {
     let mut outputs = Vec::new();
 
     let a_affine = a.to_affine();
@@ -126,7 +127,7 @@ pub fn mul<G: Projective>(mut a: G, mut b: G, s: Scalar) -> Result<Value, String
     Ok(Value::from(outputs))
 }
 
-pub fn double<G: Projective>(mut a: G, mut b: G) -> Result<Value, String> {
+pub fn double<G: Projective>(mut a: G, mut b: G) -> TestResult {
     let mut outputs = Vec::new();
 
     // 2(a + b)
@@ -152,7 +153,7 @@ pub fn double<G: Projective>(mut a: G, mut b: G) -> Result<Value, String> {
     Ok(Value::from(outputs))
 }
 
-pub fn neg<G: Projective>(r: G, s: Scalar) -> Result<Value, String> {
+pub fn neg<G: Projective>(r: G, s: Scalar) -> TestResult {
     let mut outputs = Vec::new();
     let sneg = -s;
     assert!((s + sneg).is_zero());
@@ -181,7 +182,7 @@ pub fn neg<G: Projective>(r: G, s: Scalar) -> Result<Value, String> {
     Ok(Value::from(outputs))
 }
 
-pub fn transform<G: Projective>(g: G) -> Result<Value, String> {
+pub fn transform<G: Projective>(g: G) -> TestResult {
     let g_affine = g.to_affine();
     let g_projective = g_affine.to_projective();
     assert_eq!(g, g_projective);

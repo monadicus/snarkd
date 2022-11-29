@@ -13,11 +13,11 @@ pub use fp12::*;
 mod scalar;
 pub use scalar::*;
 
-use serde_json::Value;
+use test_runner::TestResult;
 
 use crate::bls12_377::Field;
 
-pub fn neg<F: Field>(a: F) -> Result<Value, String> {
+pub fn neg<F: Field>(a: F) -> TestResult {
     let mut outputs = Vec::new();
     let mut b = -a;
     outputs.push(b);
@@ -28,7 +28,7 @@ pub fn neg<F: Field>(a: F) -> Result<Value, String> {
     Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
 }
 
-pub fn add<F: Field>(a: F, b: F, c: F) -> Result<Value, String> {
+pub fn add<F: Field>(a: F, b: F, c: F) -> TestResult {
     let mut outputs = Vec::new();
 
     let t0 = (a + b) + c; // (a + b) + c
@@ -43,7 +43,7 @@ pub fn add<F: Field>(a: F, b: F, c: F) -> Result<Value, String> {
     Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
 }
 
-pub fn add_assign<F: Field>(a: F, b: F, c: F) -> Result<Value, String> {
+pub fn add_assign<F: Field>(a: F, b: F, c: F) -> TestResult {
     let mut outputs = Vec::new();
 
     let mut tmp1 = a;
@@ -64,7 +64,7 @@ pub fn add_assign<F: Field>(a: F, b: F, c: F) -> Result<Value, String> {
     Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
 }
 
-pub fn sub<F: Field>(a: F, b: F) -> Result<Value, String> {
+pub fn sub<F: Field>(a: F, b: F) -> TestResult {
     let mut outputs = Vec::new();
 
     let t0 = a - b; // (a - b)
@@ -82,7 +82,7 @@ pub fn sub<F: Field>(a: F, b: F) -> Result<Value, String> {
     Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
 }
 
-pub fn mul<F: Field>(a: F, b: F, c: F) -> Result<Value, String> {
+pub fn mul<F: Field>(a: F, b: F, c: F) -> TestResult {
     let mut outputs = Vec::new();
 
     let mut t0 = a; // (a * b) * c
@@ -108,7 +108,7 @@ pub fn mul<F: Field>(a: F, b: F, c: F) -> Result<Value, String> {
     Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
 }
 
-pub fn mul_assign<F: Field>(a: F, b: F, c: F) -> Result<Value, String> {
+pub fn mul_assign<F: Field>(a: F, b: F, c: F) -> TestResult {
     let mut outputs = Vec::new();
 
     let mut tmp1 = a;
@@ -147,7 +147,7 @@ pub fn mul_assign<F: Field>(a: F, b: F, c: F) -> Result<Value, String> {
     Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
 }
 
-pub fn inversion<F: Field>(mut a: F) -> Result<Value, String> {
+pub fn inversion<F: Field>(mut a: F) -> TestResult {
     let mut outputs = Vec::new();
 
     let b = a.inverse(); // probablistically nonzero
@@ -164,7 +164,7 @@ pub fn inversion<F: Field>(mut a: F) -> Result<Value, String> {
     Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
 }
 
-pub fn double<F: Field>(mut a: F) -> Result<Value, String> {
+pub fn double<F: Field>(mut a: F) -> TestResult {
     let mut outputs = Vec::new();
 
     let mut b = a;
@@ -177,7 +177,7 @@ pub fn double<F: Field>(mut a: F) -> Result<Value, String> {
     Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
 }
 
-pub fn square<F: Field>(mut a: F) -> Result<Value, String> {
+pub fn square<F: Field>(mut a: F) -> TestResult {
     let mut outputs = Vec::new();
 
     let mut b = a;
@@ -190,7 +190,7 @@ pub fn square<F: Field>(mut a: F) -> Result<Value, String> {
     Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
 }
 
-pub fn expansion<F: Field>(a: F, b: F, c: F, d: F) -> Result<Value, String> {
+pub fn expansion<F: Field>(a: F, b: F, c: F, d: F) -> TestResult {
     let mut outputs = Vec::new();
 
     // Compare (a + b)(c + d) and (a*c + b*c + a*d + b*d)
@@ -267,7 +267,7 @@ macro_rules! frobenius {
     }};
 }
 
-pub fn sqrt<F: Field>(a: F) -> Result<Value, String> {
+pub fn sqrt<F: Field>(a: F) -> TestResult {
     let mut outputs = Vec::new();
 
     let square = a.square();
@@ -283,45 +283,34 @@ pub fn sqrt<F: Field>(a: F) -> Result<Value, String> {
     Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
 }
 
-pub fn sqrt_deterministic<F: Field>() {
-    let mut c = F::ONE;
-    for _ in 0..100 {
-        let mut b = c.square();
-        // assert_eq!(b.legendre(), LegendreSymbol::QuadraticResidue);
+pub fn pow<F: Field>(a: F) -> TestResult {
+    let mut outputs = Vec::new();
 
-        b = b.sqrt().unwrap();
+    let a_cubed = a * a * a;
+    let a_pow_3_one = a.pow(&[0x3, 0x0, 0x0, 0x0]);
+    outputs.push(a_pow_3_one);
+    let a_pow_3_two = a.pow(&[0x0, 0x3, 0x0, 0x0]);
+    outputs.push(a_pow_3_two);
+    assert_eq!(a_cubed, a_pow_3_one);
+    assert_eq!(a_pow_3_one, a_pow_3_two);
 
-        if b != c {
-            b = -b;
-        }
+    Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
+}
 
-        assert_eq!(b, c);
+pub fn sum_of_products<F: Field>(a: Vec<F>, b: Vec<F>) -> TestResult {
+    let mut outputs = Vec::new();
 
-        c += &F::ONE;
-    }
+    let sum = F::sum_of_products(a.clone().into_iter(), b.clone().into_iter());
+    outputs.push(sum);
+    let actual = a.into_iter().zip(b).map(|(a, b)| a * b).sum();
+    outputs.push(actual);
+    assert_eq!(sum, actual);
+
+    Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
 }
 
 #[allow(clippy::eq_op)]
-pub fn zero_one_two<F: Field>() {
-    let zero = F::ZERO;
-    assert!(zero == zero);
-    assert!(zero.is_zero()); // true
-    assert!(!zero.is_one()); // false
-
-    let one = F::ONE;
-    assert!(one == one);
-    assert!(!one.is_zero()); // false
-    assert!(one.is_one()); // true
-    assert_eq!(zero + one, one);
-
-    let two = one + one;
-    assert!(two == two);
-    assert_ne!(zero, two);
-    assert_ne!(one, two);
-}
-
-#[allow(clippy::eq_op)]
-pub fn ordering<F: Field>(a: F, b: F) {
+pub fn math_properties<F: Field>(a: F, b: F) -> TestResult {
     let zero = F::ZERO;
     let one = F::ONE;
     let two = one + one;
@@ -348,7 +337,6 @@ pub fn ordering<F: Field>(a: F, b: F) {
     assert_eq!((a + b) + a, a + (b + a));
     // (a + b).double() = (a + b) + (b + a)
     assert_eq!((a + b).double(), (a + b) + (b + a));
-    // assert_eq!(F::half(), F::ONE.double().inverse().unwrap());
 
     // a * 0 = 0
     assert_eq!(a * zero, zero);
@@ -383,19 +371,6 @@ pub fn ordering<F: Field>(a: F, b: F) {
         assert_eq!(a / a, one);
     }
 
-    // (0..10).into_par_iter().for_each(|len| {
-    //     let mut a = Vec::new();
-    //     let mut b = Vec::new();
-    //     for _ in 0..len {
-    //         a.push(F::rand());
-    //         b.push(F::rand());
-    //         assert_eq!(
-    //             F::sum_of_products(a.clone().into_iter(), b.clone().into_iter()),
-    //             a.iter().zip(b.iter()).map(|(x, y)| *x * y).sum()
-    //         );
-    //     }
-    // });
-
     assert!(F::ZERO.is_zero());
     {
         let z = -F::ZERO;
@@ -416,5 +391,44 @@ pub fn ordering<F: Field>(a: F, b: F) {
         let copy = a;
         a += &F::ZERO;
         assert_eq!(a, copy);
+    }
+
+    Ok("Pass".into())
+}
+
+#[allow(clippy::eq_op)]
+pub fn zero_one_two<F: Field>() {
+    let zero = F::ZERO;
+    assert!(zero == zero);
+    assert!(zero.is_zero()); // true
+    assert!(!zero.is_one()); // false
+
+    let one = F::ONE;
+    assert!(one == one);
+    assert!(!one.is_zero()); // false
+    assert!(one.is_one()); // true
+    assert_eq!(zero + one, one);
+
+    let two = one + one;
+    assert!(two == two);
+    assert_ne!(zero, two);
+    assert_ne!(one, two);
+}
+
+pub fn sqrt_1_to_100<F: Field>() {
+    let mut c = F::ONE;
+    for _ in 0..100 {
+        let mut b = c.square();
+        // assert_eq!(b.legendre(), LegendreSymbol::QuadraticResidue);
+
+        b = b.sqrt().unwrap();
+
+        if b != c {
+            b = -b;
+        }
+
+        assert_eq!(b, c);
+
+        c += &F::ONE;
     }
 }
