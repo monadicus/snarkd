@@ -18,8 +18,10 @@ pub struct Test {
     pub input: Value,
 }
 
+pub type TestResult = Result<Value, String>;
+
 pub trait Namespace: UnwindSafe + RefUnwindSafe {
-    fn run_test(&self, test: Test) -> Result<Value, String>;
+    fn run_test(&self, test: Test) -> TestResult;
 }
 
 pub trait Runner {
