@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 
 use anyhow::Result;
 use async_trait::async_trait;
@@ -59,11 +59,11 @@ impl RpcServer for SnarkdRpc {
         }
     }
 
-    async fn list_peers(&self) -> Result<Vec<PeerData>, RpcError> {
+    async fn get_peers(&self) -> Result<HashMap<SocketAddr, PeerData>, RpcError> {
         Ok(self
             .peer_book
             .connected_peers()
-            .map(|kv| kv.value().data)
+            .map(|kv| (*kv.key(), kv.value().data))
             .collect())
     }
 

@@ -17,7 +17,7 @@ struct Args {
 
 #[derive(Debug, Subcommand)]
 enum PeersCommands {
-    List,
+    Get,
     Listen,
 }
 
@@ -65,10 +65,10 @@ async fn main() {
             )
         }
         Commands::Peers(command) => match command {
-            PeersCommands::List => {
+            PeersCommands::Get => {
                 println!(
                     "{}",
-                    json!(client.list_peers().await.expect("error listing peers"))
+                    json!(client.get_peers().await.expect("error listing peers"))
                 )
             }
             PeersCommands::Listen => {

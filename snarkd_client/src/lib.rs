@@ -1,3 +1,5 @@
+use std::{collections::HashMap, net::SocketAddr};
+
 use anyhow::{anyhow, Result};
 use snarkd_rpc::{
     client::{websocket_client, Client},
@@ -32,8 +34,8 @@ impl SnarkdClient {
         self.rpc.bar(arg).await
     }
 
-    pub async fn list_peers(&self) -> Result<Vec<PeerData>, RpcError> {
-        self.rpc.list_peers().await
+    pub async fn get_peers(&self) -> Result<HashMap<SocketAddr, PeerData>, RpcError> {
+        self.rpc.get_peers().await
     }
 
     pub async fn subscribe_peers(&self) -> Result<Subscription<PeerMessage>, RpcError> {

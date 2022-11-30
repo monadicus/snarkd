@@ -1,3 +1,5 @@
+use std::{collections::HashMap, net::SocketAddr};
+
 use jsonrpsee::{types::SubscriptionResult, SubscriptionSink};
 use snarkd_storage::PeerData;
 
@@ -28,8 +30,8 @@ async fn test_snarkd_rpc() -> anyhow::Result<()> {
             Ok(arg)
         }
 
-        async fn list_peers(&self) -> Result<Vec<PeerData>, RpcError> {
-            Ok(vec![])
+        async fn get_peers(&self) -> Result<HashMap<SocketAddr, PeerData>, RpcError> {
+            Ok(HashMap::new())
         }
 
         fn subscribe_peers(&self, mut sink: SubscriptionSink) -> SubscriptionResult {
@@ -44,7 +46,7 @@ async fn test_snarkd_rpc() -> anyhow::Result<()> {
 
     assert_eq!(rpc.foo().await?, "foo");
     assert_eq!(rpc.bar("bar".to_string()).await?, "bar");
-    assert_eq!(rpc.list_peers().await?.len(), 0);
+    assert_eq!(rpc.get_peers().await?.len(), 0);
     let mut subscription = rpc.subscribe_peers().await?;
     assert!(subscription.next().await.is_some());
     subscription.unsubscribe().await?;
