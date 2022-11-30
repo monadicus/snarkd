@@ -16,7 +16,7 @@ struct Args {
     /// case input generation mode
     #[arg(value_enum)]
     input: Input,
-    /// output file. prints to terminal if unset
+    /// path to the output file. prints to terminal if unset
     #[arg(short)]
     output: Option<PathBuf>,
 }
@@ -96,9 +96,13 @@ impl Tests {
 fn main() {
     let args = Args::parse();
     let tests = args.input.gen(args.n_tests);
-    let json = tests.into_config(args.namespace, args.method);
-    if let Some(out) = args.output {
-        write(out, json).unwrap();
+    let json = tests.into_config(args.namespace, args.method.clone());
+    if let Some(mut out) = args.output {
+        if out.is_dir() {
+            out.push(format!("generated_{}.json", args.method))
+        }
+        write(&out, json).unwrap();
+        println!("wrote output to {}", out.display());
     } else {
         println!("{json}");
     };
