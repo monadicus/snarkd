@@ -97,7 +97,7 @@ pub fn add<G: Projective>(a: G, b: G, c: G) -> TestResult {
         }
     }
 
-    Ok(Value::from(outputs))
+    Ok(outputs.into())
 }
 
 pub fn mul<G: Projective>(mut a: G, mut b: G, s: Scalar) -> TestResult {
@@ -127,7 +127,7 @@ pub fn mul<G: Projective>(mut a: G, mut b: G, s: Scalar) -> TestResult {
 
     assert_eq!(tmp1, tmp2);
     assert_eq!(tmp1, tmp3);
-    Ok(Value::from(outputs))
+    Ok(outputs.into())
 }
 
 pub fn double<G: Projective>(mut a: G, mut b: G) -> TestResult {
@@ -153,7 +153,7 @@ pub fn double<G: Projective>(mut a: G, mut b: G) -> TestResult {
 
     assert_eq!(tmp1, tmp2);
     assert_eq!(tmp1, tmp3);
-    Ok(Value::from(outputs))
+    Ok(outputs.into())
 }
 
 pub fn neg<G: Projective>(r: G, s: Scalar) -> TestResult {
@@ -182,7 +182,7 @@ pub fn neg<G: Projective>(r: G, s: Scalar) -> TestResult {
     t1 = -t1;
     outputs.push(t1.to_string());
     assert_eq!(t1, t2);
-    Ok(Value::from(outputs))
+    Ok(outputs.into())
 }
 
 pub fn transform<G: Projective>(g: G) -> TestResult {

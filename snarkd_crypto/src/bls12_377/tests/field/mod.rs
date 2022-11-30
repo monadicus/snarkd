@@ -25,7 +25,7 @@ pub fn neg<F: Field>(a: F) -> TestResult {
 
     assert!(b.is_zero());
     outputs.push(b.to_string());
-    Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
+    Ok(outputs.into())
 }
 
 pub fn add<F: Field>(a: F, b: F, c: F) -> TestResult {
@@ -40,7 +40,7 @@ pub fn add<F: Field>(a: F, b: F, c: F) -> TestResult {
 
     assert_eq!(t0, t1);
     assert_eq!(t1, t2);
-    Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
+    Ok(outputs.into())
 }
 
 pub fn add_assign<F: Field>(a: F, b: F, c: F) -> TestResult {
@@ -61,7 +61,7 @@ pub fn add_assign<F: Field>(a: F, b: F, c: F) -> TestResult {
     // assert!(tmp1.is_valid());
     // assert!(tmp2.is_valid());
     assert_eq!(tmp1, tmp2);
-    Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
+    Ok(outputs.into())
 }
 
 pub fn sub<F: Field>(a: F, b: F) -> TestResult {
@@ -79,7 +79,7 @@ pub fn sub<F: Field>(a: F, b: F) -> TestResult {
     outputs.push(t2.to_string());
 
     assert!(t2.is_zero());
-    Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
+    Ok(outputs.into())
 }
 
 pub fn mul<F: Field>(a: F, b: F, c: F) -> TestResult {
@@ -105,7 +105,7 @@ pub fn mul<F: Field>(a: F, b: F, c: F) -> TestResult {
 
     assert_eq!(t0, t1);
     assert_eq!(t1, t2);
-    Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
+    Ok(outputs.into())
 }
 
 pub fn mul_assign<F: Field>(a: F, b: F, c: F) -> TestResult {
@@ -144,7 +144,7 @@ pub fn mul_assign<F: Field>(a: F, b: F, c: F) -> TestResult {
 
     //     assert_eq!(tmp1, a);
 
-    Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
+    Ok(outputs.into())
 }
 
 pub fn inversion<F: Field>(mut a: F) -> TestResult {
@@ -161,7 +161,7 @@ pub fn inversion<F: Field>(mut a: F) -> TestResult {
         assert_eq!(a, F::ONE);
     }
 
-    Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
+    Ok(outputs.into())
 }
 
 pub fn double<F: Field>(mut a: F) -> TestResult {
@@ -174,7 +174,7 @@ pub fn double<F: Field>(mut a: F) -> TestResult {
     outputs.push(b.to_string());
 
     assert_eq!(a, b);
-    Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
+    Ok(outputs.into())
 }
 
 pub fn square<F: Field>(mut a: F) -> TestResult {
@@ -187,7 +187,7 @@ pub fn square<F: Field>(mut a: F) -> TestResult {
     outputs.push(b.to_string());
 
     assert_eq!(a, b);
-    Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
+    Ok(outputs.into())
 }
 
 pub fn expansion<F: Field>(a: F, b: F, c: F, d: F) -> TestResult {
@@ -236,7 +236,7 @@ pub fn expansion<F: Field>(a: F, b: F, c: F, d: F) -> TestResult {
     outputs.push(t2.to_string());
 
     assert_eq!(t0, t2);
-    Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
+    Ok(outputs.into())
 }
 
 #[macro_export]
@@ -263,7 +263,7 @@ macro_rules! frobenius {
             a_q = a_q.pow(&<$field>::characteristic());
         }
 
-        Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
+        Ok(outputs.into())
     }};
 }
 
@@ -280,7 +280,7 @@ pub fn sqrt<F: Field>(a: F) -> TestResult {
         assert!(sqrt.square() == a || sqrt.square() == -a);
     }
 
-    Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
+    Ok(outputs.into())
 }
 
 pub fn pow<F: Field>(a: F) -> TestResult {
@@ -288,10 +288,10 @@ pub fn pow<F: Field>(a: F) -> TestResult {
 
     let a_cubed = a * a * a;
     let a_pow_3 = a.pow(&[0x3, 0x0, 0x0, 0x0]);
-    outputs.push(a_pow_3);
+    outputs.push(a_pow_3.to_string());
     assert_eq!(a_cubed, a_pow_3);
 
-    Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
+    Ok(outputs.into())
 }
 
 pub fn sum_of_products<F: Field>(a: Vec<F>, b: Vec<F>) -> TestResult {
@@ -303,7 +303,7 @@ pub fn sum_of_products<F: Field>(a: Vec<F>, b: Vec<F>) -> TestResult {
     outputs.push(actual.to_string());
     assert_eq!(sum, actual);
 
-    Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
+    Ok(outputs.into())
 }
 
 #[allow(clippy::eq_op)]

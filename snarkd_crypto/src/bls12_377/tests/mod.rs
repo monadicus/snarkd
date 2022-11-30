@@ -1,6 +1,11 @@
 pub mod affine;
+use affine::*;
+
 pub mod field;
+use field::*;
+
 pub mod projective;
+use projective::*;
 
 use std::{
     cmp::Ordering,
@@ -13,11 +18,6 @@ use test_runner::{run_tests, Namespace, Runner};
 
 use crate::bls12_377::{
     fp, fp2, Affine, Field, Fp, Fp12, Fp2, Fp6, G1Affine, G2Affine, LegendreSymbol, Scalar,
-};
-
-use self::{
-    field::{sqrt_1_to_100, zero_one_two, Fp12Ns, Fp2Ns, Fp6Ns, FpNs, ScalarNs},
-    projective::{BilinearNs, G1ProjectiveNs, G2ProjectiveNs},
 };
 
 struct TestRunner;
@@ -33,8 +33,8 @@ impl Runner for TestRunner {
             "G2ProjectiveNs" => Box::new(G2ProjectiveNs),
             "BilinearNs" => Box::new(BilinearNs),
             "ScalarNs" => Box::new(ScalarNs),
-            // "AffineG1Ns" => Box::new(todo!()),
-            // "AffineG2Ns" => Box::new(todo!()),
+            "AffineG1Ns" => Box::new(G1AffineNs),
+            "AffineG2Ns" => Box::new(G2AffineNs),
             _ => return None,
         })
     }
