@@ -12,7 +12,7 @@ hex = { workspace = true }
 indexmap = { workspace = true }
 itertools = { workspace = true }
 num-bigint = { workspace = true }
-num_cpus = "1.0"
+num_cpus = { workspace = true }
 parking_lot = { workspace = true }
 rand = { workspace = true }
 rand_core = { workspace = true }
@@ -26,7 +26,7 @@ smallvec = { workspace = true }
 sha2 = { workspace = true }
 thiserror = { workspace = true }
 # used for cargo-fuzz
-arbitrary = { version = "1", optional = true, features = ["derive"] }
+arbitrary = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }
 test-runner = { workspace = true, optional = true }
 

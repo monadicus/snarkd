@@ -11,6 +11,7 @@ members = [
     "snarkd_peer",
     "tools/coverage",
     "tools/test-runner",
+    "tools/test-generator",
 ]
 
 [workspace.dependencies]
@@ -60,9 +61,12 @@ tokio = { version = "1.0", features = ["full"] }
 tokio-rusqlite = "0.3.0"
 uuid = { version = "1.2", features = ["serde", "v4"] }
 walkdir = "2.3"
+arbitrary = { version = "1", features = ["derive"] }
+num_cpus = "1.0"
 
 snarkd_common = { path = "./snarkd_common" }
 snarkd_errors = { path = "./snarkd_errors" }
+snarkd_crypto = { path = "./snarkd_crypto" }
 test-runner = { path = "./tools/test-runner" }
 
 [profile.test]

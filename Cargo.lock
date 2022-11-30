@@ -1962,6 +1962,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "test-generator"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "rand",
+ "serde_json",
+ "snarkd_crypto",
+ "test-runner",
+]
+
+[[package]]
 name = "test-runner"
 version = "0.1.0"
 dependencies = [
