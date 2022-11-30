@@ -6,11 +6,14 @@ edition = "2021"
 [dependencies]
 anyhow = { workspace = true }
 clap = { workspace = true }
+crossterm = { version = "0.17" }
+better-panic = { version = "0.2" }
 lazy_static = { workspace = true }
 log = { workspace = true }
 serde_json = { workspace = true }
 snarkd_client = { workspace = true }
 snarkd_common = { workspace = true }
 tokio = { workspace = true }
-tui = { version = "0.19.0" }
+tui = { version = "0.19" }
 url = { workspace = true }
+futures = "0.3.25"

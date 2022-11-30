@@ -1,8 +1,8 @@
 use std::{collections::HashMap, net::SocketAddr};
 
 use anyhow::{anyhow, Result};
-use snarkd_rpc::{
-    client::{websocket_client, Client},
+use snarkd_rpc::client::{websocket_client, Client};
+pub use snarkd_rpc::{
     common::{PeerData, PeerMessage, RpcClient, RpcError},
     jsonrpsee::core::client::Subscription,
 };

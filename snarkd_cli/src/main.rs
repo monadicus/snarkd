@@ -1,3 +1,4 @@
+use crate::tui::TuiArgs;
 use clap::{Parser, Subcommand};
 use log::error;
 use serde_json::json;
@@ -23,6 +24,7 @@ enum PeersCommands {
 
 #[derive(Debug, Subcommand)]
 enum Commands {
+    Tui(TuiArgs),
     Foo,
     Bar {
         arg: String,
@@ -30,6 +32,8 @@ enum Commands {
     #[command(subcommand)]
     Peers(PeersCommands),
 }
+
+mod tui;
 
 #[tokio::main]
 async fn main() {
@@ -64,6 +68,9 @@ async fn main() {
                 json!(client.bar(arg).await.expect("error running foo"))
             )
         }
+        Commands::Tui(args) => tui::start(args, config, client)
+            .await
+            .expect("error running tui"),
         Commands::Peers(command) => match command {
             PeersCommands::Get => {
                 println!(
