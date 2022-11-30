@@ -70,6 +70,18 @@ impl TryFrom<String> for Fp {
     }
 }
 
+impl TryFrom<&str> for Fp {
+    type Error = String;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        let value = value.strip_prefix("0x").unwrap_or(value);
+        let hex = format!("0x{:0>96}", value);
+        ruint::Uint::from_str(&hex)
+            .map_err(|e| format!("Failed to deserialize input: {e}"))
+            .map(Self)
+    }
+}
+
 impl Namespace for FpNs {
     fn run_test(&self, test: Test) -> TestResult {
         match test.method.as_str() {
