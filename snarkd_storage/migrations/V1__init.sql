@@ -54,7 +54,7 @@ CREATE TABLE transitions(
     tpk BLOB NOT NULL,
     tcm BLOB NOT NULL,
     fee BIGINT NOT NULL,
-    deployment_id INTEGER REFERENCES deployments(id) ON DELETE CASCADE,
+    deployment_id INTEGER REFERENCES deployments(id) ON DELETE CASCADE
 );
 
 CREATE TABLE deployments (
@@ -63,7 +63,7 @@ CREATE TABLE deployments (
     program BLOB NOT NULL,
     verifying_key_id BLOB NOT NULL,
     verifying_key BLOB NOT NULL,
-    certificate BLOB NOT NULL,
+    certificate BLOB NOT NULL
 );
 
 CREATE TABLE peers(
