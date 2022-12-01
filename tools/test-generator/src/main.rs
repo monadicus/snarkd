@@ -44,6 +44,8 @@ enum Input {
     ThreeFp12,
     FourFp12,
     TwoFp12Lists,
+    Fp2Fp6,
+    Fp2Fp2Fp6,
 }
 
 impl Input {
@@ -69,16 +71,14 @@ impl Input {
         Self::gen_fp12s::<3>,
         Self::gen_fp12s::<4>,
         Self::gen_fp12_lists::<2>,
+        Self::gen_fp2_fp6,
+        Self::gen_fp2_fp2_fp6,
     ];
 
-    /// used to generate `n` input cases for tests. this is the method you want
-    fn gen(self, n: usize) -> Tests {
-        Self::gen_inner(n, Self::FN_TABLE[self as usize])
-    }
-
-    /// inner function to generate `n` input cases using the given generator `f`
-    fn gen_inner(n_tests: usize, f: fn() -> Value) -> Tests {
+    /// used to generate `n_tests` input cases for tests
+    fn gen(self, n_tests: usize) -> Tests {
         let pad_len = n_tests.to_string().len() - 1;
+        let f = Self::FN_TABLE[self as usize];
         Tests(
             (0..n_tests)
                 .map(|i| {
@@ -151,44 +151,54 @@ impl Input {
         .into()
     }
 
-    /// generates multiple Fp values
+    /// generates `N_ARGS` `Fp` values
     fn gen_fps<const N_ARGS: usize>() -> Value {
         Self::gen_multi::<N_ARGS>(Self::gen_fp)
     }
 
-    /// generates multiple Fp2 values
+    /// generates `N_ARGS` `Fp2` values
     fn gen_fp2s<const N_ARGS: usize>() -> Value {
         Self::gen_multi::<N_ARGS>(Self::gen_fp2)
     }
 
-    /// generates multiple Fp6 values
+    /// generates `N_ARGS` `Fp6` values
     fn gen_fp6s<const N_ARGS: usize>() -> Value {
         Self::gen_multi::<N_ARGS>(Self::gen_fp6)
     }
 
-    /// generates multiple Fp12 values
+    /// generates `N_ARGS` `Fp12` values
     fn gen_fp12s<const N_ARGS: usize>() -> Value {
         Self::gen_multi::<N_ARGS>(Self::gen_fp)
     }
 
-    /// generates multiple vectors of Fp values
+    /// generates `N_ARGS` vectors of `Vec<Fp>` values
     fn gen_fp_lists<const N_ARGS: usize>() -> Value {
         Self::gen_lists::<N_ARGS>(Self::gen_fp)
     }
 
-    /// generates multiple vectors of Fp2 values
+    /// generates `N_ARGS` vectors of `Vec<Fp2>` values
     fn gen_fp2_lists<const N_ARGS: usize>() -> Value {
         Self::gen_lists::<N_ARGS>(Self::gen_fp2)
     }
 
-    /// generates multiple vectors of Fp6 values
+    /// generates `N_ARGS` vectors of `Vec<Fp6>` values
     fn gen_fp6_lists<const N_ARGS: usize>() -> Value {
         Self::gen_lists::<N_ARGS>(Self::gen_fp6)
     }
 
-    /// generates multiple vectors of Fp12 values
+    /// generates `N_ARGS` vectors of `Vec<Fp12>` values
     fn gen_fp12_lists<const N_ARGS: usize>() -> Value {
         Self::gen_lists::<N_ARGS>(Self::gen_fp12)
+    }
+
+    /// generates `(Fp2, Fp6)`
+    fn gen_fp2_fp6() -> Value {
+        vec![Self::gen_fp2(), Self::gen_fp6()].into()
+    }
+
+    /// generates `(Fp2, Fp2, Fp6)`
+    fn gen_fp2_fp2_fp6() -> Value {
+        vec![Self::gen_fp2(), Self::gen_fp2(), Self::gen_fp6()].into()
     }
 }
 
@@ -212,6 +222,7 @@ fn main() {
     let args = Args::parse();
     let tests = args.input.gen(args.n_tests);
     let json = tests.into_json(args.namespace, args.method.clone());
+
     if let Some(mut out) = args.output {
         if out.is_dir() {
             out.push(format!("generated_{}.json", args.method))
