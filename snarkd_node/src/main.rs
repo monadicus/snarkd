@@ -170,7 +170,7 @@ async fn main() {
                     let mut remote_addr = connection.remote_addr();
                     remote_addr.set_port(introduction.inbound_port as u16);
                     info!("received connection from {}", remote_addr);
-                    rpc_channels.peer_message(rpc::PeerMessage::Accept(address));
+                    rpc_channels.peer_message(rpc::PeerMessage::Accept(remote_addr));
 
                     if let Err(e) = peer_book.discovered_peers(&database, [remote_addr]).await {
                         error!(
@@ -182,7 +182,7 @@ async fn main() {
                     if let Some(mut peer) = peer_book.peer_mut(&remote_addr) {
                         peer.register_connection(PeerDirection::Inbound, connection);
                         rpc_channels.peer_message(rpc::PeerMessage::Handshake {
-                            address,
+                            address: remote_addr,
                             peer: peer.data,
                         });
 
