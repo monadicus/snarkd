@@ -1,7 +1,7 @@
 use clap::Parser;
 use rand::{thread_rng, Rng};
 use serde_json::Value;
-use snarkd_crypto::bls12_377::{Field, Fp};
+use snarkd_crypto::bls12_377::{Field, Fp, Fp2};
 use std::{collections::BTreeMap, fs::write, path::PathBuf};
 use test_runner::{Case, TestConfig, TestExpectationMode};
 
@@ -28,16 +28,26 @@ enum Input {
     ThreeFp,
     FourFp,
     TwoFpLists,
+    OneFp2,
+    TwoFp2,
+    ThreeFp2,
+    FourFp2,
+    TwoFp2Lists,
 }
 
 impl Input {
     fn gen(self, n: usize) -> Tests {
         match self {
-            Input::OneFp => Self::gen_tests(n, Self::gen_single_fp),
-            Input::TwoFp => Self::gen_tests(n, Self::gen_fp::<2>),
-            Input::ThreeFp => Self::gen_tests(n, Self::gen_fp::<3>),
-            Input::FourFp => Self::gen_tests(n, Self::gen_fp::<4>),
+            Input::OneFp => Self::gen_tests(n, Self::gen_fp),
+            Input::TwoFp => Self::gen_tests(n, Self::gen_fps::<2>),
+            Input::ThreeFp => Self::gen_tests(n, Self::gen_fps::<3>),
+            Input::FourFp => Self::gen_tests(n, Self::gen_fps::<4>),
             Input::TwoFpLists => Self::gen_tests(n, Self::gen_fp_lists::<2>),
+            Input::OneFp2 => Self::gen_tests(n, Self::gen_fp2),
+            Input::TwoFp2 => Self::gen_tests(n, Self::gen_fp2s::<2>),
+            Input::ThreeFp2 => Self::gen_tests(n, Self::gen_fp2s::<3>),
+            Input::FourFp2 => Self::gen_tests(n, Self::gen_fp2s::<4>),
+            Input::TwoFp2Lists => Self::gen_tests(n, Self::gen_fp2_lists::<2>),
         }
     }
 
@@ -58,24 +68,37 @@ impl Input {
         )
     }
 
-    fn gen_single_fp() -> Value {
+    fn gen_lists<const N_ARGS: usize>(f: fn() -> Value) -> Value {
+        Value::Array(
+            (0..N_ARGS)
+                .map(|_| (0..thread_rng().gen_range(0..10)).map(|_| f()).collect())
+                .collect(),
+        )
+    }
+
+    fn gen_fp() -> Value {
         Fp::rand().to_string().into()
     }
 
-    fn gen_fp<const N_ARGS: usize>() -> Value {
-        Value::Array((0..N_ARGS).map(|_| Self::gen_single_fp()).collect())
+    fn gen_fps<const N_ARGS: usize>() -> Value {
+        Value::Array((0..N_ARGS).map(|_| Self::gen_fp()).collect())
     }
 
     fn gen_fp_lists<const N_ARGS: usize>() -> Value {
-        Value::Array(
-            (0..2)
-                .map(|_| {
-                    (0..thread_rng().gen_range(0..10))
-                        .map(|_| Self::gen_single_fp())
-                        .collect()
-                })
-                .collect(),
-        )
+        Self::gen_lists::<N_ARGS>(Self::gen_fp)
+    }
+
+    fn gen_fp2() -> Value {
+        let v = Fp2::rand();
+        Value::Array(vec![v.c0.to_string().into(), v.c1.to_string().into()])
+    }
+
+    fn gen_fp2s<const N_ARGS: usize>() -> Value {
+        Value::Array((0..N_ARGS).map(|_| Self::gen_fp2()).collect())
+    }
+
+    fn gen_fp2_lists<const N_ARGS: usize>() -> Value {
+        Self::gen_lists::<N_ARGS>(Self::gen_fp2)
     }
 }
 
