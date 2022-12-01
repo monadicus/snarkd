@@ -46,6 +46,7 @@ enum Input {
     TwoFp12Lists,
     Fp2Fp6,
     Fp2Fp2Fp6,
+    Fp2Fp2Fp2Fp12,
 }
 
 impl Input {
@@ -73,6 +74,7 @@ impl Input {
         Self::gen_fp12_lists::<2>,
         Self::gen_fp2_fp6,
         Self::gen_fp2_fp2_fp6,
+        Self::gen_fp2_fp2_fp2_fp12,
     ];
 
     /// used to generate `n_tests` input cases for tests
@@ -168,7 +170,7 @@ impl Input {
 
     /// generates `N_ARGS` `Fp12` values
     fn gen_fp12s<const N_ARGS: usize>() -> Value {
-        Self::gen_multi::<N_ARGS>(Self::gen_fp)
+        Self::gen_multi::<N_ARGS>(Self::gen_fp12)
     }
 
     /// generates `N_ARGS` vectors of `Vec<Fp>` values
@@ -199,6 +201,17 @@ impl Input {
     /// generates `(Fp2, Fp2, Fp6)`
     fn gen_fp2_fp2_fp6() -> Value {
         vec![Self::gen_fp2(), Self::gen_fp2(), Self::gen_fp6()].into()
+    }
+
+    /// generates `(Fp2, Fp2, Fp2, Fp12)`
+    fn gen_fp2_fp2_fp2_fp12() -> Value {
+        vec![
+            Self::gen_fp2(),
+            Self::gen_fp2(),
+            Self::gen_fp2(),
+            Self::gen_fp12(),
+        ]
+        .into()
     }
 }
 
