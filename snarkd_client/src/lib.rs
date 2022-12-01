@@ -1,7 +1,10 @@
 use std::{collections::HashMap, net::SocketAddr};
 
 use anyhow::{anyhow, Result};
-use snarkd_rpc::client::{websocket_client, Client};
+use snarkd_rpc::{
+    client::{websocket_client, Client},
+    common::NodeMetadata,
+};
 pub use snarkd_rpc::{
     common::{PeerData, PeerMessage, RpcClient, RpcError},
     jsonrpsee::core::client::Subscription,
@@ -32,6 +35,10 @@ impl SnarkdClient {
 
     pub async fn bar(&self, arg: String) -> Result<String, RpcError> {
         self.rpc.bar(arg).await
+    }
+
+    pub async fn metadata(&self) -> Result<NodeMetadata, RpcError> {
+        self.rpc.metadata().await
     }
 
     pub async fn get_peers(&self) -> Result<HashMap<SocketAddr, PeerData>, RpcError> {

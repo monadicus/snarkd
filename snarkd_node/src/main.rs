@@ -1,9 +1,3 @@
-use std::{
-    net::{SocketAddr, SocketAddrV4},
-    sync::Arc,
-    time::Duration,
-};
-
 use clap::Parser;
 use config::{CONFIG, NODE_ID};
 use log::{debug, error, info, warn, LevelFilter};
@@ -13,6 +7,11 @@ use snarkd_network::Connection;
 use snarkd_peer::announcer::AnnouncerConsumer;
 use snarkd_rpc::server::websocket_server;
 use snarkd_storage::{Database, PeerDirection};
+use std::{
+    net::{SocketAddr, SocketAddrV4},
+    sync::Arc,
+    time::Duration,
+};
 use tokio::{net::TcpListener, sync::oneshot, time::MissedTickBehavior};
 
 use crate::{inbound_handler::InboundHandler, peer::PEER_PING_INTERVAL};
@@ -290,8 +289,10 @@ async fn main() {
     let rpc_handle = if rpc_enabled {
         let rpc_addr = SocketAddr::new(config.rpc_ip.into(), config.rpc_port);
         let rpc_module = rpc::SnarkdRpc {
+            start_time: chrono::Utc::now(),
             peer_book,
             channels: rpc_channels,
+            config: config.clone(),
         }
         .module();
 

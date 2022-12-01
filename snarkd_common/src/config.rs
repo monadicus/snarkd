@@ -18,7 +18,7 @@ pub enum Verbosity {
     Trace,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Config {
     /// Log level verbosity, defaults to `info`

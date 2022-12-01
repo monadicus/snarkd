@@ -24,11 +24,12 @@ enum PeersCommands {
 
 #[derive(Debug, Subcommand)]
 enum Commands {
-    Tui(TuiArgs),
     Foo,
     Bar {
         arg: String,
     },
+    Tui(TuiArgs),
+    Metadata,
     #[command(subcommand)]
     Peers(PeersCommands),
 }
@@ -71,6 +72,12 @@ async fn main() {
         Commands::Tui(args) => tui::start(args, config, client)
             .await
             .expect("error running tui"),
+        Commands::Metadata => {
+            println!(
+                "{}",
+                json!(client.metadata().await.expect("error getting metadata"))
+            )
+        }
         Commands::Peers(command) => match command {
             PeersCommands::Get => {
                 println!(

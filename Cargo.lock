@@ -2702,10 +2702,13 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "chrono",
  "jsonrpsee",
  "serde",
+ "snarkd_common",
  "snarkd_storage",
  "tokio",
+ "uuid",
 ]
 
 [[package]]

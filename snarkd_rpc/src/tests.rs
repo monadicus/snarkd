@@ -1,11 +1,14 @@
 use std::{collections::HashMap, net::SocketAddr};
 
+use chrono::{DateTime, Utc};
 use jsonrpsee::{types::SubscriptionResult, SubscriptionSink};
+use snarkd_common::config::Config;
 use snarkd_storage::PeerData;
+use uuid::Uuid;
 
 use crate::{
     client,
-    common::{self, PeerMessage},
+    common::{self, NodeMetadata, PeerMessage},
     server,
 };
 
@@ -38,6 +41,17 @@ async fn test_snarkd_rpc() -> anyhow::Result<()> {
             let _ = sink.send(&PeerMessage::Accept("0.0.0.0:0".parse().unwrap()));
             Ok(())
         }
+
+        fn metadata(&self) -> Result<NodeMetadata, RpcError> {
+            Ok(NodeMetadata {
+                node_id: Uuid::new_v4(),
+                version: "".to_string(),
+                config: Config::default(),
+                config_path: "".to_string(),
+                cwd: "".to_string(),
+                start_time: DateTime::<Utc>::default(),
+            })
+        }
     }
 
     let (addr, server) =
@@ -47,6 +61,7 @@ async fn test_snarkd_rpc() -> anyhow::Result<()> {
     assert_eq!(rpc.foo().await?, "foo");
     assert_eq!(rpc.bar("bar".to_string()).await?, "bar");
     assert_eq!(rpc.get_peers().await?.len(), 0);
+    assert!(rpc.metadata().await.is_ok());
     let mut subscription = rpc.subscribe_peers().await?;
     assert!(subscription.next().await.is_some());
     subscription.unsubscribe().await?;
