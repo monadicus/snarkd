@@ -10,30 +10,6 @@ use super::*;
 pub struct G1ProjectiveNs;
 
 impl G1ProjectiveNs {
-    fn add(a: G1Projective, b: G1Projective, c: G1Projective) -> TestResult {
-        add(a, b, c)
-    }
-
-    fn mul(a: G1Projective, b: G1Projective, s: Scalar) -> TestResult {
-        mul(a, b, s)
-    }
-
-    fn double(a: G1Projective, b: G1Projective) -> TestResult {
-        double(a, b)
-    }
-
-    fn neg(a: G1Projective, s: Scalar) -> TestResult {
-        neg(a, s)
-    }
-
-    fn transform(g: G1Projective) -> TestResult {
-        transform(g)
-    }
-
-    fn batch_normalization(batch: Vec<G1Projective>) -> TestResult {
-        batch_normalization(batch)
-    }
-
     pub fn projective_glv(point: G1Projective, scalar: Scalar) -> TestResult {
         let mut outputs = Vec::new();
 
@@ -67,27 +43,27 @@ impl Namespace for G1ProjectiveNs {
         match test.method.as_str() {
             "add" => {
                 let (a, b, c) = serde_json::from_value(test.input).expect("failed to get input");
-                Self::add(a, b, c)
+                add::<G1Projective>(a, b, c)
             }
             "mul" => {
                 let (a, b, s) = serde_json::from_value(test.input).expect("failed to get input");
-                Self::mul(a, b, s)
+                mul::<G1Projective>(a, b, s)
             }
             "double" => {
                 let (a, b) = serde_json::from_value(test.input).expect("failed to get input");
-                Self::double(a, b)
+                double::<G1Projective>(a, b)
             }
             "neg" => {
                 let (a, s) = serde_json::from_value(test.input).expect("failed to get input");
-                Self::neg(a, s)
+                neg::<G1Projective>(a, s)
             }
             "transform" => {
                 let g = serde_json::from_value(test.input).expect("failed to get input");
-                Self::transform(g)
+                transform::<G1Projective>(g)
             }
             "batch_normalization" => {
                 let batch = serde_json::from_value(test.input).expect("failed to get input");
-                Self::batch_normalization(batch)
+                batch_normalization::<G1Projective>(batch)
             }
             "projective_glv" => {
                 let (point, scalar) =

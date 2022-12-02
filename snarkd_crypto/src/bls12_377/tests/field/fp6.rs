@@ -12,58 +12,6 @@ use super::*;
 pub struct Fp6Ns;
 
 impl Fp6Ns {
-    pub fn neg(a: Fp6) -> TestResult {
-        neg(a)
-    }
-
-    pub fn add(a: Fp6, b: Fp6, c: Fp6) -> TestResult {
-        add(a, b, c)
-    }
-
-    pub fn sub(a: Fp6, b: Fp6) -> TestResult {
-        sub(a, b)
-    }
-
-    pub fn mul(a: Fp6, b: Fp6, c: Fp6) -> TestResult {
-        mul(a, b, c)
-    }
-
-    pub fn inversion(a: Fp6) -> TestResult {
-        inversion(a)
-    }
-
-    pub fn double(a: Fp6) -> TestResult {
-        double(a)
-    }
-
-    pub fn square(a: Fp6) -> TestResult {
-        square(a)
-    }
-
-    pub fn expansion(a: Fp6, b: Fp6, c: Fp6, d: Fp6) -> TestResult {
-        expansion(a, b, c, d)
-    }
-
-    pub fn sqrt(a: Fp6) -> TestResult {
-        sqrt(a)
-    }
-
-    pub fn frobenius(a: Fp6) -> TestResult {
-        frobenius!(a, Fp6)
-    }
-
-    pub fn pow(a: Fp6) -> TestResult {
-        pow(a)
-    }
-
-    pub fn sum_of_products(a: Vec<Fp6>, b: Vec<Fp6>) -> TestResult {
-        sum_of_products(a, b)
-    }
-
-    pub fn math_properties(a: Fp6, b: Fp6) -> TestResult {
-        math_properties(a, b)
-    }
-
     pub fn mul_by_1(c1: Fp2, mut a: Fp6) -> TestResult {
         let mut outputs = Vec::new();
         let mut b = a;
@@ -107,63 +55,63 @@ impl Namespace for Fp6Ns {
         match test.method.as_str() {
             "neg" => {
                 let a: Fp6Tuple = serde_json::from_value(test.input).expect("failed to get input");
-                Self::neg(a.into())
+                neg::<Fp6>(a.into())
             }
             "add" => {
                 let (a, b, c): (Fp6Tuple, Fp6Tuple, Fp6Tuple) =
                     serde_json::from_value(test.input).expect("failed to get input");
-                Self::add(a.into(), b.into(), c.into())
+                add::<Fp6>(a.into(), b.into(), c.into())
             }
             "sub" => {
                 let (a, b): (Fp6Tuple, Fp6Tuple) =
                     serde_json::from_value(test.input).expect("failed to get input");
-                Self::sub(a.into(), b.into())
+                sub::<Fp6>(a.into(), b.into())
             }
             "mul" => {
                 let (a, b, c): (Fp6Tuple, Fp6Tuple, Fp6Tuple) =
                     serde_json::from_value(test.input).expect("failed to get input");
-                Self::mul(a.into(), b.into(), c.into())
+                mul::<Fp6>(a.into(), b.into(), c.into())
             }
             "inversion" => {
                 let a: Fp6Tuple = serde_json::from_value(test.input).expect("failed to get input");
-                Self::inversion(a.into())
+                inversion::<Fp6>(a.into())
             }
             "double" => {
                 let a: Fp6Tuple = serde_json::from_value(test.input).expect("failed to get input");
-                Self::double(a.into())
+                double::<Fp6>(a.into())
             }
             "square" => {
                 let a: Fp6Tuple = serde_json::from_value(test.input).expect("failed to get input");
-                Self::square(a.into())
+                square::<Fp6>(a.into())
             }
             "expansion" => {
                 let (a, b, c, d): (Fp6Tuple, Fp6Tuple, Fp6Tuple, Fp6Tuple) =
                     serde_json::from_value(test.input).expect("failed to get input");
-                Self::expansion(a.into(), b.into(), c.into(), d.into())
+                expansion::<Fp6>(a.into(), b.into(), c.into(), d.into())
             }
             "frobenius" => {
                 let a: Fp6Tuple = serde_json::from_value(test.input).expect("failed to get input");
-                Self::frobenius(a.into())
+                frobenius!(Fp6::from(a), Fp6)
             }
             "sqrt" => {
                 let a: Fp6Tuple = serde_json::from_value(test.input).expect("failed to get input");
-                Self::sqrt(a.into())
+                sqrt::<Fp6>(a.into())
             }
             "pow" => {
                 let a: Fp6Tuple = serde_json::from_value(test.input).expect("failed to get input");
-                Self::pow(a.into())
+                pow::<Fp6>(a.into())
             }
             "sum_of_products" => {
                 let (a, b): (Vec<Fp6Tuple>, Vec<Fp6Tuple>) =
                     serde_json::from_value(test.input).expect("failed to get input");
                 let a = a.into_iter().map(|f| f.into()).collect();
                 let b = b.into_iter().map(|f| f.into()).collect();
-                Self::sum_of_products(a, b)
+                sum_of_products::<Fp6>(a, b)
             }
             "math_properties" => {
                 let (a, b): (Fp6Tuple, Fp6Tuple) =
                     serde_json::from_value(test.input).expect("failed to get input");
-                Self::math_properties(a.into(), b.into())
+                math_properties::<Fp6>(a.into(), b.into())
             }
             "mul_by_1" => {
                 let (c1, a): (Fp2Tuple, Fp6Tuple) =

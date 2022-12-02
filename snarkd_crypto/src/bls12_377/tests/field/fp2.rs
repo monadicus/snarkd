@@ -9,60 +9,6 @@ use super::*;
 
 pub struct Fp2Ns;
 
-impl Fp2Ns {
-    pub fn neg(a: Fp2) -> TestResult {
-        neg(a)
-    }
-
-    pub fn add(a: Fp2, b: Fp2, c: Fp2) -> TestResult {
-        add(a, b, c)
-    }
-
-    pub fn sub(a: Fp2, b: Fp2) -> TestResult {
-        sub(a, b)
-    }
-
-    pub fn mul(a: Fp2, b: Fp2, c: Fp2) -> TestResult {
-        mul(a, b, c)
-    }
-
-    pub fn inversion(a: Fp2) -> TestResult {
-        inversion(a)
-    }
-
-    pub fn double(a: Fp2) -> TestResult {
-        double(a)
-    }
-
-    pub fn square(a: Fp2) -> TestResult {
-        square(a)
-    }
-
-    pub fn expansion(a: Fp2, b: Fp2, c: Fp2, d: Fp2) -> TestResult {
-        expansion(a, b, c, d)
-    }
-
-    pub fn sqrt(a: Fp2) -> TestResult {
-        sqrt(a)
-    }
-
-    pub fn frobenius(a: Fp2) -> TestResult {
-        frobenius!(a, Fp2)
-    }
-
-    pub fn pow(a: Fp2) -> TestResult {
-        pow(a)
-    }
-
-    pub fn sum_of_products(a: Vec<Fp2>, b: Vec<Fp2>) -> TestResult {
-        sum_of_products(a, b)
-    }
-
-    pub fn math_properties(a: Fp2, b: Fp2) -> TestResult {
-        math_properties(a, b)
-    }
-}
-
 pub type Fp2Tuple = [Fp; 2];
 impl From<Fp2Tuple> for Fp2 {
     fn from(value: Fp2Tuple) -> Self {
@@ -78,63 +24,63 @@ impl Namespace for Fp2Ns {
         match test.method.as_str() {
             "neg" => {
                 let a: Fp2Tuple = serde_json::from_value(test.input).expect("failed to get input");
-                Self::neg(a.into())
+                neg::<Fp2>(a.into())
             }
             "add" => {
                 let (a, b, c): (Fp2Tuple, Fp2Tuple, Fp2Tuple) =
                     serde_json::from_value(test.input).expect("failed to get input");
-                Self::add(a.into(), b.into(), c.into())
+                add::<Fp2>(a.into(), b.into(), c.into())
             }
             "sub" => {
                 let (a, b): (Fp2Tuple, Fp2Tuple) =
                     serde_json::from_value(test.input).expect("failed to get input");
-                Self::sub(a.into(), b.into())
+                sub::<Fp2>(a.into(), b.into())
             }
             "mul" => {
                 let (a, b, c): (Fp2Tuple, Fp2Tuple, Fp2Tuple) =
                     serde_json::from_value(test.input).expect("failed to get input");
-                Self::mul(a.into(), b.into(), c.into())
+                mul::<Fp2>(a.into(), b.into(), c.into())
             }
             "inversion" => {
                 let a: Fp2Tuple = serde_json::from_value(test.input).expect("failed to get input");
-                Self::inversion(a.into())
+                inversion::<Fp2>(a.into())
             }
             "double" => {
                 let a: Fp2Tuple = serde_json::from_value(test.input).expect("failed to get input");
-                Self::double(a.into())
+                double::<Fp2>(a.into())
             }
             "square" => {
                 let a: Fp2Tuple = serde_json::from_value(test.input).expect("failed to get input");
-                Self::square(a.into())
+                square::<Fp2>(a.into())
             }
             "expansion" => {
                 let (a, b, c, d): (Fp2Tuple, Fp2Tuple, Fp2Tuple, Fp2Tuple) =
                     serde_json::from_value(test.input).expect("failed to get input");
-                Self::expansion(a.into(), b.into(), c.into(), d.into())
+                expansion::<Fp2>(a.into(), b.into(), c.into(), d.into())
             }
             "frobenius" => {
                 let a: Fp2Tuple = serde_json::from_value(test.input).expect("failed to get input");
-                Self::frobenius(a.into())
+                frobenius!(Fp2::from(a), Fp2)
             }
             "sqrt" => {
                 let a: Fp2Tuple = serde_json::from_value(test.input).expect("failed to get input");
-                Self::sqrt(a.into())
+                sqrt::<Fp2>(a.into())
             }
             "pow" => {
                 let a: Fp2Tuple = serde_json::from_value(test.input).expect("failed to get input");
-                Self::pow(a.into())
+                pow::<Fp2>(a.into())
             }
             "sum_of_products" => {
                 let (a, b): (Vec<Fp2Tuple>, Vec<Fp2Tuple>) =
                     serde_json::from_value(test.input).expect("failed to get input");
                 let a = a.into_iter().map(|f| f.into()).collect();
                 let b = b.into_iter().map(|f| f.into()).collect();
-                Self::sum_of_products(a, b)
+                sum_of_products::<Fp2>(a, b)
             }
             "math_properties" => {
                 let (a, b): (Fp2Tuple, Fp2Tuple) =
                     serde_json::from_value(test.input).expect("failed to get input");
-                Self::math_properties(a.into(), b.into())
+                math_properties::<Fp2>(a.into(), b.into())
             }
             e => panic!("unknown method for Fp2Ns: {e}"),
         }
