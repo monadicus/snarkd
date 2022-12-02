@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-snarkd_crypto = { workspace = true }
+snarkd_crypto = { workspace = true, features = ["fuzz"] }
 test-runner = { workspace = true }
 serde_json = { workspace = true }
 clap = { workspace = true }

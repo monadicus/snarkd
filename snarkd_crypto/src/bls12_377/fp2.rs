@@ -11,10 +11,9 @@ use core::{
 use ruint::uint;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
-#[cfg_attr(feature = "fuzz", derive(arbitrary::Arbitrary))]
 #[cfg_attr(
     any(test, feature = "fuzz"),
-    derive(serde::Serialize, serde::Deserialize)
+    derive(serde::Serialize, serde::Deserialize, arbitrary::Arbitrary)
 )]
 pub struct Fp2 {
     pub c0: Fp,

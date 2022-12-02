@@ -227,7 +227,7 @@ impl<P: Parameters> Distribution<SWAffine<P>> for Standard {
     }
 }
 
-#[cfg(feature = "fuzz")]
+#[cfg(any(test, feature = "fuzz"))]
 impl<'a, P: Parameters> arbitrary::Arbitrary<'a> for SWAffine<P> {
     fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
         let x = P::BaseField::arbitrary(u)?;

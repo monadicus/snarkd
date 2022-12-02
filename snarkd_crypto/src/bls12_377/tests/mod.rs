@@ -7,18 +7,24 @@ use field::*;
 pub mod projective;
 use projective::*;
 
+#[cfg(test)]
+use rayon::prelude::{IntoParallelIterator, ParallelIterator};
+#[cfg(test)]
+use ruint::uint;
+#[cfg(test)]
 use std::{
     cmp::Ordering,
     ops::{AddAssign, MulAssign},
 };
 
-use rayon::prelude::{IntoParallelIterator, ParallelIterator};
-use ruint::uint;
-use test_runner::{run_tests, Namespace, Runner};
-
+#[cfg(test)]
 use crate::bls12_377::{
     fp, fp2, Affine, Field, Fp, Fp12, Fp2, Fp6, G1Affine, G2Affine, LegendreSymbol, Scalar,
 };
+#[cfg(test)]
+use test_runner::run_tests;
+
+use test_runner::{Namespace, Runner};
 
 struct TestRunner;
 

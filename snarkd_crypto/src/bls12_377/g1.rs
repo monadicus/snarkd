@@ -7,10 +7,9 @@ use bitvec::prelude::*;
 use ruint::{uint, Uint};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "fuzz", derive(arbitrary::Arbitrary))]
 #[cfg_attr(
     any(test, feature = "fuzz"),
-    derive(serde::Serialize, serde::Deserialize)
+    derive(serde::Serialize, serde::Deserialize, arbitrary::Arbitrary)
 )]
 pub struct G1Parameters;
 

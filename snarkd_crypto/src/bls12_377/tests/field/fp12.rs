@@ -9,7 +9,7 @@ use crate::{
 
 use super::*;
 
-type Fp12Tuple = [Fp6Tuple; 2];
+pub type Fp12Tuple = [Fp6Tuple; 2];
 
 impl From<Fp12Tuple> for Fp12 {
     fn from(value: Fp12Tuple) -> Self {

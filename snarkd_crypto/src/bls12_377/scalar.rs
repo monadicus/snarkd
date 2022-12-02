@@ -698,7 +698,7 @@ impl rusqlite::types::ToSql for Scalar {
 
 impl Testable for Scalar {}
 
-#[cfg(feature = "fuzz")]
+#[cfg(any(test, feature = "fuzz"))]
 impl<'a> arbitrary::Arbitrary<'a> for Scalar {
     fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
         let mut f = Self(Uint::arbitrary(u)?);
