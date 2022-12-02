@@ -12,7 +12,7 @@ use test_runner::TestResult;
 
 use crate::bls12_377::{field::Field, Affine, Parameters, Projective, SWProjective, Scalar};
 
-type ProjectiveTuple<T> = [T; 3];
+pub type ProjectiveTuple<T> = [T; 3];
 
 impl<T, P> From<ProjectiveTuple<T>> for SWProjective<P>
 where
@@ -25,6 +25,16 @@ where
             y: v[1],
             z: v[2],
         }
+    }
+}
+
+impl<T, P> From<SWProjective<P>> for ProjectiveTuple<T>
+where
+    T: Copy,
+    P: Parameters<BaseField = T>,
+{
+    fn from(v: SWProjective<P>) -> Self {
+        [v.x, v.y, v.z]
     }
 }
 

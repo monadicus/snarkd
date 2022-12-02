@@ -18,6 +18,12 @@ impl From<Fp2Tuple> for Fp2 {
     }
 }
 
+impl From<Fp2> for Fp2Tuple {
+    fn from(v: Fp2) -> Self {
+        [v.c0, v.c1]
+    }
+}
+
 pub struct Fp2Ns;
 
 impl Namespace for Fp2Ns {

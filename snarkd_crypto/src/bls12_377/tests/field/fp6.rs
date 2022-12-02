@@ -21,6 +21,12 @@ impl From<Fp6Tuple> for Fp6 {
     }
 }
 
+impl From<Fp6> for Fp6Tuple {
+    fn from(v: Fp6) -> Self {
+        [v.c0.into(), v.c1.into(), v.c2.into()]
+    }
+}
+
 pub struct Fp6Ns;
 
 impl Fp6Ns {

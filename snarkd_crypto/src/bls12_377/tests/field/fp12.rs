@@ -20,6 +20,12 @@ impl From<Fp12Tuple> for Fp12 {
     }
 }
 
+impl From<Fp12> for Fp12Tuple {
+    fn from(v: Fp12) -> Self {
+        [v.c0.into(), v.c1.into()]
+    }
+}
+
 pub struct Fp12Ns;
 
 impl Fp12Ns {
