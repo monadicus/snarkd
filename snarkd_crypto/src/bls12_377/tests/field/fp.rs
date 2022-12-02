@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use test_runner::{Namespace, Test, TestResult};
 
 use crate::bls12_377::Fp;
@@ -58,94 +56,56 @@ impl FpNs {
     }
 }
 
-impl TryFrom<String> for Fp {
-    type Error = String;
-
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        let value = value.strip_prefix("0x").unwrap_or(&value);
-        let hex = format!("0x{:0>96}", value);
-        ruint::Uint::from_str(&hex)
-            .map_err(|e| format!("Failed to deserialize input: {e}"))
-            .map(Self)
-    }
-}
-
-impl TryFrom<&str> for Fp {
-    type Error = String;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        let value = value.strip_prefix("0x").unwrap_or(value);
-        let hex = format!("0x{:0>96}", value);
-        ruint::Uint::from_str(&hex)
-            .map_err(|e| format!("Failed to deserialize input: {e}"))
-            .map(Self)
-    }
-}
-
 impl Namespace for FpNs {
     fn run_test(&self, test: Test) -> TestResult {
         match test.method.as_str() {
             "neg" => {
-                let a: String = serde_json::from_value(test.input).expect("failed to get input");
-                Self::neg(a.try_into()?)
+                let a = serde_json::from_value(test.input).expect("failed to get input");
+                Self::neg(a)
             }
             "add" => {
-                let (a, b, c): (String, String, String) =
-                    serde_json::from_value(test.input).expect("failed to get input");
-                Self::add(a.try_into()?, b.try_into()?, c.try_into()?)
+                let (a, b, c) = serde_json::from_value(test.input).expect("failed to get input");
+                Self::add(a, b, c)
             }
             "sub" => {
-                let (a, b): (String, String) =
-                    serde_json::from_value(test.input).expect("failed to get input");
-                Self::sub(a.try_into()?, b.try_into()?)
+                let (a, b) = serde_json::from_value(test.input).expect("failed to get input");
+                Self::sub(a, b)
             }
             "mul" => {
-                let (a, b, c): (String, String, String) =
-                    serde_json::from_value(test.input).expect("failed to get input");
-                Self::mul(a.try_into()?, b.try_into()?, c.try_into()?)
+                let (a, b, c) = serde_json::from_value(test.input).expect("failed to get input");
+                Self::mul(a, b, c)
             }
             "inversion" => {
-                let a: String = serde_json::from_value(test.input).expect("failed to get input");
-                Self::inversion(a.try_into()?)
+                let a = serde_json::from_value(test.input).expect("failed to get input");
+                Self::inversion(a)
             }
             "double" => {
-                let a: String = serde_json::from_value(test.input).expect("failed to get input");
-                Self::double(a.try_into()?)
+                let a = serde_json::from_value(test.input).expect("failed to get input");
+                Self::double(a)
             }
             "square" => {
-                let a: String = serde_json::from_value(test.input).expect("failed to get input");
-                Self::square(a.try_into()?)
+                let a = serde_json::from_value(test.input).expect("failed to get input");
+                Self::square(a)
             }
             "expansion" => {
-                let (a, b, c, d): (String, String, String, String) =
-                    serde_json::from_value(test.input).expect("failed to get input");
-                Self::expansion(a.try_into()?, b.try_into()?, c.try_into()?, d.try_into()?)
+                let (a, b, c, d) = serde_json::from_value(test.input).expect("failed to get input");
+                Self::expansion(a, b, c, d)
             }
             "sqrt" => {
-                let a: String = serde_json::from_value(test.input).expect("failed to get input");
-                Self::sqrt(a.try_into()?)
+                let a = serde_json::from_value(test.input).expect("failed to get input");
+                Self::sqrt(a)
             }
             "pow" => {
-                let a: String = serde_json::from_value(test.input).expect("failed to get input");
-                Self::pow(a.try_into()?)
+                let a = serde_json::from_value(test.input).expect("failed to get input");
+                Self::pow(a)
             }
             "sum_of_products" => {
-                let (a, b): (Vec<String>, Vec<String>) =
-                    serde_json::from_value(test.input).expect("failed to get input");
-                let a = a
-                    .into_iter()
-                    .map(|f| f.try_into())
-                    .collect::<Result<Vec<_>, _>>()?;
-                let b = b
-                    .into_iter()
-                    .map(|f| f.try_into())
-                    .collect::<Result<Vec<_>, _>>()?;
+                let (a, b) = serde_json::from_value(test.input).expect("failed to get input");
                 Self::sum_of_products(a, b)
             }
             "math_properties" => {
-                let (a, b): (String, String) =
-                    serde_json::from_value(test.input).expect("failed to get input");
-                Self::math_properties(a.try_into()?, b.try_into()?)
+                let (a, b) = serde_json::from_value(test.input).expect("failed to get input");
+                Self::math_properties(a, b)
             }
             e => panic!("unknown method for FpNs: {e}"),
         }
