@@ -1,4 +1,5 @@
 use colored::Colorize;
+use serde::de::DeserializeOwned;
 use serde_json::Value;
 use std::{
     any::Any,
@@ -22,6 +23,13 @@ pub type TestResult = Result<Value, String>;
 
 pub trait Namespace: UnwindSafe + RefUnwindSafe {
     fn run_test(&self, test: Test) -> TestResult;
+
+    fn get<T: DeserializeOwned>(input: Value) -> T
+    where
+        Self: Sized,
+    {
+        serde_json::from_value(input).expect("failed to get input")
+    }
 }
 
 pub trait Runner {
