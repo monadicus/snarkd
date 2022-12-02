@@ -10,7 +10,23 @@ pub use g2::*;
 use serde_json::Value;
 use test_runner::TestResult;
 
-use crate::bls12_377::{field::Field, Affine, Projective, Scalar};
+use crate::bls12_377::{field::Field, Affine, Parameters, Projective, SWProjective, Scalar};
+
+type ProjectiveTuple<T> = [T; 3];
+
+impl<T, P> From<ProjectiveTuple<T>> for SWProjective<P>
+where
+    T: Copy,
+    P: Parameters<BaseField = T>,
+{
+    fn from(v: ProjectiveTuple<T>) -> Self {
+        SWProjective {
+            x: v[0],
+            y: v[1],
+            z: v[2],
+        }
+    }
+}
 
 pub fn add<G: Projective>(a: G, b: G, c: G) -> TestResult {
     let mut outputs = Vec::new();
