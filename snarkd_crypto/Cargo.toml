@@ -31,7 +31,8 @@ serde_json = { workspace = true, optional = true }
 test-runner = { workspace = true, optional = true }
 
 [dev-dependencies]
-ruint = { workspace = true, features = ["serde"] }
+ruint = { workspace = true, features = ["serde", "arbitrary"] }
+arbitrary = { workspace = true }
 serde_json = { workspace = true }
 test-runner = { workspace = true }
 

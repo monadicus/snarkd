@@ -1,0 +1,406 @@
+{
+  "namespace": "ScalarNs",
+  "method": "neg",
+  "tests": {
+    "random_00": {
+      "expectation": "Pass",
+      "input": "0x0c2e233e729647a856c7613c926fdea0a093441a82657b6d907fcdb8dd789dfe"
+    },
+    "random_01": {
+      "expectation": "Pass",
+      "input": "0x0e761d33ce890cb527d014392c099cb81809e4c493294d25c96d1163c7d5581f"
+    },
+    "random_02": {
+      "expectation": "Pass",
+      "input": "0x0a5308f1a5fc0bb926d53566844d088b46b176f0c92605244493b6ba9057390b"
+    },
+    "random_03": {
+      "expectation": "Pass",
+      "input": "0x055664c59a099737858a7c6b73f2322464e0ea653054a11980973b50306089c5"
+    },
+    "random_04": {
+      "expectation": "Pass",
+      "input": "0x0a0267e4388b467aedfd008c9693b0a5ed75214ad6d2c6130fcf0f1a0a8a1b04"
+    },
+    "random_05": {
+      "expectation": "Pass",
+      "input": "0x0fa6eab24f856d6573d1a896e9ab66fe768b66fdf2d0198a50660aac2b8dadb2"
+    },
+    "random_06": {
+      "expectation": "Pass",
+      "input": "0x0f125284d24e9a80661c6b99e35db6fe7c857b1b88eb8c13b57d70d7cf278859"
+    },
+    "random_07": {
+      "expectation": "Pass",
+      "input": "0x0f14f4c677a74b1efdcac0173e53f35a90c4eab1528698113dfd0f7060abb431"
+    },
+    "random_08": {
+      "expectation": "Pass",
+      "input": "0x0e5ac3095572db4afae1b13549146bbf0cd60df491c3100ddf16b5856a4ad80a"
+    },
+    "random_09": {
+      "expectation": "Pass",
+      "input": "0x085d50d04164d48043e489611f1b93a231fd063004d00416e4151a495f8c7619"
+    },
+    "random_10": {
+      "expectation": "Pass",
+      "input": "0x0c899ae5321c31ddecdbfcc57aedd071a90843071563ff484410b6dafe0a7fee"
+    },
+    "random_11": {
+      "expectation": "Pass",
+      "input": "0x092c8a5cf25f7f9f2d92e911d5e1baa6d02db18499c3c6c683b14205b853a456"
+    },
+    "random_12": {
+      "expectation": "Pass",
+      "input": "0x0fbe888e006756146c473daab9c6bb2ed4768bf63ddd906fd25f5fb4faccaa7d"
+    },
+    "random_13": {
+      "expectation": "Pass",
+      "input": "0x00112b29b41412d35bea9a9e59a658be0303a31c600c475e1ca3fdb31abd531c"
+    },
+    "random_14": {
+      "expectation": "Pass",
+      "input": "0x096596b4e1c01bbca8a7a22f9117257cc8fae447691e739a20a73947954ce501"
+    },
+    "random_15": {
+      "expectation": "Pass",
+      "input": "0x0865fe2dfeaf7206455d12e088953a99daed823e8770735c80074235555e801d"
+    },
+    "random_16": {
+      "expectation": "Pass",
+      "input": "0x116cf5adfe617e3d990dec9402dce169e9c3f056c0695d174c0c67b8bcdcd919"
+    },
+    "random_17": {
+      "expectation": "Pass",
+      "input": "0x0e3890e10136aae5c5161f70ab6601c7bb18b3234bce6a908ec937ce36b66bf6"
+    },
+    "random_18": {
+      "expectation": "Pass",
+      "input": "0x0995744bdf4857e32542b66c6e36fb01b6b1994c79e0d381edcbad91ea32d705"
+    },
+    "random_19": {
+      "expectation": "Pass",
+      "input": "0x08e8fc1527ae7b6fae84131f3b441ce812ee8d6e94af63b8846c7e2ad1c169b7"
+    },
+    "random_20": {
+      "expectation": "Pass",
+      "input": "0x0c4c167459a29cb913c10ca4173c8a6dc2b229257ad9dda5f2f5902807686460"
+    },
+    "random_21": {
+      "expectation": "Pass",
+      "input": "0x09bf66caf7a6f036392eac9e707fe4edfe22725714c2c1bd8d22617d0116df33"
+    },
+    "random_22": {
+      "expectation": "Pass",
+      "input": "0x0ca5c50d797ee60e467caa37b65fc412c5b85be92bde1907cf29b979439c4436"
+    },
+    "random_23": {
+      "expectation": "Pass",
+      "input": "0x1209e9e0d7db251e317685c72e84fb3cf7bb2d4136337d43efdd5ed7062e356c"
+    },
+    "random_24": {
+      "expectation": "Pass",
+      "input": "0x05b1d1d215a3c55b05d84d3ef1e70949e1aff90afa2e996a3395751952e70d35"
+    },
+    "random_25": {
+      "expectation": "Pass",
+      "input": "0x03ee9ca67cf9f9927cd8d3b9f4b34664f7ab0c59b259634a7722e4a422a509a6"
+    },
+    "random_26": {
+      "expectation": "Pass",
+      "input": "0x0a47f32e8a995f486b7d8e9ae08905fb71731e6ecc6a3da63d32df844278f529"
+    },
+    "random_27": {
+      "expectation": "Pass",
+      "input": "0x01504b2340b75309880e2d9f71909bbcdc09569d987fe7985dad448e1ac17869"
+    },
+    "random_28": {
+      "expectation": "Pass",
+      "input": "0x10f2294039e27a7d248b7bcbc610ee07c0ec81cd735a2f9ccd786f3e659b5b6b"
+    },
+    "random_29": {
+      "expectation": "Pass",
+      "input": "0x04abb56cdf8ae79bad8e74a0ff5e3f64d55fd501cc8aebf66b4402745db03d07"
+    },
+    "random_30": {
+      "expectation": "Pass",
+      "input": "0x06d67b7c18b3684ff83aef278e7b656c7de35e72e66c7702ec4fc1422edb3fab"
+    },
+    "random_31": {
+      "expectation": "Pass",
+      "input": "0x128cada4e74a4aaf70c83ccbd6a65027a3769a19d011aa0b0eca458ce26c1bd6"
+    },
+    "random_32": {
+      "expectation": "Pass",
+      "input": "0x069712a36d477e2f12134bdbceaddac1dfbb1026e9f124c89ba34a2cf7532c5c"
+    },
+    "random_33": {
+      "expectation": "Pass",
+      "input": "0x11be590e0d280eead0e00cc395c848f1345bc48eb915a8774326b3d222ce463c"
+    },
+    "random_34": {
+      "expectation": "Pass",
+      "input": "0x099f59f4d76a78331f360f10ace05e445bcf640aa1d582ade1d0a8e9bb9f300f"
+    },
+    "random_35": {
+      "expectation": "Pass",
+      "input": "0x01a92ca643813afb92dd36fc8a161abde5b0e18f1a6d0469b71ba91fa4dd7a62"
+    },
+    "random_36": {
+      "expectation": "Pass",
+      "input": "0x0dffe235ed1f92ded48898b131e547edbe57bae6c423834c8580e142134edc7c"
+    },
+    "random_37": {
+      "expectation": "Pass",
+      "input": "0x04ee38acbaf00b249c2df2737acf1e70f41d66f6fc1b12305a887d2a018e1661"
+    },
+    "random_38": {
+      "expectation": "Pass",
+      "input": "0x0df26525e9152a514a0f5f59691ef0ba3af6bdbaf4b54149fb10c27303bbbc8c"
+    },
+    "random_39": {
+      "expectation": "Pass",
+      "input": "0x0d53ddd4b4c8a0871071e0b17fde9401deb91670047c8b6f677e19455e067d51"
+    },
+    "random_40": {
+      "expectation": "Pass",
+      "input": "0x07d92d382dc85478e81cbc0b7e49fd4e7d6bf6e31bcc6a3504eb51b239a00a80"
+    },
+    "random_41": {
+      "expectation": "Pass",
+      "input": "0x06438b6502141d93e64f6efdc4ccfe332c2392acc50fa47de34ba77de99d0eb1"
+    },
+    "random_42": {
+      "expectation": "Pass",
+      "input": "0x04636b7ea5c456a3deb19d41978acec7dafd13642daf0e31bae2c666019448a9"
+    },
+    "random_43": {
+      "expectation": "Pass",
+      "input": "0x09d0164b1cb66d8a44a9d0425e0f95738e18e2e65885d6b8e86a073212b24256"
+    },
+    "random_44": {
+      "expectation": "Pass",
+      "input": "0x02bdeb33328382f907ea68a35d296a505ea5aa6539fef6e0397cf7ba73ea73d9"
+    },
+    "random_45": {
+      "expectation": "Pass",
+      "input": "0x1246cb8bdd118f707d0c42ff6e3a78383695fbb835aae7d6c8edc8527765aff8"
+    },
+    "random_46": {
+      "expectation": "Pass",
+      "input": "0x124f631b5402f3d2256b9384cacb47e4c6d4d2353111cd7d09b644102079bfce"
+    },
+    "random_47": {
+      "expectation": "Pass",
+      "input": "0x1244095da05063b3022c265761a07d180ee89023c674e25eda5a84077ea3f793"
+    },
+    "random_48": {
+      "expectation": "Pass",
+      "input": "0x00a4edbbe06fd9b868369670879eedae33cc2b7ed46fc09fd2f9595a79b75f6f"
+    },
+    "random_49": {
+      "expectation": "Pass",
+      "input": "0x090cc207e375cb0a4d771ec71428f749760fdafc4b66cecf2bffc648f0f95bc2"
+    },
+    "random_50": {
+      "expectation": "Pass",
+      "input": "0x1253be1d1cdf2772b9ee5571780076894db5db37eb351dc1b7674eb7695b49a6"
+    },
+    "random_51": {
+      "expectation": "Pass",
+      "input": "0x0993badf26a5d891d7324ecb554b8481712d06a82b053cfa4b9a74de182a7875"
+    },
+    "random_52": {
+      "expectation": "Pass",
+      "input": "0x0266ad8c0ac59f92f4e78ae436ed4b0090b66bc74f1c23b878ad5541359491db"
+    },
+    "random_53": {
+      "expectation": "Pass",
+      "input": "0x07d7ed08a9ecfa53248a54f77ca06ec5efaba8a43285a96f7139d60a45713e14"
+    },
+    "random_54": {
+      "expectation": "Pass",
+      "input": "0x0ae0e190bea2bd9880ac808e3b53bb860d256b44bf575204713de48de3b7e2a5"
+    },
+    "random_55": {
+      "expectation": "Pass",
+      "input": "0x0b4129ca9735602f0daf2f5cb93306473e9c39da61e88f8f966e770409ba24c3"
+    },
+    "random_56": {
+      "expectation": "Pass",
+      "input": "0x025fec055c778088a3aaf1ddc5ef2043395d1a52005940fd0d28d5f0ce1c6f7f"
+    },
+    "random_57": {
+      "expectation": "Pass",
+      "input": "0x1106f958f1a80b760dae66f6ba4bfd77151846df73fa4d6c7003d6f1c1b3f8bb"
+    },
+    "random_58": {
+      "expectation": "Pass",
+      "input": "0x0149fbf19ed433f4339e8a3ca555057e158decd43d7900068538c56d9b714eff"
+    },
+    "random_59": {
+      "expectation": "Pass",
+      "input": "0x0c5463432cde1954ff2f5e30709ded6a3508afa8c78818a89e6f9a211cecbbab"
+    },
+    "random_60": {
+      "expectation": "Pass",
+      "input": "0x0b0841978abf35fab6453a778e5b5200aa2b68b7fc86c72a2d547c4636e3d4b4"
+    },
+    "random_61": {
+      "expectation": "Pass",
+      "input": "0x01f7f7edfab726859818af07270ae7acf0d7fe8942236400754d6aea3eb0dc77"
+    },
+    "random_62": {
+      "expectation": "Pass",
+      "input": "0x0c7f8bb368019a965e8cd6b18b1c173484cda2942a4aab62636141123c25680f"
+    },
+    "random_63": {
+      "expectation": "Pass",
+      "input": "0x010bf28735b7efea760a6f82539a0e999169b3a5274d5bb5849f0fca4db0b419"
+    },
+    "random_64": {
+      "expectation": "Pass",
+      "input": "0x0aa8b88b42504bf6885bf3c1073a71e047f6b7833e74ab20ae4616be100fddee"
+    },
+    "random_65": {
+      "expectation": "Pass",
+      "input": "0x0ef08e3104f7dddfff6de5448a3a9eac0d6838d7e0c0b3c260975fc4cc8347bf"
+    },
+    "random_66": {
+      "expectation": "Pass",
+      "input": "0x07946a23dc2c0b60f0514e7605e3464d0153a53a9f572624822f3ef5fc116946"
+    },
+    "random_67": {
+      "expectation": "Pass",
+      "input": "0x04dadda1a2a0f12621f59d984596445d62fa164a3234714b3095e177b7538fb1"
+    },
+    "random_68": {
+      "expectation": "Pass",
+      "input": "0x0f6ccae2733167e2e80df72dcbfb99aed55be2f858d2428747eb4bcd66a0d030"
+    },
+    "random_69": {
+      "expectation": "Pass",
+      "input": "0x0f4bc96f3c711deb416577e40ed46b91603214926ad683f04f4ae782798bba77"
+    },
+    "random_70": {
+      "expectation": "Pass",
+      "input": "0x01361140e40c876b7db273eba1c3643d68dbd21d413ae7dd08c7543acbec1560"
+    },
+    "random_71": {
+      "expectation": "Pass",
+      "input": "0x060f2025a03f090233e75eb689c4f74311d61638eeda983548e3752e9e9245b0"
+    },
+    "random_72": {
+      "expectation": "Pass",
+      "input": "0x064cd1fe8aab80d0b8faf147f506e52e007aa6d06e4f1dcf9025b3f1c96d6d7a"
+    },
+    "random_73": {
+      "expectation": "Pass",
+      "input": "0x09a831603aa8dd5b4bb8c5e23e30e45f40d1d36d8253e53474dd7ec8176172d4"
+    },
+    "random_74": {
+      "expectation": "Pass",
+      "input": "0x02a56aa1599694c79563167289cb46410d5d774553643d165e5730ec3b2205c4"
+    },
+    "random_75": {
+      "expectation": "Pass",
+      "input": "0x1293ab4eabfd5cc4e7e05da2c117820e4abde06b7e5bbb56c2b83fd2e3ffd4b8"
+    },
+    "random_76": {
+      "expectation": "Pass",
+      "input": "0x129335c316f0c3fb9779c7a45189107ccc4c371cd3849d1e3a5fd8d15d3cffe8"
+    },
+    "random_77": {
+      "expectation": "Pass",
+      "input": "0x0d496b9f32189f9098f8f3ac781cc1b0ac5df679839fbb343f9ea99208cd23e8"
+    },
+    "random_78": {
+      "expectation": "Pass",
+      "input": "0x01d482ae22a7bebdd2fc5fcee3e47fa0a575af3d2c63c67d3a066c8b0ed85886"
+    },
+    "random_79": {
+      "expectation": "Pass",
+      "input": "0x0b4358813fd5ea0ddc9c4a1a9f36a831150d7f4ab39de762d219c4d3bc53cdc0"
+    },
+    "random_80": {
+      "expectation": "Pass",
+      "input": "0x09162811c26758ca83b4578b0fd40bbd2645587c5360fb0a911127ab26dc99f1"
+    },
+    "random_81": {
+      "expectation": "Pass",
+      "input": "0x04a46b8024d402379686b2544c176785468a99f787e585da32c42a1c2a09a80a"
+    },
+    "random_82": {
+      "expectation": "Pass",
+      "input": "0x0052862629d78f08ef03a30c6efb151095d6ce51b5cbd70d7c92580491093d89"
+    },
+    "random_83": {
+      "expectation": "Pass",
+      "input": "0x09c1bde1e815e3126b0197f4d3617a4a5f7b7016ec51e130ef1ee36432d8234d"
+    },
+    "random_84": {
+      "expectation": "Pass",
+      "input": "0x0a2b69f91d800bd6b177f483fb40d2f4014674339aa2bca606138b7d2eaf2f0d"
+    },
+    "random_85": {
+      "expectation": "Pass",
+      "input": "0x04f9a245061771f319175d1b62b19a3524e07762a764d2439a80aee3fd9fd38f"
+    },
+    "random_86": {
+      "expectation": "Pass",
+      "input": "0x05b66eb76fca67159ce7c66be6696132a5f765fe7d8a79157cb1a4957fcbe5a2"
+    },
+    "random_87": {
+      "expectation": "Pass",
+      "input": "0x0751d9f2245d18c5e905745a6d63dc428e3dc31e9a15071fc1b1f4eec2660029"
+    },
+    "random_88": {
+      "expectation": "Pass",
+      "input": "0x08025c37727fa55a34c8bdf02a3c323c15550179746cb2b8cb73557084b2a32e"
+    },
+    "random_89": {
+      "expectation": "Pass",
+      "input": "0x06c500d32533ca5d0e3cb7f769ecb59053ff0603520a645bb0aa281479d4c32d"
+    },
+    "random_90": {
+      "expectation": "Pass",
+      "input": "0x092397f636cceb468f4006978d3aaba3850f644f79262af5ad8a0389194d45a8"
+    },
+    "random_91": {
+      "expectation": "Pass",
+      "input": "0x042ff2efa7154bd641c9f49d0d8afebbf68a572ed72a98690d21d48cbca37599"
+    },
+    "random_92": {
+      "expectation": "Pass",
+      "input": "0x0230a81ef6bc4481192a4c2a1351dadb369256bf8bb86928d3c990f4fa988678"
+    },
+    "random_93": {
+      "expectation": "Pass",
+      "input": "0x05fd93613db68bbbbb5377e9076c7153f47f9acfcbedd5a657ca2a9f254fe2b7"
+    },
+    "random_94": {
+      "expectation": "Pass",
+      "input": "0x012bf6cb6954ef599f13438bdf7de8cd02e8032db19797aee9d5b77d0a03c908"
+    },
+    "random_95": {
+      "expectation": "Pass",
+      "input": "0x110b2108a923e8c3b8800a00a7259481d49c18123ba6811830d4c9be212080c1"
+    },
+    "random_96": {
+      "expectation": "Pass",
+      "input": "0x0152eabb8b99e42b974e866e3a5c4e1238080fcb7ce8f059ed55393de0c4bb1d"
+    },
+    "random_97": {
+      "expectation": "Pass",
+      "input": "0x0b203b0c660bde227a6494c31e3b32ca3e3ec9e3387b6bddeadd2b890e8c34b8"
+    },
+    "random_98": {
+      "expectation": "Pass",
+      "input": "0x03e97ba1065f446fc1e16c966c9ec0d7bc14eccdcd1171ef7d5f06309378cf5e"
+    },
+    "random_99": {
+      "expectation": "Pass",
+      "input": "0x06009d5460860126446090f737cbbe6133c147737c36e6b8ccfd7174ff76aae4"
+    }
+  }
+}
