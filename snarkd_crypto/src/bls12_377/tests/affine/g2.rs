@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use test_runner::{Namespace, Test, TestResult};
 
 use super::*;
 use crate::bls12_377::{test::tests::field::Fp2Tuple, G2Affine};
@@ -37,4 +36,11 @@ impl Namespace for G2AffineNs {
             e => panic!("unknown method for G1ProjectiveNs: {e}"),
         }
     }
+}
+
+#[test]
+fn test_generator() {
+    let generator = G2Affine::prime_subgroup_generator();
+    assert!(generator.is_on_curve());
+    assert!(generator.is_in_correct_subgroup_assuming_on_curve());
 }

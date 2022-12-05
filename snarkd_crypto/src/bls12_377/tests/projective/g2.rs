@@ -1,5 +1,3 @@
-use test_runner::{Namespace, Test, TestResult};
-
 use crate::bls12_377::{test::tests::field::Fp2Tuple, G2Projective};
 
 use super::*;

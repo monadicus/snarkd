@@ -1,5 +1,3 @@
-use test_runner::{Namespace, Test, TestResult};
-
 use crate::bls12_377::Scalar;
 
 use super::*;

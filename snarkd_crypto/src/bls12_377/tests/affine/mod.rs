@@ -3,7 +3,8 @@ pub use g1::*;
 
 mod g2;
 pub use g2::*;
-use test_runner::TestResult;
+
+use test_runner::{Namespace, Test, TestResult};
 
 use crate::bls12_377::{Affine, Scalar};
 

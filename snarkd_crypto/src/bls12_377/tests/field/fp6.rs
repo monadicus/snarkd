@@ -1,7 +1,3 @@
-use std::ops::MulAssign;
-
-use test_runner::{Namespace, Test, TestResult};
-
 use crate::{
     bls12_377::{Fp2, Fp6},
     frobenius,
@@ -36,7 +32,7 @@ impl Fp6Ns {
 
         a.mul_by_1(&c1);
         outputs.push(a.to_string());
-        b.mul_assign(&Fp6::new(Fp2::ZERO, c1, Fp2::ZERO));
+        b *= &Fp6::new(Fp2::ZERO, c1, Fp2::ZERO);
         outputs.push(b.to_string());
         assert_eq!(a, b);
 
@@ -49,7 +45,7 @@ impl Fp6Ns {
 
         a.mul_by_01(&c0, &c1);
         outputs.push(a.to_string());
-        b.mul_assign(&Fp6::new(c0, c1, Fp2::ZERO));
+        b *= &Fp6::new(c0, c1, Fp2::ZERO);
         outputs.push(b.to_string());
         assert_eq!(a, b);
 

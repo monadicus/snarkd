@@ -1,8 +1,6 @@
-use test_runner::{Namespace, Test, TestResult};
+use crate::bls12_377::{pairing, Fp12, G1Projective, G2Projective};
 
-use crate::bls12_377::{pairing, Field, Fp12, G1Projective, G2Projective, Scalar};
-
-use super::G2Tuple;
+use super::*;
 
 pub struct BilinearNs;
 

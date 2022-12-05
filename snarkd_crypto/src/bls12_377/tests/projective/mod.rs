@@ -8,7 +8,7 @@ mod g2;
 pub use g2::*;
 
 use serde_json::Value;
-use test_runner::TestResult;
+use test_runner::{Namespace, Test, TestResult};
 
 use crate::bls12_377::{field::Field, Affine, Parameters, Projective, SWProjective, Scalar};
 

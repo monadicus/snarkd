@@ -8,21 +8,7 @@ pub mod projective;
 use projective::*;
 
 #[cfg(test)]
-use rayon::prelude::{IntoParallelIterator, ParallelIterator};
-#[cfg(test)]
-use ruint::uint;
-#[cfg(test)]
-use std::{
-    cmp::Ordering,
-    ops::{AddAssign, MulAssign},
-};
-
-#[cfg(test)]
-use crate::bls12_377::{
-    fp, fp2, Affine, Field, Fp, Fp12, Fp2, Fp6, G1Affine, G2Affine, LegendreSymbol, Scalar,
-};
-#[cfg(test)]
-use test_runner::run_tests;
+use crate::bls12_377::{fp, Field, Fp, Fp12, Fp2, Fp6, Scalar};
 
 use test_runner::{Namespace, Runner};
 
@@ -48,7 +34,7 @@ impl Runner for TestRunner {
 
 #[test]
 fn curve_tests() {
-    run_tests(&TestRunner, "crypto");
+    test_runner::run_tests(&TestRunner, "crypto");
 }
 
 #[test]
@@ -64,14 +50,7 @@ fn test_zero_one_two() {
 fn test_sqrt_1_to_100() {
     sqrt_1_to_100::<Fp>();
     sqrt_1_to_100::<Fp2>();
-    sqrt_1_to_100::<Fp6>();
-    sqrt_1_to_100::<Fp12>();
     sqrt_1_to_100::<Scalar>();
-}
-
-#[test]
-fn test_fp_is_half() {
-    assert_eq!(Fp::half(), Fp::ONE.double().inverse().unwrap());
 }
 
 #[test]
@@ -99,86 +78,4 @@ fn test_fp_root_of_unity() {
         Fp::ONE
     );
     assert!(Fp::MULTIPLICATIVE_GENERATOR.sqrt().is_none());
-}
-
-#[test]
-fn test_fp_legendre() {
-    assert_eq!(LegendreSymbol::QuadraticResidue, Fp::ONE.legendre());
-    assert_eq!(LegendreSymbol::Zero, Fp::ZERO.legendre());
-    assert_eq!(
-        LegendreSymbol::QuadraticResidue,
-        Fp(uint!(4_U384)).legendre()
-    );
-    assert_eq!(
-        LegendreSymbol::QuadraticNonResidue,
-        Fp(uint!(5_U384)).legendre()
-    );
-}
-
-#[test]
-fn test_fp2_ordering() {
-    let mut a = Fp2::new(Fp::ZERO, Fp::ZERO);
-    let mut b = a;
-
-    assert!(a.cmp(&b) == Ordering::Equal);
-    b.c0.add_assign(Fp::ONE);
-    assert!(a.cmp(&b) == Ordering::Less);
-    a.c0.add_assign(Fp::ONE);
-    assert!(a.cmp(&b) == Ordering::Equal);
-    b.c1.add_assign(Fp::ONE);
-    assert!(a.cmp(&b) == Ordering::Less);
-    a.c0.add_assign(Fp::ONE);
-    assert!(a.cmp(&b) == Ordering::Less);
-    a.c1.add_assign(Fp::ONE);
-    assert!(a.cmp(&b) == Ordering::Greater);
-    b.c0.add_assign(Fp::ONE);
-    assert!(a.cmp(&b) == Ordering::Equal);
-}
-
-#[test]
-fn test_fp2_basics() {
-    assert_eq!(Fp2::new(Fp::ZERO, Fp::ZERO,), Fp2::ZERO);
-    assert_eq!(Fp2::new(Fp::ONE, Fp::ZERO,), Fp2::ONE);
-    assert!(Fp2::ZERO.is_zero());
-    assert!(!Fp2::ONE.is_zero());
-    assert!(!Fp2::new(Fp::ZERO, Fp::ONE,).is_zero());
-}
-
-#[test]
-fn test_fp2_legendre() {
-    assert_eq!(LegendreSymbol::Zero, Fp2::ZERO.legendre());
-    // i^2 = -1
-    let mut m1 = -Fp2::ONE;
-    assert_eq!(LegendreSymbol::QuadraticResidue, m1.legendre());
-    m1 = Fp6::mul_fp2_by_nonresidue(&m1);
-    assert_eq!(LegendreSymbol::QuadraticNonResidue, m1.legendre());
-}
-
-#[test]
-fn test_fp2_mul_nonresidue() {
-    let nqr = Fp2::new(Fp::ZERO, Fp::ONE);
-
-    let quadratic_non_residue = Fp2::new(fp2::QUADRATIC_NONRESIDUE.0, fp2::QUADRATIC_NONRESIDUE.1);
-    (0..100).into_par_iter().for_each(|_| {
-        let mut a = Fp2::rand();
-        let mut b = a;
-        a = quadratic_non_residue * a;
-        b.mul_assign(&nqr);
-
-        assert_eq!(a, b);
-    });
-}
-
-#[test]
-fn test_g1_generator() {
-    let generator = G1Affine::prime_subgroup_generator();
-    assert!(generator.is_on_curve());
-    assert!(generator.is_in_correct_subgroup_assuming_on_curve());
-}
-
-#[test]
-fn test_g2_generator() {
-    let generator = G2Affine::prime_subgroup_generator();
-    assert!(generator.is_on_curve());
-    assert!(generator.is_in_correct_subgroup_assuming_on_curve());
 }

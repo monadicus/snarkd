@@ -13,7 +13,7 @@ pub use fp12::*;
 mod scalar;
 pub use scalar::*;
 
-use test_runner::TestResult;
+use test_runner::{Namespace, Test, TestResult};
 
 use crate::bls12_377::Field;
 
@@ -380,7 +380,6 @@ pub fn sqrt_1_to_100<F: Field>() {
     let mut c = F::ONE;
     for _ in 0..100 {
         let mut b = c.square();
-        // assert_eq!(b.legendre(), LegendreSymbol::QuadraticResidue);
 
         b = b.sqrt().unwrap();
 

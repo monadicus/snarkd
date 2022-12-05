@@ -20,3 +20,10 @@ impl Namespace for G1AffineNs {
         }
     }
 }
+
+#[test]
+fn test_generator() {
+    let generator = G1Affine::prime_subgroup_generator();
+    assert!(generator.is_on_curve());
+    assert!(generator.is_in_correct_subgroup_assuming_on_curve());
+}

@@ -1,5 +1,3 @@
-use test_runner::{Namespace, Test, TestResult};
-
 use crate::bls12_377::Fp;
 
 use super::*;
@@ -60,4 +58,26 @@ impl Namespace for FpNs {
             e => panic!("unknown method for FpNs: {e}"),
         }
     }
+}
+
+#[test]
+fn test_legendre() {
+    use crate::bls12_377::LegendreSymbol;
+    use ruint::uint;
+
+    assert_eq!(LegendreSymbol::QuadraticResidue, Fp::ONE.legendre());
+    assert_eq!(LegendreSymbol::Zero, Fp::ZERO.legendre());
+    assert_eq!(
+        LegendreSymbol::QuadraticResidue,
+        Fp(uint!(4_U384)).legendre()
+    );
+    assert_eq!(
+        LegendreSymbol::QuadraticNonResidue,
+        Fp(uint!(5_U384)).legendre()
+    );
+}
+
+#[test]
+fn test_is_half() {
+    assert_eq!(Fp::half(), Fp::ONE.double().inverse().unwrap());
 }

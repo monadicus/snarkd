@@ -1,7 +1,6 @@
 use std::ops::Mul;
 
 use bitvec::{prelude::Lsb0, view::BitView};
-use test_runner::{Namespace, Test, TestResult};
 
 use crate::bls12_377::{G1Projective, Scalar};
 
