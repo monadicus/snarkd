@@ -111,7 +111,7 @@ impl<P: Parameters> Distribution<SWProjective<P>> for Standard {
     }
 }
 
-#[cfg(any(test, feature = "fuzz"))]
+#[cfg(feature = "fuzz")]
 impl<'a, P: Parameters> arbitrary::Arbitrary<'a> for SWProjective<P> {
     fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
         let x = P::BaseField::arbitrary(u)?;

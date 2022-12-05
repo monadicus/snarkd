@@ -35,9 +35,9 @@ impl Fp6Ns {
         let mut b = a;
 
         a.mul_by_1(&c1);
-        outputs.push(a);
+        outputs.push(a.to_string());
         b.mul_assign(&Fp6::new(Fp2::ZERO, c1, Fp2::ZERO));
-        outputs.push(b);
+        outputs.push(b.to_string());
         assert_eq!(a, b);
 
         Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
@@ -48,9 +48,9 @@ impl Fp6Ns {
         let mut b = a;
 
         a.mul_by_01(&c0, &c1);
-        outputs.push(a);
+        outputs.push(a.to_string());
         b.mul_assign(&Fp6::new(c0, c1, Fp2::ZERO));
-        outputs.push(b);
+        outputs.push(b.to_string());
         assert_eq!(a, b);
 
         Ok(serde_json::to_value(outputs).expect("failed to serialize results"))

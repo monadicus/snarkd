@@ -7,8 +7,6 @@ use core::{
 };
 use std::{fmt::Display, ops::Deref};
 
-use crate::test::Testable;
-
 pub trait Field:
     Add<Self, Output = Self>
     + AddAssign<Self>
@@ -36,7 +34,6 @@ pub trait Field:
     + Sized
     + Send
     + Sync
-    + Testable
 {
     const PHI: Self;
     const ZERO: Self;

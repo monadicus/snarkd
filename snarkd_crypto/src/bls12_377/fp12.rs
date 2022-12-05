@@ -1,7 +1,4 @@
-use crate::{
-    bls12_377::{field::Field, Fp, Fp2, Fp6},
-    test::Testable,
-};
+use crate::bls12_377::{field::Field, Fp, Fp2, Fp6};
 use bitvec::prelude::*;
 use core::{
     iter::Sum,
@@ -11,10 +8,6 @@ use ruint::uint;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 #[cfg_attr(feature = "fuzz", derive(arbitrary::Arbitrary))]
-#[cfg_attr(
-    any(test, feature = "fuzz"),
-    derive(serde::Serialize, serde::Deserialize)
-)]
 pub struct Fp12 {
     pub c0: Fp6,
     pub c1: Fp6,
@@ -551,5 +544,3 @@ impl std::fmt::Display for Fp12 {
         write!(f, "Fp12({} + {})", self.c0, self.c1)
     }
 }
-
-impl Testable for Fp12 {}

@@ -34,12 +34,12 @@ impl Fp12Ns {
         let mut b = a;
 
         a.mul_by_014(&c0, &c1, &c5);
-        outputs.push(a);
+        outputs.push(a.to_string());
         b.mul_assign(&Fp12::new(
             Fp6::new(c0, c1, Fp2::ZERO),
             Fp6::new(Fp2::ZERO, c5, Fp2::ZERO),
         ));
-        outputs.push(b);
+        outputs.push(b.to_string());
         assert_eq!(a, b);
 
         Ok(serde_json::to_value(outputs).expect("failed to serialize results"))
@@ -50,12 +50,12 @@ impl Fp12Ns {
         let mut b = a;
 
         a.mul_by_034(&c0, &c3, &c4);
-        outputs.push(a);
+        outputs.push(a.to_string());
         b.mul_assign(&Fp12::new(
             Fp6::new(c0, Fp2::ZERO, Fp2::ZERO),
             Fp6::new(c3, c4, Fp2::ZERO),
         ));
-        outputs.push(b);
+        outputs.push(b.to_string());
         assert_eq!(a, b);
 
         Ok(serde_json::to_value(outputs).expect("failed to serialize results"))

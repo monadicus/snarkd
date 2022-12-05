@@ -1,7 +1,4 @@
-use crate::{
-    bls12_377::{field::Field, Fp, Fp2},
-    test::Testable,
-};
+use crate::bls12_377::{field::Field, Fp, Fp2};
 use core::{
     iter::Sum,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
@@ -9,10 +6,7 @@ use core::{
 use ruint::uint;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
-#[cfg_attr(
-    any(test, feature = "fuzz"),
-    derive(serde::Serialize, serde::Deserialize, arbitrary::Arbitrary)
-)]
+#[cfg_attr(feature = "fuzz", derive(arbitrary::Arbitrary))]
 pub struct Fp6 {
     pub c0: Fp2,
     pub c1: Fp2,
@@ -534,8 +528,6 @@ impl std::fmt::Display for Fp6 {
         write!(f, "Fp6({} + {} + {})", self.c0, self.c1, self.c2)
     }
 }
-
-impl Testable for Fp6 {}
 
 #[cfg(test)]
 mod test {

@@ -2,6 +2,8 @@ use test_runner::{Namespace, Test, TestResult};
 
 use crate::bls12_377::{pairing, Field, Fp12, G1Projective, G2Projective, Scalar};
 
+use super::G2Tuple;
+
 pub struct BilinearNs;
 
 impl BilinearNs {
@@ -39,8 +41,9 @@ impl Namespace for BilinearNs {
     fn run_test(&self, test: Test) -> TestResult {
         match test.method.as_str() {
             "bilinearity" => {
-                let (a, b, s) = serde_json::from_value(test.input).expect("failed to get input");
-                Self::bilinearity(a, b, s)
+                let (a, b, s): (_, G2Tuple, _) =
+                    serde_json::from_value(test.input).expect("failed to get input");
+                Self::bilinearity(a, b.into(), s)
             }
             e => panic!("unknown method for BilinearNs: `{e}`"),
         }

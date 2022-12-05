@@ -1,10 +1,20 @@
 use test_runner::{Namespace, Test, TestResult};
 
-use crate::bls12_377::{Fp2, G2Projective};
+use crate::bls12_377::{test::tests::field::Fp2Tuple, G2Projective};
 
 use super::*;
 
-type G2Tuple = ProjectiveTuple<Fp2>;
+pub type G2Tuple = ProjectiveTuple<Fp2Tuple>;
+
+impl From<G2Tuple> for G2Projective {
+    fn from(value: G2Tuple) -> Self {
+        Self {
+            x: value[0].into(),
+            y: value[1].into(),
+            z: value[2].into(),
+        }
+    }
+}
 
 pub struct G2ProjectiveNs;
 

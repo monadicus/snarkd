@@ -1,7 +1,4 @@
-use crate::{
-    bls12_377::{field::Field, LegendreSymbol},
-    test::Testable,
-};
+use crate::bls12_377::{field::Field, LegendreSymbol};
 use bitvec::prelude::*;
 use core::{
     iter::Sum,
@@ -479,8 +476,6 @@ impl fmt::Display for Fp {
         write!(f, "0x{:0>1}", s.trim_start_matches('0'))
     }
 }
-
-impl Testable for Fp {}
 
 #[cfg(any(test, feature = "fuzz"))]
 impl<'a> arbitrary::Arbitrary<'a> for Fp {

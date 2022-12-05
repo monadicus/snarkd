@@ -3,11 +3,9 @@ use std::ops::Mul;
 use bitvec::{prelude::Lsb0, view::BitView};
 use test_runner::{Namespace, Test, TestResult};
 
-use crate::bls12_377::{Fp, G1Projective, Scalar};
+use crate::bls12_377::{G1Projective, Scalar};
 
 use super::*;
-
-type G1Tuple = ProjectiveTuple<Fp>;
 
 pub struct G1ProjectiveNs;
 
@@ -44,33 +42,32 @@ impl Namespace for G1ProjectiveNs {
     fn run_test(&self, test: Test) -> TestResult {
         match test.method.as_str() {
             "add" => {
-                let (a, b, c): (G1Tuple, G1Tuple, G1Tuple) = Self::get(test.input);
-                add::<G1Projective>(a.into(), b.into(), c.into())
+                let (a, b, c) = Self::get(test.input);
+                add::<G1Projective>(a, b, c)
             }
             "mul" => {
-                let (a, b, s): (G1Tuple, G1Tuple, _) = Self::get(test.input);
-                mul::<G1Projective>(a.into(), b.into(), s)
+                let (a, b, s) = Self::get(test.input);
+                mul::<G1Projective>(a, b, s)
             }
             "double" => {
-                let (a, b): (G1Tuple, G1Tuple) = Self::get(test.input);
-                double::<G1Projective>(a.into(), b.into())
+                let (a, b) = Self::get(test.input);
+                double::<G1Projective>(a, b)
             }
             "neg" => {
-                let (a, s): (G1Tuple, _) = Self::get(test.input);
-                neg::<G1Projective>(a.into(), s)
+                let (a, s) = Self::get(test.input);
+                neg::<G1Projective>(a, s)
             }
             "transform" => {
-                let g: G1Tuple = Self::get(test.input);
-                transform::<G1Projective>(g.into())
+                let g = Self::get(test.input);
+                transform::<G1Projective>(g)
             }
             "batch_normalization" => {
-                let batch: Vec<G1Tuple> = Self::get(test.input);
-                let batch = batch.into_iter().map(|v| v.into()).collect();
+                let batch = Self::get(test.input);
                 batch_normalization::<G1Projective>(batch)
             }
             "projective_glv" => {
-                let (point, scalar): (G1Tuple, _) = Self::get(test.input);
-                Self::projective_glv(point.into(), scalar)
+                let (point, scalar) = Self::get(test.input);
+                Self::projective_glv(point, scalar)
             }
             e => panic!("unknown method for G1ProjectiveNs: {e}"),
         }

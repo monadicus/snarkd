@@ -1,7 +1,4 @@
-use crate::{
-    bls12_377::{field::Field, Fp, LegendreSymbol},
-    test::Testable,
-};
+use crate::bls12_377::{field::Field, Fp, LegendreSymbol};
 use core::{
     cmp::Ordering,
     iter::Sum,
@@ -11,10 +8,7 @@ use core::{
 use ruint::uint;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
-#[cfg_attr(
-    any(test, feature = "fuzz"),
-    derive(serde::Serialize, serde::Deserialize, arbitrary::Arbitrary)
-)]
+#[cfg_attr(feature = "fuzz", derive(arbitrary::Arbitrary))]
 pub struct Fp2 {
     pub c0: Fp,
     pub c1: Fp,
@@ -398,5 +392,3 @@ impl PartialOrd for Fp2 {
         Some(self.cmp(other))
     }
 }
-
-impl Testable for Fp2 {}

@@ -1,5 +1,3 @@
-use crate::test::Testable;
-
 use super::{adc, field::Field, mac_with_carry, LegendreSymbol};
 use bitvec::prelude::*;
 use core::{
@@ -695,8 +693,6 @@ impl rusqlite::types::ToSql for Scalar {
         ))
     }
 }
-
-impl Testable for Scalar {}
 
 #[cfg(any(test, feature = "fuzz"))]
 impl<'a> arbitrary::Arbitrary<'a> for Scalar {
