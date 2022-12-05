@@ -1,16 +1,4 @@
-use crate::bls12_377::{
-    field::Field, fp, fp2, pairing, Affine, Fp, Fp12, Fp2, Fp6, G1Affine, G1Projective, G2Affine,
-    G2Projective, LegendreSymbol, Projective, Scalar,
-};
-use bitvec::prelude::*;
-use rayon::prelude::{IntoParallelIterator, ParallelIterator};
-use ruint::uint;
-use std::{
-    cmp::Ordering,
-    ops::{AddAssign, Mul, MulAssign, SubAssign},
-};
-
-pub(crate) const ITERATIONS: usize = 10;
+use crate::bls12_377::{field::Field, Affine, Projective, Scalar};
 
 pub fn curve_tests<G: Projective>() {
     // Negation edge case with zero.

@@ -31,6 +31,14 @@ pub fn neg<F: Field>(a: F) -> TestResult {
 pub fn add<F: Field>(a: F, b: F, c: F) -> TestResult {
     let mut outputs = Vec::new();
 
+    // a + b == (a, a += b)
+    let a_b = a + b;
+    let mut a_b_assign = a;
+    a_b_assign += b;
+    outputs.push(a_b.to_string());
+    outputs.push(a_b_assign.to_string());
+    assert_eq!(a_b, a_b_assign);
+
     let t0 = (a + b) + c; // (a + b) + c
     outputs.push(t0.to_string());
     let t1 = (a + c) + b; // (a + c) + b
@@ -43,29 +51,16 @@ pub fn add<F: Field>(a: F, b: F, c: F) -> TestResult {
     Ok(outputs.into())
 }
 
-pub fn add_assign<F: Field>(a: F, b: F, c: F) -> TestResult {
-    let mut outputs = Vec::new();
-
-    let mut tmp1 = a;
-    tmp1.add_assign(b);
-    outputs.push(tmp1.to_string());
-    tmp1.add_assign(c);
-    outputs.push(tmp1.to_string());
-
-    let mut tmp2 = b;
-    tmp2.add_assign(c);
-    outputs.push(tmp2.to_string());
-    tmp2.add_assign(a);
-    outputs.push(tmp2.to_string());
-
-    // assert!(tmp1.is_valid());
-    // assert!(tmp2.is_valid());
-    assert_eq!(tmp1, tmp2);
-    Ok(outputs.into())
-}
-
 pub fn sub<F: Field>(a: F, b: F) -> TestResult {
     let mut outputs = Vec::new();
+
+    // a - b == (a, a -= b)
+    let a_b = a - b;
+    let mut a_b_assign = a;
+    a_b_assign -= b;
+    outputs.push(a_b.to_string());
+    outputs.push(a_b_assign.to_string());
+    assert_eq!(a_b, a_b_assign);
 
     let t0 = a - b; // (a - b)
     outputs.push(t0.to_string());
@@ -84,6 +79,14 @@ pub fn sub<F: Field>(a: F, b: F) -> TestResult {
 
 pub fn mul<F: Field>(a: F, b: F, c: F) -> TestResult {
     let mut outputs = Vec::new();
+
+    // a * b == (a, a *= b)
+    let a_b = a * b;
+    let mut a_b_assign = a;
+    a_b_assign *= b;
+    outputs.push(a_b.to_string());
+    outputs.push(a_b_assign.to_string());
+    assert_eq!(a_b, a_b_assign);
 
     let mut t0 = a; // (a * b) * c
     t0 *= &b;
@@ -105,45 +108,6 @@ pub fn mul<F: Field>(a: F, b: F, c: F) -> TestResult {
 
     assert_eq!(t0, t1);
     assert_eq!(t1, t2);
-    Ok(outputs.into())
-}
-
-pub fn mul_assign<F: Field>(a: F, b: F, c: F) -> TestResult {
-    let mut outputs = Vec::new();
-
-    let mut tmp1 = a;
-    tmp1.mul_assign(&b);
-    outputs.push(tmp1.to_string());
-    tmp1.mul_assign(&c);
-    outputs.push(tmp1.to_string());
-
-    let mut tmp2 = b;
-    tmp2.mul_assign(&c);
-    outputs.push(tmp2.to_string());
-    tmp2.mul_assign(&a);
-    outputs.push(tmp2.to_string());
-
-    assert_eq!(tmp1, tmp2);
-
-    // let r = Fp::rand();
-    //     let mut a = Fp::rand();
-    //     let mut b = Fp::rand();
-    //     let mut c = Fp::rand();
-
-    //     let mut tmp1 = a;
-    //     tmp1.add_assign(b);
-    //     tmp1.add_assign(c);
-    //     tmp1.mul_assign(&r);
-
-    //     a.mul_assign(&r);
-    //     b.mul_assign(&r);
-    //     c.mul_assign(&r);
-
-    //     a.add_assign(b);
-    //     a.add_assign(c);
-
-    //     assert_eq!(tmp1, a);
-
     Ok(outputs.into())
 }
 
