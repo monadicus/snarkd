@@ -39,9 +39,9 @@ impl Namespace for BilinearNs {
     fn run_test(&self, test: Test) -> TestResult {
         match test.method.as_str() {
             "bilinearity" => {
-                let (a, b, s): (_, G2Tuple, _) =
+                let (a, b, s): (G1Tuple, G2Tuple, _) =
                     serde_json::from_value(test.input).expect("failed to get input");
-                Self::bilinearity(a, b.into(), s)
+                Self::bilinearity(a.into(), b.into(), s)
             }
             e => panic!("unknown method for BilinearNs: `{e}`"),
         }

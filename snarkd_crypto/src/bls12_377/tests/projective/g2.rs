@@ -14,6 +14,12 @@ impl From<G2Tuple> for G2Projective {
     }
 }
 
+impl From<G2Projective> for G2Tuple {
+    fn from(v: G2Projective) -> Self {
+        [v.x.into(), v.y.into(), v.z.into()]
+    }
+}
+
 pub struct G2ProjectiveNs;
 
 impl Namespace for G2ProjectiveNs {

@@ -2,8 +2,11 @@ use clap::Parser;
 use rand::{thread_rng, Rng};
 use serde_json::Value;
 use snarkd_crypto::bls12_377::{
-    test::tests::field::{Fp12Tuple, Fp2Tuple, Fp6Tuple},
-    Field, Fp, Fp12, Fp2, Fp6, Scalar,
+    test::tests::{
+        field::{Fp12Tuple, Fp2Tuple, Fp6Tuple},
+        projective::{G1Tuple, G2Tuple},
+    },
+    Field, Fp, Fp12, Fp2, Fp6, G1Parameters, G2Parameters, Projective, SWProjective, Scalar,
 };
 use std::{collections::BTreeMap, fs::write, path::PathBuf};
 use test_runner::{Case, TestConfig, TestExpectationMode};
@@ -79,6 +82,10 @@ enum Input {
     VecFp12,
     Scalar,
     VecScalar,
+    G1,
+    VecG1,
+    G2,
+    VecG2,
 }
 
 impl Input {
@@ -102,6 +109,10 @@ impl Input {
             Input::VecFp12 => gen_vec(Self::gen_fp12),
             Input::Scalar => Self::gen_scalar(),
             Input::VecScalar => gen_vec(Self::gen_scalar),
+            Input::G1 => Self::gen_g1(),
+            Input::VecG1 => gen_vec(Self::gen_g1),
+            Input::G2 => Self::gen_g2(),
+            Input::VecG2 => gen_vec(Self::gen_g2),
         }
     }
 
@@ -123,6 +134,14 @@ impl Input {
 
     fn gen_scalar() -> Value {
         serde_json::to_value(Scalar::rand()).unwrap()
+    }
+
+    fn gen_g1() -> Value {
+        serde_json::to_value(G1Tuple::from(SWProjective::<G1Parameters>::rand())).unwrap()
+    }
+
+    fn gen_g2() -> Value {
+        serde_json::to_value(G2Tuple::from(SWProjective::<G2Parameters>::rand())).unwrap()
     }
 }
 

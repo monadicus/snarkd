@@ -7,6 +7,7 @@ pub use g1::*;
 mod g2;
 pub use g2::*;
 
+use rand::SeedableRng;
 use serde_json::Value;
 use test_runner::{Namespace, Test, TestResult};
 
@@ -224,16 +225,18 @@ pub fn batch_normalization<G: Projective>(mut batch: Vec<G>) -> Result<Value, St
         assert!(!i.is_normalized());
     }
 
-    use rand::distributions::{Distribution, Uniform};
-    let between = Uniform::from(0..batch.len());
-    let mut rng = rand::thread_rng();
-    // Sprinkle in some normalized points
-    for _ in 0..5 {
-        batch[between.sample(&mut rng)] = G::ZERO;
-    }
-    for _ in 0..5 {
-        let s = between.sample(&mut rng);
-        batch[s] = batch[s].to_affine().to_projective();
+    if !batch.is_empty() {
+        use rand::distributions::{Distribution, Uniform};
+        let between = Uniform::from(0..batch.len());
+        let mut rng = rand::rngs::StdRng::seed_from_u64(0);
+        // Sprinkle in some normalized points
+        for _ in 0..5 {
+            batch[between.sample(&mut rng)] = G::ZERO;
+        }
+        for _ in 0..5 {
+            let s = between.sample(&mut rng);
+            batch[s] = batch[s].to_affine().to_projective();
+        }
     }
 
     let expected_v = batch

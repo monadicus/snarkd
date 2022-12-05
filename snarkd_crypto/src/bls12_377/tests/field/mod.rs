@@ -270,6 +270,7 @@ pub fn sum_of_products<F: Field>(a: Vec<F>, b: Vec<F>) -> TestResult {
     Ok(outputs.into())
 }
 
+// TODO: remove rand
 #[allow(clippy::eq_op)]
 pub fn math_properties<F: Field>(a: F, b: F) -> TestResult {
     let zero = F::ZERO;
