@@ -4,18 +4,14 @@ use super::*;
 use crate::bls12_377::{test::tests::field::Fp2Tuple, G2Affine};
 
 #[derive(Serialize, Deserialize)]
-struct G2AffineTuple {
-    x: Fp2Tuple,
-    y: Fp2Tuple,
-    infinity: bool,
-}
+pub struct G2AffineTuple(Fp2Tuple, Fp2Tuple, bool);
 
 impl From<G2AffineTuple> for G2Affine {
     fn from(value: G2AffineTuple) -> Self {
         Self {
-            x: value.x.into(),
-            y: value.y.into(),
-            infinity: value.infinity,
+            x: value.0.into(),
+            y: value.1.into(),
+            infinity: value.2,
         }
     }
 }

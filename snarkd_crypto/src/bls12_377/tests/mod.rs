@@ -54,6 +54,13 @@ fn test_sqrt_1_to_100() {
 }
 
 #[test]
+fn test_field_ord() {
+    ordering::<Fp>();
+    ordering::<Fp2>();
+    ordering::<Scalar>();
+}
+
+#[test]
 fn test_fp_num_bits() {
     assert_eq!(fp::MODULUS_BITS, 377);
     assert_eq!(fp::CAPACITY, 376);

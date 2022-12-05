@@ -392,3 +392,23 @@ pub fn sqrt_1_to_100<F: Field>() {
         c += &F::ONE;
     }
 }
+
+pub fn ordering<F: Field + Ord>() {
+    let mut a = F::ZERO;
+    let mut b = a;
+
+    use std::cmp::Ordering;
+    assert!(a.cmp(&b) == Ordering::Equal);
+    b += F::ONE;
+    assert!(a.cmp(&b) == Ordering::Less);
+    a += F::ONE;
+    assert!(a.cmp(&b) == Ordering::Equal);
+    b += F::ONE;
+    assert!(a.cmp(&b) == Ordering::Less);
+    a += F::ONE;
+    assert!(a.cmp(&b) == Ordering::Less);
+    a += F::ONE;
+    assert!(a.cmp(&b) == Ordering::Greater);
+    b += F::ONE;
+    assert!(a.cmp(&b) == Ordering::Equal);
+}
