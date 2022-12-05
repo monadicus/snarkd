@@ -24,6 +24,27 @@ impl From<Fp2> for Fp2Tuple {
 
 pub struct Fp2Ns;
 
+impl Fp2Ns {
+    pub fn mul_nonresidue(mut a: Fp2) -> TestResult {
+        let mut outputs = Vec::new();
+
+        let nqr = Fp2::new(Fp::ZERO, Fp::ONE);
+
+        use crate::bls12_377::fp2;
+        let quadratic_non_residue =
+            Fp2::new(fp2::QUADRATIC_NONRESIDUE.0, fp2::QUADRATIC_NONRESIDUE.1);
+
+        let mut b = a;
+        a = quadratic_non_residue * a;
+        outputs.push(a.to_string());
+        b *= &nqr;
+        outputs.push(b.to_string());
+
+        assert_eq!(a, b);
+        Ok(outputs.into())
+    }
+}
+
 impl Namespace for Fp2Ns {
     fn run_test(&self, test: Test) -> TestResult {
         match test.method.as_str() {
@@ -116,22 +137,4 @@ fn test_legendre() {
     assert_eq!(LegendreSymbol::QuadraticResidue, m1.legendre());
     m1 = Fp6::mul_fp2_by_nonresidue(&m1);
     assert_eq!(LegendreSymbol::QuadraticNonResidue, m1.legendre());
-}
-
-// TODO: remove rand
-#[test]
-fn test_mul_nonresidue() {
-    let nqr = Fp2::new(Fp::ZERO, Fp::ONE);
-
-    use crate::bls12_377::fp2;
-    let quadratic_non_residue = Fp2::new(fp2::QUADRATIC_NONRESIDUE.0, fp2::QUADRATIC_NONRESIDUE.1);
-    use rayon::prelude::{IntoParallelIterator, ParallelIterator};
-    (0..100).into_par_iter().for_each(|_| {
-        let mut a = Fp2::rand();
-        let mut b = a;
-        a = quadratic_non_residue * a;
-        b *= &nqr;
-
-        assert_eq!(a, b);
-    });
 }

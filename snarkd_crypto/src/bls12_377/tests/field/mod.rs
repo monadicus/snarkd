@@ -343,13 +343,13 @@ pub fn math_properties<F: Field>(a: F, b: F) -> TestResult {
 
     // Multiplication by zero
     {
-        let a = F::rand() * F::ZERO;
+        let a = a * F::ZERO;
         assert!(a.is_zero());
     }
 
     // Addition by zero
     {
-        let mut a = F::rand();
+        let mut a = a;
         let copy = a;
         a += &F::ZERO;
         assert_eq!(a, copy);

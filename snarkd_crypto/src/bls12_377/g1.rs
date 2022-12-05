@@ -113,36 +113,3 @@ impl rusqlite::types::ToSql for G1Affine {
         ))
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::{super::G1Affine, *};
-    use crate::bls12_377::field::Field;
-    use rand::Rng;
-    use rayon::prelude::{IntoParallelIterator, ParallelIterator};
-
-    #[test]
-    fn test_subgroup_membership() {
-        (0..100).into_par_iter().for_each(|_| {
-            let p = G1Affine::rand();
-            assert!(p.is_in_correct_subgroup_assuming_on_curve());
-            let x = Fp::rand();
-            let greatest = rand::thread_rng().gen();
-
-            if let Some(p) = G1Affine::from_x_coordinate(x, greatest) {
-                assert_eq!(
-                    p.is_in_correct_subgroup_assuming_on_curve(),
-                    p.mul_bits(
-                        Scalar::characteristic()
-                            .iter()
-                            .flat_map(|limb| limb.view_bits::<Lsb0>())
-                            .map(|b| *b)
-                            .rev()
-                            .collect::<Vec<_>>()
-                    )
-                    .is_zero(),
-                );
-            }
-        })
-    }
-}
