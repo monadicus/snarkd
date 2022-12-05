@@ -3,6 +3,8 @@ use crate::bls12_377::{Field, Fp, G1Affine, Projective};
 
 use bitvec::{prelude::Lsb0, view::BitView};
 
+pub type G1AffineTuple = AffineTuple<Fp>;
+
 pub struct G1AffineNs;
 
 impl G1AffineNs {

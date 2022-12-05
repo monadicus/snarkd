@@ -15,27 +15,27 @@ use crate::bls12_377::{field::Field, Affine, Parameters, Projective, SWProjectiv
 
 pub type ProjectiveTuple<T> = [T; 3];
 
-impl<T, P> From<ProjectiveTuple<T>> for SWProjective<P>
+impl<T, B, P> From<ProjectiveTuple<T>> for SWProjective<P>
 where
-    T: Copy,
-    P: Parameters<BaseField = T>,
+    T: Copy + Into<B>,
+    P: Parameters<BaseField = B>,
 {
     fn from(v: ProjectiveTuple<T>) -> Self {
         SWProjective {
-            x: v[0],
-            y: v[1],
-            z: v[2],
+            x: v[0].into(),
+            y: v[1].into(),
+            z: v[2].into(),
         }
     }
 }
 
-impl<T, P> From<SWProjective<P>> for ProjectiveTuple<T>
+impl<T, B, P> From<SWProjective<P>> for ProjectiveTuple<T>
 where
-    T: Copy,
-    P: Parameters<BaseField = T>,
+    B: Into<T>,
+    P: Parameters<BaseField = B>,
 {
     fn from(v: SWProjective<P>) -> Self {
-        [v.x, v.y, v.z]
+        [v.x.into(), v.y.into(), v.z.into()]
     }
 }
 

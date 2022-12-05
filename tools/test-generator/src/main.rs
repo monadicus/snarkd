@@ -3,10 +3,12 @@ use rand::{thread_rng, Rng};
 use serde_json::Value;
 use snarkd_crypto::bls12_377::{
     test::tests::{
+        affine::{G1AffineTuple, G2AffineTuple},
         field::{Fp12Tuple, Fp2Tuple, Fp6Tuple},
-        projective::{G1Tuple, G2Tuple},
+        projective::{G1ProjectiveTuple, G2ProjectiveTuple},
     },
-    Field, Fp, Fp12, Fp2, Fp6, G1Parameters, G2Parameters, Projective, SWProjective, Scalar,
+    Affine, Field, Fp, Fp12, Fp2, Fp6, G1Parameters, G2Parameters, Projective, SWAffine,
+    SWProjective, Scalar,
 };
 use std::{collections::BTreeMap, fs::write, path::PathBuf};
 use test_runner::{Case, TestConfig, TestExpectationMode};
@@ -82,10 +84,15 @@ enum Input {
     VecFp12,
     Scalar,
     VecScalar,
-    G1,
-    VecG1,
-    G2,
-    VecG2,
+    G1P,
+    VecG1P,
+    G2P,
+    VecG2P,
+    G1A,
+    VecG1A,
+    G2A,
+    VecG2A,
+    Bool,
 }
 
 impl Input {
@@ -109,10 +116,15 @@ impl Input {
             Input::VecFp12 => gen_vec(Self::gen_fp12),
             Input::Scalar => Self::gen_scalar(),
             Input::VecScalar => gen_vec(Self::gen_scalar),
-            Input::G1 => Self::gen_g1(),
-            Input::VecG1 => gen_vec(Self::gen_g1),
-            Input::G2 => Self::gen_g2(),
-            Input::VecG2 => gen_vec(Self::gen_g2),
+            Input::G1P => Self::gen_g1a(),
+            Input::VecG1P => gen_vec(Self::gen_g1a),
+            Input::G2P => Self::gen_g2a(),
+            Input::VecG2P => gen_vec(Self::gen_g2a),
+            Input::G1A => Self::gen_g1p(),
+            Input::VecG1A => gen_vec(Self::gen_g1p),
+            Input::G2A => Self::gen_g2p(),
+            Input::VecG2A => gen_vec(Self::gen_g2p),
+            Input::Bool => Self::gen_bool(),
         }
     }
 
@@ -136,12 +148,24 @@ impl Input {
         serde_json::to_value(Scalar::rand()).unwrap()
     }
 
-    fn gen_g1() -> Value {
-        serde_json::to_value(G1Tuple::from(SWProjective::<G1Parameters>::rand())).unwrap()
+    fn gen_g1a() -> Value {
+        serde_json::to_value(G1ProjectiveTuple::from(SWProjective::<G1Parameters>::rand())).unwrap()
     }
 
-    fn gen_g2() -> Value {
-        serde_json::to_value(G2Tuple::from(SWProjective::<G2Parameters>::rand())).unwrap()
+    fn gen_g2a() -> Value {
+        serde_json::to_value(G2ProjectiveTuple::from(SWProjective::<G2Parameters>::rand())).unwrap()
+    }
+
+    fn gen_g1p() -> Value {
+        serde_json::to_value(G1AffineTuple::from(SWAffine::<G1Parameters>::rand())).unwrap()
+    }
+
+    fn gen_g2p() -> Value {
+        serde_json::to_value(G2AffineTuple::from(SWAffine::<G2Parameters>::rand())).unwrap()
+    }
+
+    fn gen_bool() -> Value {
+        serde_json::to_value(thread_rng().gen::<bool>()).unwrap()
     }
 }
 

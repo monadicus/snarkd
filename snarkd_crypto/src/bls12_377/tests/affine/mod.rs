@@ -6,7 +6,33 @@ pub use g2::*;
 
 use test_runner::{Namespace, Test, TestResult};
 
-use crate::bls12_377::{Affine, Scalar};
+use crate::bls12_377::{Affine, Parameters, SWAffine, Scalar};
+
+pub type AffineTuple<T> = (T, T, bool);
+
+impl<T, B, P> From<AffineTuple<T>> for SWAffine<P>
+where
+    T: Copy + Into<B>,
+    P: Parameters<BaseField = B>,
+{
+    fn from(v: AffineTuple<T>) -> Self {
+        SWAffine {
+            x: v.0.into(),
+            y: v.1.into(),
+            infinity: v.2,
+        }
+    }
+}
+
+impl<T, B, P> From<SWAffine<P>> for AffineTuple<T>
+where
+    B: Into<T>,
+    P: Parameters<BaseField = B>,
+{
+    fn from(v: SWAffine<P>) -> Self {
+        (v.x.into(), v.y.into(), v.infinity)
+    }
+}
 
 pub fn neg<A: Affine>(a: A) -> TestResult {
     let mut outputs = Vec::new();

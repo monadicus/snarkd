@@ -25,8 +25,8 @@ impl Runner for TestRunner {
             "G2ProjectiveNs" => Box::new(G2ProjectiveNs),
             "BilinearNs" => Box::new(BilinearNs),
             "ScalarNs" => Box::new(ScalarNs),
-            "AffineG1Ns" => Box::new(G1AffineNs),
-            "AffineG2Ns" => Box::new(G2AffineNs),
+            "G1AffineNs" => Box::new(G1AffineNs),
+            "G2AffineNs" => Box::new(G2AffineNs),
             _ => return None,
         })
     }

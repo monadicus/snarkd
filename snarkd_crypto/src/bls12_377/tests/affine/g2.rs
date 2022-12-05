@@ -1,20 +1,7 @@
-use serde::{Deserialize, Serialize};
-
 use super::*;
 use crate::bls12_377::{test::tests::field::Fp2Tuple, G2Affine};
 
-#[derive(Serialize, Deserialize)]
-pub struct G2AffineTuple(Fp2Tuple, Fp2Tuple, bool);
-
-impl From<G2AffineTuple> for G2Affine {
-    fn from(value: G2AffineTuple) -> Self {
-        Self {
-            x: value.0.into(),
-            y: value.1.into(),
-            infinity: value.2,
-        }
-    }
-}
+pub type G2AffineTuple = AffineTuple<Fp2Tuple>;
 
 pub struct G2AffineNs;
 
