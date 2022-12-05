@@ -1,5 +1,5 @@
 use crate::{
-    bls12_377::{Field, Scalar},
+    bls12_377::Scalar,
     marlin::ahp::matrices::{make_matrices_square, padded_matrix_dim, to_matrix_helper},
     r1cs::{ConstraintSystem as CS, Index as VarIndex, LinearCombination, Variable},
 };

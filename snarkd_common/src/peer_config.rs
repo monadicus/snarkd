@@ -2,23 +2,16 @@ use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(default)]
 pub struct PeerConfig {
     /// Bittorrent Peer id, defaults to random 20 bytes
-    #[serde(default = "generate_peer_id")]
     pub peer_id: String,
-
-    #[serde(default)]
+    /// Not used at the moment as it's identical to the peer's port.
     pub client_port: u16,
-
-    #[serde(default = "default_info_hash")]
     /// Info Hash for finding peers
     pub info_hash: String,
-
-    #[serde(default = "default_trackers")]
     /// List of trackers to find peers from. Leave empty to disable tracker based peer discovery
     pub trackers: Vec<url::Url>,
-
-    #[serde(default)]
     // List of initial peers to connect to (via bittorrent)
     pub peers: Vec<SocketAddr>,
 }
@@ -55,6 +48,7 @@ fn default_trackers() -> Vec<url::Url> {
     .collect()
 }
 
+#[derive(Debug)]
 pub enum PeerConfigError {
     InvalidInfoHash(String),
     InvalidTracker(String),
@@ -103,13 +97,15 @@ impl PeerConfig {
     pub fn validate(&self) -> Result<(), PeerConfigError> {
         // info_hash validation
         if let Err(err) = validate_hash(&self.info_hash) {
-            return Err(PeerConfigError::InvalidInfoHash(format!("info {err}")));
+            return Err(PeerConfigError::InvalidInfoHash(format!(
+                "invalid peer info hash: {err}"
+            )));
         }
 
         // peer id validation
         if self.peer_id.len() != 20 {
             return Err(PeerConfigError::InvalidPeerId(
-                "peer ID is too short".to_string(),
+                "invalid peer ID: length must be 20".to_string(),
             ));
         }
 

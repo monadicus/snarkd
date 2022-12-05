@@ -1,6 +1,4 @@
-use crate::marlin::{ahp::AHPForR1CS, MarlinMode};
-
-use core::marker::PhantomData;
+use crate::marlin::ahp::AHPForR1CS;
 
 /// Information about the circuit, including the field of definition, the number of
 /// variables, the number of constraints, and the maximum number of non-zero

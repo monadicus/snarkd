@@ -1,17 +1,23 @@
 [workspace]
 resolver = "2"
 members = [
+    "snarkd_cli",
+    "snarkd_client",
     "snarkd_common",
     "snarkd_crypto",
     "snarkd_errors",
     "snarkd_ir",
     "snarkd_network",
     "snarkd_node",
-    "snarkd_storage",
     "snarkd_peer",
+    "snarkd_rpc",
+    "snarkd_storage",
     "tools/coverage",
     "tools/test-runner",
+<<<<<<< HEAD
     "tools/test-generator",
+=======
+>>>>>>> origin/main
 ]
 
 [workspace.dependencies]
@@ -20,6 +26,7 @@ anyhow = "1.0.66"
 arc-swap = "1.0"
 async-trait = "0.1"
 bech32 = "0.9.1"
+blake2 = "0.10"
 bitvec = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4.0", features = ["derive"] }
@@ -57,16 +64,23 @@ smallvec = "1.10"
 strum = { version = "0.24", features = ["derive"] }
 thiserror = "1.0"
 tokio = { version = "1.0", features = ["full"] }
+tokio-stream = { version = "0.1", features = ["sync"] }
 # we need a new release for rusqlite 0.28 support
 tokio-rusqlite = "0.3.0"
 uuid = { version = "1.2", features = ["serde", "v4"] }
 walkdir = "2.3"
 arbitrary = { version = "1", features = ["derive"] }
 num_cpus = "1.0"
+url = { version = "2.3.1", features = ["serde"] }
 
+snarkd_crypto = { path = "./snarkd_crypto" }
+snarkd_network = { path = "./snarkd_network" }
+snarkd_client = { path = "./snarkd_client" }
 snarkd_common = { path = "./snarkd_common" }
 snarkd_errors = { path = "./snarkd_errors" }
-snarkd_crypto = { path = "./snarkd_crypto" }
+snarkd_peer = { path = "./snarkd_peer" }
+snarkd_rpc = { path = "./snarkd_rpc" }
+snarkd_storage = { path = "./snarkd_storage" }
 test-runner = { path = "./tools/test-runner" }
 
 [profile.test]

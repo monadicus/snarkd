@@ -76,6 +76,7 @@ doc = false
 name = "sw_affine_g2"
 path = "fuzz_targets/bls12_377/sw_affine_g2.rs"
 test = false
+<<<<<<< HEAD
 doc = false
 
 [[bin]]
@@ -538,4 +539,6 @@ doc = false
 name = "mul_by_034_fp12"
 path = "fuzz_targets/bls12_377/field/mul_by_034_fp12.rs"
 test = false
+=======
+>>>>>>> origin/main
 doc = false

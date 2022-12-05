@@ -26,7 +26,7 @@ CREATE INDEX canon_height_lookup ON blocks(canon_height);
 CREATE TABLE transactions(
     id INTEGER PRIMARY KEY,
     transaction_id BLOB UNIQUE NOT NULL,
-    edition INTEGER NOT NULL,
+    execute_edition INTEGER,
     transaction_type TEXT NOT NULL
 );
 
@@ -53,7 +53,17 @@ CREATE TABLE transitions(
     proof BLOB NOT NULL,
     tpk BLOB NOT NULL,
     tcm BLOB NOT NULL,
-    fee BIGINT NOT NULL
+    fee BIGINT NOT NULL,
+    deployment_id INTEGER REFERENCES deployments(id) ON DELETE CASCADE
+);
+
+CREATE TABLE deployments (
+    id INTEGER PRIMARY KEY,
+    edition INTEGER NOT NULL,
+    program BLOB NOT NULL,
+    verifying_key_id BLOB NOT NULL,
+    verifying_key BLOB NOT NULL,
+    certificate BLOB NOT NULL
 );
 
 CREATE TABLE peers(

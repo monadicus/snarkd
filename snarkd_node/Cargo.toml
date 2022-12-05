@@ -8,24 +8,25 @@ name = "snarkd"
 path = "src/main.rs"
 
 [dependencies]
-tokio = { workspace = true }
+always_cell = { workspace = true }
 anyhow = { workspace = true }
-lazy_static = { workspace = true }
-serde = { workspace = true }
-chrono = { workspace = true }
 arc-swap = { workspace = true }
-serde_yaml = { workspace = true }
-log = { workspace = true }
-env_logger = { workspace = true }
+async-trait = { workspace = true }
+chrono = { workspace = true }
 clap = { workspace = true }
 dashmap = { workspace = true }
+env_logger = { workspace = true }
 itertools = { workspace = true }
-async-trait = { workspace = true }
+lazy_static = { workspace = true }
+log = { workspace = true }
 rand = { workspace = true }
+serde = { workspace = true }
+tokio = { workspace = true }
+tokio-stream = { workspace = true }
 uuid = { workspace = true }
-always_cell = { workspace = true }
 
-snarkd_common = { path = "../snarkd_common" }
-snarkd_storage = { path = "../snarkd_storage" }
-snarkd_network = { path = "../snarkd_network" }
-snarkd_peer = { path = "../snarkd_peer" }
+snarkd_common = { workspace = true }
+snarkd_network = { workspace = true }
+snarkd_peer = { workspace = true }
+snarkd_rpc = { workspace = true, features = ["server"] }
+snarkd_storage = { workspace = true }

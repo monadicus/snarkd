@@ -1,14 +1,11 @@
 use crate::{
-    bls12_377::{scalar, Field, G1Projective, Scalar},
+    bls12_377::{scalar, Field, Scalar},
     fft::{domain::*, DensePolynomial},
 };
-use rand::Rng;
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 
 #[test]
 fn vanishing_polynomial_evaluation() {
-    let rng = &mut rand::thread_rng();
-
     (0..10).into_par_iter().for_each(|coeffs| {
         let domain = EvaluationDomain::new(coeffs).unwrap();
         let z = domain.vanishing_polynomial();
@@ -59,7 +56,6 @@ fn elements_contents() {
 #[test]
 fn non_systematic_lagrange_coefficients_test() {
     (1..10).into_par_iter().for_each(|domain_dim| {
-        let mut rng = rand::thread_rng();
         let domain_size = 1 << domain_dim;
         let domain = EvaluationDomain::new(domain_size).unwrap();
         // Get random pt + lagrange coefficients
@@ -68,7 +64,7 @@ fn non_systematic_lagrange_coefficients_test() {
 
         // Sample the random polynomial, evaluate it over the domain and the random
         // point.
-        let rand_poly = DensePolynomial::rand(domain_size - 1, &mut rng);
+        let rand_poly = DensePolynomial::rand(domain_size - 1);
         let poly_evals = domain.fft(rand_poly.coeffs());
         let actual_eval = rand_poly.evaluate(rand_pt);
 
@@ -114,7 +110,7 @@ fn test_fft_correctness() {
     // Runs in time O(degree^2)
     let log_degree = 5;
     let degree = 1 << log_degree;
-    let rand_poly = DensePolynomial::rand(degree - 1, &mut rand::thread_rng());
+    let rand_poly = DensePolynomial::rand(degree - 1);
 
     (log_degree..(log_degree + 2))
         .into_par_iter()
@@ -249,12 +245,12 @@ fn parallel_fft_consistency() {
         }
     }
 
-    fn test_consistency<R: Rng>(rng: &mut R, max_coeffs: u32) {
+    fn test_consistency(max_coeffs: u32) {
         for _ in 0..5 {
             for log_d in 0..max_coeffs {
                 let d = 1 << log_d;
 
-                let expected_poly = (0..d).map(|_| Scalar::rand(rng)).collect::<Vec<_>>();
+                let expected_poly = (0..d).map(|_| Scalar::rand()).collect::<Vec<_>>();
                 let mut expected_vec = expected_poly.clone();
                 let mut actual_vec = expected_vec.clone();
 
@@ -280,14 +276,12 @@ fn parallel_fft_consistency() {
         }
     }
 
-    let rng = &mut rand::thread_rng();
-
-    test_consistency(rng, 10);
+    test_consistency(10);
 }
 
 #[test]
 fn fft_composition() {
-    fn test_fft_composition<R: Rng>(rng: &mut R, max_coeffs: usize) {
+    fn test_fft_composition(max_coeffs: usize) {
         (0..max_coeffs).into_par_iter().for_each(|coeffs| {
             let coeffs = 1 << coeffs;
 
@@ -319,9 +313,7 @@ fn fft_composition() {
         });
     }
 
-    let rng = &mut rand::thread_rng();
-
-    test_fft_composition::<_>(rng, 10);
+    test_fft_composition(10);
 }
 
 #[test]
@@ -330,10 +322,9 @@ fn evaluate_over_domain() {
         .into_par_iter()
         .map(|i| 2usize.pow(i))
         .for_each(|domain_size| {
-            let rng = &mut rand::thread_rng();
             let domain = EvaluationDomain::new(domain_size).unwrap();
             for degree in [domain_size - 2, domain_size - 1, domain_size + 10] {
-                let p = DensePolynomial::rand(degree, rng);
+                let p = DensePolynomial::rand(degree);
                 assert_eq!(
                     p.evaluate_over_domain_by_ref(domain).evaluations,
                     domain.elements().map(|e| p.evaluate(e)).collect::<Vec<_>>()

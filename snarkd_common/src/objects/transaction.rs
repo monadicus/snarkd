@@ -1,7 +1,6 @@
 use crate::Digest32;
 
 use super::{Certificate, Identifier, Program, Transition, VerifyingKey};
-use indexmap::IndexMap;
 
 type TransactionID = Digest32;
 
@@ -14,7 +13,7 @@ pub enum Transaction {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DeployTransaction {
     pub id: TransactionID,
-    pub deployment: Box<Deployment>,
+    pub deployment: Deployment,
     /// Additional fee, used to pay for bytecode storage.
     pub transition: Transition,
 }
@@ -32,7 +31,9 @@ pub struct ExecuteTransaction {
 pub struct Deployment {
     pub edition: u16,
     pub program: Program,
-    pub verifying_keys: IndexMap<Identifier, (VerifyingKey, Certificate)>,
+    pub verifying_key_id: Identifier,
+    pub verifying_key: VerifyingKey,
+    pub certificate: Certificate,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

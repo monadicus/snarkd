@@ -11,9 +11,7 @@
 #![allow(clippy::type_complexity)]
 
 use crate::{
-    bls12_377::{Field, ToScalar},
-    sonic_pc::UniversalParams,
-    ConstraintSynthesizer, PoseidonParameters,
+    bls12_377::ToScalar, sonic_pc::UniversalParams, ConstraintSynthesizer, PoseidonParameters,
 };
 use core::{borrow::Borrow, sync::atomic::AtomicBool};
 use rand::Rng;
@@ -71,20 +69,17 @@ pub trait Prepare {
 
 /// An abstraction layer to enable a circuit-specific SRS or universal SRS.
 /// Forward compatible with future assumptions that proof systems will require.
-pub enum SRS<'a, R: Rng + CryptoRng, T> {
-    CircuitSpecific(&'a mut R),
+pub enum SRS<'a, T> {
+    CircuitSpecific,
     Universal(&'a T),
 }
 
 pub trait SNARK {
-    fn universal_setup<R: Rng + CryptoRng>(
-        config: usize,
-        rng: &mut R,
-    ) -> Result<UniversalParams, SNARKError>;
+    fn universal_setup(config: usize) -> Result<UniversalParams, SNARKError>;
 
-    fn setup<C: ConstraintSynthesizer, R: Rng + CryptoRng>(
+    fn setup<C: ConstraintSynthesizer>(
         circuit: &C,
-        srs: &mut SRS<R, UniversalParams>,
+        srs: &mut SRS<UniversalParams>,
         mode: bool,
     ) -> Result<(CircuitProvingKey, CircuitVerifyingKey), SNARKError>;
 

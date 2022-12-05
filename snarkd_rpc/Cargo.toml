@@ -1,0 +1,17 @@
+[package]
+name = "snarkd_rpc"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+jsonrpsee = { version = "0.15.1", default-features = false }
+anyhow = { workspace = true }
+tokio = { workspace = true }
+async-trait = { workspace = true }
+snarkd_storage = { workspace = true }
+serde = { workspace = true }
+
+[features]
+default = ["client", "server"]
+client = ["jsonrpsee/client", "jsonrpsee/client-ws-transport"]
+server = ["jsonrpsee/server", "jsonrpsee/macros"]

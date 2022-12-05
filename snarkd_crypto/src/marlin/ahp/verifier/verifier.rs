@@ -1,5 +1,3 @@
-use core::marker::PhantomData;
-
 use crate::{
     bls12_377::{Field, Scalar},
     fft::EvaluationDomain,

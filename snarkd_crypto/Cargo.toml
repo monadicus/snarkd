@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 anyhow = { workspace = true }
 bitvec = { workspace = true }
+blake2 = { workspace = true }
 fxhash = { workspace = true }
 hashbrown = { workspace = true }
 hex = { workspace = true }
@@ -18,7 +19,7 @@ rand = { workspace = true }
 rand_core = { workspace = true }
 rand_xorshift = { workspace = true }
 rayon = { workspace = true }
-ruint = { workspace = true }
+ruint = { workspace = true, features = ["arbitrary"] }
 rusqlite = { workspace = true }
 # uses arbitrary for cargo-fuzz
 serde = { workspace = true }

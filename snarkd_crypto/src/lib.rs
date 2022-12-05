@@ -7,7 +7,10 @@ pub mod utils;
 pub use utils::*;
 
 pub mod bls12_377;
+pub mod coinbase_puzzle;
 pub mod fft;
+pub mod keys;
+pub use keys::*;
 pub mod marlin;
 pub use marlin::*;
 mod msm;

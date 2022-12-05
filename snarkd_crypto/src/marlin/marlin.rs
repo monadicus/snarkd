@@ -3,8 +3,8 @@ use crate::{
     fft::EvaluationDomain,
     marlin::{
         ahp::{AHPError, AHPForR1CS, EvaluationsProvider},
-        proof, prover, witness_label, CircuitProvingKey, CircuitVerifyingKey, MarlinError,
-        MarlinMode, Prepare, Proof,
+        proof, prover, witness_label, CircuitProvingKey, CircuitVerifyingKey, MarlinError, Prepare,
+        Proof,
     },
     polycommit::sonic_pc::{
         Commitment, Evaluations, LabeledCommitment, QuerySet, Randomness, SonicKZG10,
@@ -15,14 +15,10 @@ use crate::{
 };
 use itertools::Itertools;
 use rand::{CryptoRng, Rng};
-use rand_core::RngCore;
 
 use std::{borrow::Borrow, sync::Arc};
 
-use core::{
-    marker::PhantomData,
-    sync::atomic::{AtomicBool, Ordering},
-};
+use core::sync::atomic::{AtomicBool, Ordering};
 
 use super::Certificate;
 
@@ -46,13 +42,12 @@ impl MarlinSNARK {
     /// In production, one should instead perform a universal setup via [`Self::universal_setup`],
     /// and then deterministically specialize the resulting universal SRS via [`Self::circuit_setup`].
     #[allow(clippy::type_complexity)]
-    pub fn circuit_specific_setup<C: ConstraintSynthesizer, R: RngCore + CryptoRng>(
+    pub fn circuit_specific_setup<C: ConstraintSynthesizer>(
         c: &C,
-        rng: &mut R,
         mode: bool,
     ) -> Result<(CircuitProvingKey, CircuitVerifyingKey), SNARKError> {
         let circuit = AHPForR1CS::index(c, mode)?;
-        let srs = Self::universal_setup(circuit.max_degree(), rng)?;
+        let srs = Self::universal_setup(circuit.max_degree())?;
         Self::circuit_setup(&srs, c, mode)
     }
 
@@ -88,7 +83,7 @@ impl MarlinSNARK {
         )?;
 
         let (mut circuit_commitments, circuit_commitment_randomness): (_, _) =
-            SonicKZG10::commit(&committer_key, index.iter().map(Into::into), None)?;
+            SonicKZG10::commit(&committer_key, index.iter().map(Into::into))?;
 
         circuit_commitments.sort_by(|c1, c2| c1.label().cmp(c2.label()));
         let circuit_commitments = circuit_commitments
@@ -189,21 +184,18 @@ impl MarlinSNARK {
 }
 
 impl SNARK for MarlinSNARK {
-    fn universal_setup<R: Rng + CryptoRng>(
-        max_degree: usize,
-        rng: &mut R,
-    ) -> Result<UniversalParams, SNARKError> {
-        let srs = SonicKZG10::setup(max_degree, rng).map_err(Into::into);
+    fn universal_setup(max_degree: usize) -> Result<UniversalParams, SNARKError> {
+        let srs = SonicKZG10::setup(max_degree).map_err(Into::into);
         srs
     }
 
-    fn setup<C: ConstraintSynthesizer, R: Rng + CryptoRng>(
+    fn setup<C: ConstraintSynthesizer>(
         circuit: &C,
-        srs: &mut SRS<R, UniversalParams>,
+        srs: &mut SRS<UniversalParams>,
         mode: bool,
     ) -> Result<(CircuitProvingKey, CircuitVerifyingKey), SNARKError> {
         match srs {
-            SRS::CircuitSpecific(rng) => Self::circuit_specific_setup(circuit, rng, mode),
+            SRS::CircuitSpecific => Self::circuit_specific_setup(circuit, mode),
             SRS::Universal(srs) => Self::circuit_setup(srs, circuit, mode),
         }
         .map_err(SNARKError::from)
@@ -348,7 +340,7 @@ impl SNARK for MarlinSNARK {
         // First round
 
         Self::terminate(terminator)?;
-        let mut prover_state = ahp.prover_first_round(prover_state, zk_rng)?;
+        let mut prover_state = ahp.prover_first_round(prover_state)?;
         Self::terminate(terminator)?;
 
         let (first_commitments, first_commitment_randomnesses) = {
@@ -357,7 +349,6 @@ impl SNARK for MarlinSNARK {
             SonicKZG10::commit(
                 &circuit_proving_key.committer_key,
                 first_round_oracles.iter_for_commit(),
-                Some(zk_rng),
             )?
         };
 
@@ -384,7 +375,6 @@ impl SNARK for MarlinSNARK {
                 &circuit_proving_key.committer_key,
                 second_oracles.iter().map(Into::into),
                 terminator,
-                Some(zk_rng),
             )?;
 
         Self::absorb_labeled(&second_commitments, &mut sponge);
@@ -408,7 +398,6 @@ impl SNARK for MarlinSNARK {
                 &circuit_proving_key.committer_key,
                 third_oracles.iter().map(Into::into),
                 terminator,
-                Some(zk_rng),
             )?;
 
         Self::absorb_labeled_with_msg(&third_commitments, &prover_third_message, &mut sponge);
@@ -432,7 +421,6 @@ impl SNARK for MarlinSNARK {
                 &circuit_proving_key.committer_key,
                 fourth_oracles.iter().map(Into::into),
                 terminator,
-                Some(zk_rng),
             )?;
 
         Self::absorb_labeled(&fourth_commitments, &mut sponge);
@@ -763,10 +751,9 @@ impl SNARK for MarlinSNARK {
 #[cfg(test)]
 pub mod test {
     use super::*;
-    use crate::{bls12_377::Scalar, marlin::MarlinSNARK, r1cs::ConstraintSystem, utils::*, SRS};
+    use crate::{bls12_377::Scalar, marlin::MarlinSNARK, r1cs::ConstraintSystem, SRS};
     use anyhow::{anyhow, Result};
     use core::ops::MulAssign;
-    use rayon::prelude::*;
 
     #[derive(Copy, Clone)]
     pub struct Circuit {
@@ -814,7 +801,6 @@ pub mod test {
         }
     }
 
-    type FS = PoseidonSponge;
     type TestSNARK = MarlinSNARK;
 
     #[test]
@@ -836,7 +822,7 @@ pub mod test {
 
         // Generate the circuit parameters.
 
-        let (pk, vk) = TestSNARK::setup(&circ, &mut SRS::CircuitSpecific(&mut rng), true).unwrap();
+        let (pk, vk) = TestSNARK::setup(&circ, &mut SRS::CircuitSpecific, true).unwrap();
 
         // Test native proof and verification.
         let fs_parameters = PoseidonParameters::default();

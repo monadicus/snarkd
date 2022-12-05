@@ -1,8 +1,6 @@
-use std::marker::PhantomData;
-
 use super::sonic_pc::{
-    BatchLCProof, BatchProof, Commitment, Evaluations, LabeledCommitment, QuerySet, Randomness,
-    SonicKZG10, VerifierKey,
+    BatchLCProof, BatchProof, Evaluations, LabeledCommitment, QuerySet, Randomness, SonicKZG10,
+    VerifierKey,
 };
 use crate::{
     bls12_377::{Field, Scalar},
@@ -42,9 +40,8 @@ pub struct TestComponents {
 }
 
 pub fn bad_degree_bound_test() -> Result<(), PCError> {
-    let rng = &mut rand::thread_rng();
     let max_degree = 100;
-    let pp = SonicKZG10::setup(max_degree, rng)?;
+    let pp = SonicKZG10::setup(max_degree)?;
 
     (0..10).into_par_iter().for_each(|_| {
         let rng = &mut rand::thread_rng();
@@ -61,7 +58,7 @@ pub fn bad_degree_bound_test() -> Result<(), PCError> {
         for i in 0..10 {
             let label = format!("Test{}", i);
             labels.push(label.clone());
-            let poly = DensePolynomial::rand(supported_degree, rng);
+            let poly = DensePolynomial::rand(supported_degree);
 
             let degree_bound = 1usize;
             let hiding_bound = Some(1);
@@ -86,8 +83,7 @@ pub fn bad_degree_bound_test() -> Result<(), PCError> {
         .unwrap();
         println!("Trimmed");
 
-        let (comms, rands) =
-            SonicKZG10::commit(&ck, polynomials.iter().map(Into::into), Some(rng)).unwrap();
+        let (comms, rands) = SonicKZG10::commit(&ck, polynomials.iter().map(Into::into)).unwrap();
 
         let mut query_set = QuerySet::new();
         let mut values = Evaluations::new();
@@ -132,8 +128,7 @@ pub fn lagrange_test_template() -> Result<(), PCError> {
     let num_polynomials = 1usize;
     let max_num_queries = 2usize;
 
-    let rng = &mut rand::thread_rng();
-    let pp = SonicKZG10::setup(max_degree, rng)?;
+    let pp = SonicKZG10::setup(max_degree)?;
 
     (0..num_iters).into_par_iter().for_each(|_| {
         let rng = &mut rand::thread_rng();
@@ -200,7 +195,7 @@ pub fn lagrange_test_template() -> Result<(), PCError> {
         .unwrap();
         println!("Trimmed");
 
-        let (comms, rands) = SonicKZG10::commit(&ck, lagrange_polynomials, Some(rng)).unwrap();
+        let (comms, rands) = SonicKZG10::commit(&ck, lagrange_polynomials).unwrap();
 
         // Construct query set
         let mut query_set = QuerySet::new();
@@ -266,7 +261,7 @@ where
 
     let rng = &mut rand::thread_rng();
     let max_degree = max_degree.unwrap_or_else(|| distributions::Uniform::from(8..=64).sample(rng));
-    let pp = SonicKZG10::setup(max_degree, rng)?;
+    let pp = SonicKZG10::setup(max_degree)?;
     let supported_degree_bounds = pp.supported_degree_bounds();
 
     (0..num_iters).into_par_iter().for_each(|_| {
@@ -293,7 +288,7 @@ where
             let label = format!("Test{}", i);
             labels.push(label.clone());
             let degree = distributions::Uniform::from(1..=supported_degree).sample(rng);
-            let poly = DensePolynomial::rand(degree, rng);
+            let poly = DensePolynomial::rand(degree);
 
             let supported_degree_bounds_after_trimmed = supported_degree_bounds
                 .iter()
@@ -350,8 +345,7 @@ where
         .unwrap();
         println!("Trimmed");
 
-        let (comms, rands) =
-            SonicKZG10::commit(&ck, polynomials.iter().map(Into::into), Some(rng)).unwrap();
+        let (comms, rands) = SonicKZG10::commit(&ck, polynomials.iter().map(Into::into)).unwrap();
 
         // Construct query set
         let mut query_set = QuerySet::new();
@@ -415,7 +409,7 @@ fn equation_test_template(info: TestInfo) -> Result<(), PCError> {
 
     let rng = &mut rand::thread_rng();
     let max_degree = max_degree.unwrap_or_else(|| distributions::Uniform::from(8..=64).sample(rng));
-    let pp = SonicKZG10::setup(max_degree, rng)?;
+    let pp = SonicKZG10::setup(max_degree)?;
     let supported_degree_bounds = pp.supported_degree_bounds();
 
     (0..num_iters).into_par_iter().for_each(|_| {
@@ -442,7 +436,7 @@ fn equation_test_template(info: TestInfo) -> Result<(), PCError> {
             let label = format!("Test{}", i);
             labels.push(label.clone());
             let degree = distributions::Uniform::from(1..=supported_degree).sample(rng);
-            let poly = DensePolynomial::rand(degree, rng);
+            let poly = DensePolynomial::rand(degree);
 
             let supported_degree_bounds_after_trimmed = supported_degree_bounds
                 .iter()
@@ -503,8 +497,7 @@ fn equation_test_template(info: TestInfo) -> Result<(), PCError> {
         .unwrap();
         println!("Trimmed");
 
-        let (comms, rands) =
-            SonicKZG10::commit(&ck, polynomials.iter().map(Into::into), Some(rng)).unwrap();
+        let (comms, rands) = SonicKZG10::commit(&ck, polynomials.iter().map(Into::into)).unwrap();
 
         // Let's construct our equations
         let mut linear_combinations = Vec::new();
