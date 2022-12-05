@@ -8,7 +8,7 @@ use core::{
 use ruint::uint;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[cfg_attr(feature = "fuzz", derive(arbitrary::Arbitrary))]
 pub struct Fp2 {
     pub c0: Fp,
     pub c1: Fp,
@@ -372,7 +372,7 @@ impl Sum<Fp2> for Fp2 {
 
 impl std::fmt::Display for Fp2 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Fp2({} + {} * u)", self.c0, self.c1)
+        write!(f, "Fp2({} + {})", self.c0, self.c1)
     }
 }
 

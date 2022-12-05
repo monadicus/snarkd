@@ -43,8 +43,13 @@ pub use sw_projective::*;
 pub mod to_scalar;
 pub use to_scalar::*;
 
-#[cfg(test)]
-mod tests;
+#[cfg(any(test, feature = "fuzz"))]
+#[path = ""]
+pub mod test {
+
+    mod old;
+    pub mod tests;
+}
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum LegendreSymbol {

@@ -1,4 +1,5 @@
 use colored::Colorize;
+use serde::de::DeserializeOwned;
 use serde_json::Value;
 use std::{
     any::Any,
@@ -18,8 +19,17 @@ pub struct Test {
     pub input: Value,
 }
 
+pub type TestResult = Result<Value, String>;
+
 pub trait Namespace: UnwindSafe + RefUnwindSafe {
-    fn run_test(&self, test: Test) -> Result<String, String>;
+    fn run_test(&self, test: Test) -> TestResult;
+
+    fn get<T: DeserializeOwned>(input: Value) -> T
+    where
+        Self: Sized,
+    {
+        serde_json::from_value(input).expect("failed to get input")
+    }
 }
 
 pub trait Runner {
@@ -54,9 +64,9 @@ fn set_hook() -> Arc<Mutex<Option<String>>> {
 }
 
 fn take_hook(
-    output: Result<Result<String, String>, Box<dyn Any + Send>>,
+    output: Result<Result<Value, String>, Box<dyn Any + Send>>,
     panic_buf: Arc<Mutex<Option<String>>>,
-) -> Result<Result<String, String>, String> {
+) -> Result<Result<Value, String>, String> {
     let _ = panic::take_hook();
     output.map_err(|_| {
         panic_buf
@@ -109,7 +119,7 @@ impl TestCases {
                     .expect("failed to read expectations file");
                 (
                     expectation_path,
-                    Some(serde_json::from_str(&raw).expect("invalid yaml in expectations file")),
+                    Some(serde_json::from_str(&raw).expect("invalid json in expectations file")),
                 )
             }
         } else {
@@ -119,9 +129,9 @@ impl TestCases {
 }
 
 #[cfg(target_os = "windows")]
-const TESTS: &'static str = "tests\\";
+const TESTS: &str = "tests\\";
 #[cfg(not(target_os = "windows"))]
-const TESTS: &'static str = "tests/";
+const TESTS: &str = "tests/";
 
 pub fn run_tests<T: Runner>(runner: &T, expectation_category: &str) {
     let mut cases = TestCases::new(expectation_category);
@@ -135,27 +145,22 @@ pub fn run_tests<T: Runner>(runner: &T, expectation_category: &str) {
     for config in configs {
         let namespace = match runner.resolve_namespace(&config.namespace) {
             Some(ns) => ns,
-            None => return,
+            None => {
+                cases.fail_categories.push(TestFailure {
+                    path: config.path.display().to_string(),
+                    errors: vec![TestError::UnknownNamespace {
+                        namespace: config.namespace,
+                    }],
+                });
+                continue;
+            }
         };
 
         let (expectation_path, expectations) = cases.load_expectations(&config.path);
 
         let mut errors = vec![];
-        if let Some(expectations) = expectations.as_ref() {
-            if config.tests.len()
-                - config
-                    .tests
-                    .iter()
-                    .filter(|(_, case)| case.expectation == TestExpectationMode::Skip)
-                    .count()
-                != expectations.0.len()
-            {
-                errors.push(TestError::MismatchedTestExpectationLength);
-            }
-        }
-
         let mut new_outputs = BTreeMap::new();
-        let mut expected_output = expectations.as_ref().map(|x| x.0.iter());
+        let expected_output = expectations.clone().unwrap_or_default().0;
 
         for (i, (test_name, test_case)) in config.tests.into_iter().enumerate() {
             if matches!(test_case.expectation, TestExpectationMode::Skip) {
@@ -177,7 +182,14 @@ pub fn run_tests<T: Runner>(runner: &T, expectation_category: &str) {
                 continue;
             }
 
-            let expected_output = expected_output.as_mut().and_then(|x| x.next());
+            let expected_output = expected_output.get(&test_name);
+            if expectations.is_some() && expected_output.is_none() {
+                errors.push(TestError::MissingExpectation {
+                    test: test_name,
+                    index: i,
+                });
+                continue;
+            }
             println!(
                 "{}",
                 format!(
@@ -213,7 +225,7 @@ pub fn run_tests<T: Runner>(runner: &T, expectation_category: &str) {
                 errors.push(error);
             } else {
                 pass_tests += 1;
-                new_outputs.insert(test_name, output.unwrap().unwrap_or_else(|e| e));
+                new_outputs.insert(test_name, output.unwrap().unwrap_or_else(|e| e.into()));
             }
         }
 
@@ -249,7 +261,7 @@ pub fn run_tests<T: Runner>(runner: &T, expectation_category: &str) {
                 println!("{error}");
             }
         }
-        panic!("failed {pass_tests}/{} tests", fail_tests + pass_tests,);
+        panic!("failed {fail_tests}/{} tests", fail_tests + pass_tests,);
     } else {
         for (path, new_expectation) in outputs {
             std::fs::create_dir_all(path.parent().unwrap())

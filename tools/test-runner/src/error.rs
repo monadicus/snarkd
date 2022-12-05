@@ -1,9 +1,11 @@
 use colored::Colorize;
+use serde_json::Value;
 
 use std::fmt;
 
 use crate::test::TestExpectationMode;
 
+#[derive(Debug)]
 pub struct TestFailure {
     pub path: String,
     pub errors: Vec<TestError>,
@@ -19,8 +21,8 @@ pub enum TestError {
     UnexpectedOutput {
         test: String,
         index: usize,
-        expected: String,
-        output: String,
+        expected: Value,
+        output: Value,
     },
     PassedAndShouldntHave {
         test: String,
@@ -37,8 +39,13 @@ pub enum TestError {
         expected: String,
         output: String,
     },
-    MismatchedTestExpectationLength,
-    MissingTestConfig,
+    UnknownNamespace {
+        namespace: String,
+    },
+    MissingExpectation {
+        test: String,
+        index: usize,
+    },
 }
 
 impl fmt::Display for TestError {
@@ -124,19 +131,34 @@ impl fmt::Display for TestError {
                     .red(),
                 )
             }
-            TestError::MismatchedTestExpectationLength => {
-                write!(f, "{}", "invalid number of test expectations".red())
+            TestError::UnknownNamespace { namespace } => {
+                write!(
+                    f,
+                    "{}",
+                    format!("Test has an unknown namespace `{}`", namespace.cyan()).red()
+                )
             }
-            TestError::MissingTestConfig => write!(f, "{}", "missing test config".red()),
+            TestError::MissingExpectation { test, index } => {
+                write!(
+                    f,
+                    "{}",
+                    format!(
+                        "test #{}: case `{}` has no expectation in the expectation file",
+                        index + 1,
+                        test.purple(),
+                    )
+                    .red(),
+                )
+            }
         }
     }
 }
 
 pub fn emit_errors(
     test: &str,
-    output: &Result<Result<String, String>, String>,
+    output: &Result<Result<Value, String>, String>,
     mode: TestExpectationMode,
-    expected_output: Option<(&String, &String)>,
+    expected_output: Option<&Value>,
     test_index: usize,
 ) -> Option<TestError> {
     match (output, mode) {
@@ -147,13 +169,13 @@ pub fn emit_errors(
         }),
         (Ok(Ok(output)), TestExpectationMode::Pass) => {
             // passed and should have
-            if let Some(expected_output) = expected_output.as_ref() {
-                if output != expected_output.1 {
+            if let Some(expected_output) = expected_output {
+                if output != expected_output {
                     // invalid output
                     return Some(TestError::UnexpectedOutput {
                         test: test.to_string(),
                         index: test_index,
-                        expected: expected_output.1.clone(),
+                        expected: expected_output.clone(),
                         output: output.clone(),
                     });
                 }
@@ -170,7 +192,7 @@ pub fn emit_errors(
             index: test_index,
         }),
         (Ok(Err(err)), TestExpectationMode::Fail) => {
-            if let Some((_, expected_output)) = expected_output {
+            if let Some(expected_output) = expected_output {
                 if err != expected_output {
                     // invalid output
                     return Some(TestError::UnexpectedError {

@@ -32,7 +32,10 @@ use ruint::{uint, Uint};
 /// print("2-adic gen into_chunks(g2 * R % q): ", into_chunks(g2 * R % q, 64, 4))
 /// ```
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[cfg_attr(
+    any(test, feature = "fuzz"),
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub struct Scalar(pub Uint<256, 4>);
 
 impl From<Uint<256, 4>> for Scalar {
@@ -676,28 +679,11 @@ impl rusqlite::types::ToSql for Scalar {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_powers_of_g() {
-        let two = Scalar(uint!(2_U256));
-
-        // Compute the expected powers of G.
-        let g = Scalar(GENERATOR).pow(T.as_limbs());
-        let powers = (0..TWO_ADICITY - 1)
-            .map(|i| g.pow(two.pow(&[i as u64]).0.as_limbs()))
-            .collect::<Vec<_>>();
-
-        // Ensure the correct number of powers of G are present.
-        assert_eq!(POWERS_OF_G.len() as u64, (TWO_ADICITY - 1) as u64);
-        assert_eq!(POWERS_OF_G.len(), powers.len());
-
-        // Ensure the expected and candidate powers match.
-        for (expected, candidate) in powers.iter().zip(POWERS_OF_G.iter()) {
-            println!("{:?} =?= {:?}", expected, candidate);
-            assert_eq!(*expected, Scalar(*candidate));
-        }
+#[cfg(any(test, feature = "fuzz"))]
+impl<'a> arbitrary::Arbitrary<'a> for Scalar {
+    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+        let mut f = Self(Uint::arbitrary(u)?);
+        f.reduce();
+        Ok(f)
     }
 }

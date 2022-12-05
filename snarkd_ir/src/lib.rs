@@ -13,6 +13,3 @@ pub use operand::*;
 
 #[cfg(test)]
 mod tests;
-
-#[cfg(test)]
-mod test;

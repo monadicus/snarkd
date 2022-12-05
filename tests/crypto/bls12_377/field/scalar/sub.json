@@ -1,0 +1,20 @@
+{
+  "namespace": "ScalarNs",
+  "method": "sub",
+  "tests": {
+    "zero": {
+      "expectation": "Pass",
+      "input": [
+        "0x0",
+        "0x0"
+      ]
+    },
+    "one": {
+      "expectation": "Pass",
+      "input": [
+        "0x1",
+        "0x1"
+      ]
+    }
+  }
+}

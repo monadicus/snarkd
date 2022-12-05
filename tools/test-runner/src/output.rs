@@ -1,7 +1,9 @@
 use std::collections::BTreeMap;
 
-#[derive(serde::Serialize, serde::Deserialize, Clone)]
-pub struct TestExpectation(pub BTreeMap<String, String>);
+use serde_json::Value;
+
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
+pub struct TestExpectation(pub BTreeMap<String, Value>);
 
 /*
 {

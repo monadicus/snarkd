@@ -1,15 +1,18 @@
 use crate::bls12_377::{field::Field, LegendreSymbol};
 use bitvec::prelude::*;
 use core::{
-    fmt::{Display, Formatter, Result as FmtResult},
     iter::Sum,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 use rand::{distributions::Standard, Rng};
 use ruint::{uint, Uint};
+use std::fmt;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[cfg_attr(
+    any(test, feature = "fuzz"),
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub struct Fp(pub Uint<384, 6>);
 
 impl From<Uint<384, 6>> for Fp {
@@ -467,34 +470,18 @@ impl Sum<Fp> for Fp {
     }
 }
 
-impl Display for Fp {
-    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        write!(f, "{}", self.0)
+impl fmt::Display for Fp {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = format!("{:X}", self.0);
+        write!(f, "0x{:0>1}", s.trim_start_matches('0'))
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_powers_of_g() {
-        let two = Fp(uint!(2_U384));
-
-        // Compute the expected powers of G.
-        let g = Fp(GENERATOR).pow(T.as_limbs());
-        let powers = (0..TWO_ADICITY - 1)
-            .map(|i| g.pow(two.pow(&[i as u64]).0.as_limbs()))
-            .collect::<Vec<_>>();
-
-        // Ensure the correct number of powers of G are present.
-        assert_eq!(POWERS_OF_G.len() as u64, (TWO_ADICITY - 1) as u64);
-        assert_eq!(POWERS_OF_G.len(), powers.len());
-
-        // Ensure the expected and candidate powers match.
-        for (expected, candidate) in powers.iter().zip(POWERS_OF_G.iter()) {
-            println!("{:?} =?= {:?}", expected, candidate);
-            assert_eq!(*expected, Fp(*candidate));
-        }
+#[cfg(any(test, feature = "fuzz"))]
+impl<'a> arbitrary::Arbitrary<'a> for Fp {
+    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+        let mut f = Self(Uint::arbitrary(u)?);
+        f.reduce();
+        Ok(f)
     }
 }
