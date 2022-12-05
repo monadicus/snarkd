@@ -485,29 +485,3 @@ impl<'a> arbitrary::Arbitrary<'a> for Fp {
         Ok(f)
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_powers_of_g() {
-        let two = Fp(uint!(2_U384));
-
-        // Compute the expected powers of G.
-        let g = Fp(GENERATOR).pow(T.as_limbs());
-        let powers = (0..TWO_ADICITY - 1)
-            .map(|i| g.pow(two.pow(&[i as u64]).0.as_limbs()))
-            .collect::<Vec<_>>();
-
-        // Ensure the correct number of powers of G are present.
-        assert_eq!(POWERS_OF_G.len() as u64, (TWO_ADICITY - 1) as u64);
-        assert_eq!(POWERS_OF_G.len(), powers.len());
-
-        // Ensure the expected and candidate powers match.
-        for (expected, candidate) in powers.iter().zip(POWERS_OF_G.iter()) {
-            println!("{:?} =?= {:?}", expected, candidate);
-            assert_eq!(*expected, Fp(*candidate));
-        }
-    }
-}
