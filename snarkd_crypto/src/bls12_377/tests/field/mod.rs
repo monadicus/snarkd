@@ -399,17 +399,24 @@ pub fn ordering<F: Field + Ord>() {
     let mut b = a;
 
     use std::cmp::Ordering;
+    // a = 0, b = 0
     assert!(a.cmp(&b) == Ordering::Equal);
+    // a = 0, b = 1
     b += F::ONE;
     assert!(a.cmp(&b) == Ordering::Less);
+    // a = 1, b = 1
     a += F::ONE;
     assert!(a.cmp(&b) == Ordering::Equal);
+    // a = 1, b = 2
     b += F::ONE;
     assert!(a.cmp(&b) == Ordering::Less);
+    // a = 2, b = 2
     a += F::ONE;
-    assert!(a.cmp(&b) == Ordering::Less);
+    assert!(a.cmp(&b) == Ordering::Equal);
+    // a = 3, b = 2
     a += F::ONE;
     assert!(a.cmp(&b) == Ordering::Greater);
+    // a = 3, b = 3
     b += F::ONE;
     assert!(a.cmp(&b) == Ordering::Equal);
 }
