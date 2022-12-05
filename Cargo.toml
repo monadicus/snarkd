@@ -14,10 +14,7 @@ members = [
     "snarkd_storage",
     "tools/coverage",
     "tools/test-runner",
-<<<<<<< HEAD
     "tools/test-generator",
-=======
->>>>>>> origin/main
 ]
 
 [workspace.dependencies]
