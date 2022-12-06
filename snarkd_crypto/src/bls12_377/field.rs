@@ -5,7 +5,7 @@ use core::{
     iter::Sum,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
-use std::ops::Deref;
+use std::{fmt::Display, ops::Deref};
 
 pub trait Field:
     Add<Self, Output = Self>
@@ -30,6 +30,7 @@ pub trait Field:
     + Eq
     + Hash
     + Debug
+    + Display
     + Sized
     + Send
     + Sync

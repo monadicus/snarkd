@@ -52,17 +52,34 @@ commands:
 jobs:
   # runs rustfmt, clippy, and cargo test
   lint_and_test:
+    resource_class: monadicus/tleilax
     environment:
       RUST_BACKTRACE: 1
     docker:
-      - image: cimg/rust:1.64.0
+      - image: cimg/rust:1.65.0
+
+    parameters:
+      cache_version:
+        default: v1
+        description: Cache version to use - increment this to build a fresh cache.
+        type: string
+
     steps:
       - checkout
       - setup:
           protoc: true
-      - rust/format
-      - rust/clippy
-      - rust/test
+      - restore_cache:
+          keys: ['cargo-<<parameters.cache_version>>-{{ checksum "Cargo.lock" }}']
+      - rust/format:
+          with_cache: false
+      - rust/clippy:
+          with_cache: false
+      - rust/test:
+          with_cache: false
+      - save_cache:
+          key: cargo-<<parameters.cache_version>>-{{ checksum "Cargo.lock" }}
+          paths:
+              - ~/.cargo
 
   # runs cargo test on arm64 architecture
   test_arm64:
@@ -70,7 +87,7 @@ jobs:
       RUST_BACKTRACE: 1
     machine:
       image: ubuntu-2204:current
-    resource_class: arm.medium
+    resource_class: arm.large
     steps:
       - checkout
       - setup:

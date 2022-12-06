@@ -1,0 +1,18 @@
+{
+  "namespace": "FpNs",
+  "method": "double",
+  "tests": {
+    "zero": {
+      "expectation": "Pass",
+      "input": "0"
+    },
+    "one": {
+      "expectation": "Pass",
+      "input": "1"
+    },
+    "two": {
+      "expectation": "Pass",
+      "input": "2"
+    }
+  }
+}

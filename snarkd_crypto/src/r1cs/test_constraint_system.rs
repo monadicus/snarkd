@@ -360,6 +360,7 @@ impl TestConstraintSystem {
 
 impl ConstraintSystem for TestConstraintSystem {
     type Root = Self;
+    type Field = Fp;
 
     fn alloc<Fn, A, AR>(&mut self, annotation: A, f: Fn) -> Result<Variable>
     where

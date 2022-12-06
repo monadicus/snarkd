@@ -7,6 +7,10 @@ use bitvec::prelude::*;
 use ruint::{uint, Uint};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[cfg_attr(
+    any(test, feature = "fuzz"),
+    derive(serde::Serialize, serde::Deserialize, arbitrary::Arbitrary)
+)]
 pub struct G1Parameters;
 
 impl Parameters for G1Parameters {
@@ -78,35 +82,34 @@ impl Default for G1Prepared {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::{super::G1Affine, *};
-    use crate::bls12_377::field::Field;
-    use rand::Rng;
-    use rayon::prelude::{IntoParallelIterator, ParallelIterator};
-
-    #[test]
-    fn test_subgroup_membership() {
-        (0..1000).into_par_iter().for_each(|_| {
-            let p = G1Affine::rand();
-            assert!(p.is_in_correct_subgroup_assuming_on_curve());
-            let x = Fp::rand();
-            let greatest = rand::thread_rng().gen();
-
-            if let Some(p) = G1Affine::from_x_coordinate(x, greatest) {
-                assert_eq!(
-                    p.is_in_correct_subgroup_assuming_on_curve(),
-                    p.mul_bits(
-                        Scalar::characteristic()
-                            .iter()
-                            .flat_map(|limb| limb.view_bits::<Lsb0>())
-                            .map(|b| *b)
-                            .rev()
-                            .collect::<Vec<_>>()
-                    )
-                    .is_zero(),
-                );
+impl rusqlite::types::FromSql for G1Affine {
+    fn column_result(value: rusqlite::types::ValueRef<'_>) -> rusqlite::types::FromSqlResult<Self> {
+        match value {
+            rusqlite::types::ValueRef::Blob(blob) => {
+                let mut x = [0u8; 48];
+                x.copy_from_slice(&blob[..48]);
+                let mut y = [0u8; 48];
+                y.copy_from_slice(&blob[48..96]);
+                let infinity = blob[96] != 0;
+                Ok(Self {
+                    x: Fp(Uint::from_le_bytes(x)),
+                    y: Fp(Uint::from_le_bytes(y)),
+                    infinity,
+                })
             }
-        })
+            _ => Err(rusqlite::types::FromSqlError::InvalidType),
+        }
+    }
+}
+
+impl rusqlite::types::ToSql for G1Affine {
+    fn to_sql(&self) -> rusqlite::Result<rusqlite::types::ToSqlOutput<'_>> {
+        let mut bytes = Vec::<u8>::with_capacity(97);
+        bytes.extend(self.x.0.as_le_slice());
+        bytes.extend(self.y.0.as_le_slice());
+        bytes.push(self.infinity as u8);
+        Ok(rusqlite::types::ToSqlOutput::Owned(
+            rusqlite::types::Value::Blob(bytes),
+        ))
     }
 }

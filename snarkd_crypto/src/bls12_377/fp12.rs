@@ -7,6 +7,7 @@ use core::{
 use ruint::uint;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+#[cfg_attr(feature = "fuzz", derive(arbitrary::Arbitrary))]
 pub struct Fp12 {
     pub c0: Fp6,
     pub c1: Fp6,
@@ -535,5 +536,11 @@ impl Sum<Fp12> for Fp12 {
     /// Returns the `sum` of `self` and `other`.
     fn sum<I: Iterator<Item = Fp12>>(iter: I) -> Self {
         iter.fold(Fp12::ZERO, |a, b| a + b)
+    }
+}
+
+impl std::fmt::Display for Fp12 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Fp12({} + {})", self.c0, self.c1)
     }
 }

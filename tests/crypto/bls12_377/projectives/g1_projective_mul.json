@@ -1,0 +1,22 @@
+{
+  "namespace": "G1ProjectiveNs",
+  "method": "mul",
+  "tests": {
+    "zero": {
+      "expectation": "Pass",
+      "input": [
+        [
+          "0x0",
+          "0x0",
+          "0x0"
+        ],
+        [
+          "0x0",
+          "0x0",
+          "0x0"
+        ],
+        "0x0"
+      ]
+    }
+  }
+}

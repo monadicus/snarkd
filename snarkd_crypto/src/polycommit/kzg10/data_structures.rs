@@ -1,7 +1,5 @@
 use crate::{
-    bls12_377::{
-        scalar, Affine, Fp, G1Affine, G1Projective, G2Affine, G2Prepared, Projective, Scalar,
-    },
+    bls12_377::{scalar, Affine, G1Affine, G1Projective, G2Affine, G2Prepared, Projective, Scalar},
     fft::{DensePolynomial, EvaluationDomain},
     polycommit::powers::PowersOfG,
     utils::PoseidonSponge,
@@ -9,8 +7,7 @@ use crate::{
 use anyhow::Result;
 use core::ops::{Add, AddAssign};
 use parking_lot::RwLock;
-use rand_core::RngCore;
-use std::{borrow::Cow, collections::BTreeMap, io, sync::Arc};
+use std::{borrow::Cow, collections::BTreeMap, sync::Arc};
 
 /// `UniversalParams` are the universal parameters for the KZG10 scheme.
 #[derive(Clone, Debug)]
@@ -247,10 +244,10 @@ impl Randomness {
         }
     }
 
-    pub fn rand<R: RngCore>(hiding_bound: usize, _: bool, rng: &mut R) -> Self {
+    pub fn rand(hiding_bound: usize, _: bool) -> Self {
         let mut randomness = Randomness::empty();
         let hiding_poly_degree = Self::calculate_hiding_polynomial_degree(hiding_bound);
-        randomness.blinding_polynomial = DensePolynomial::rand(hiding_poly_degree, rng);
+        randomness.blinding_polynomial = DensePolynomial::rand(hiding_poly_degree);
         randomness
     }
 }

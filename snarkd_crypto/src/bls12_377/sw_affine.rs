@@ -12,6 +12,10 @@ use rand::{
 };
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[cfg_attr(
+    any(test, feature = "fuzz"),
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub struct SWAffine<P: Parameters> {
     pub x: P::BaseField,
     pub y: P::BaseField,
@@ -219,6 +223,28 @@ impl<P: Parameters> Distribution<SWAffine<P>> for Standard {
                     )
                     .into();
             }
+        }
+    }
+}
+
+#[cfg(feature = "fuzz")]
+impl<'a, P: Parameters> arbitrary::Arbitrary<'a> for SWAffine<P> {
+    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+        let x = P::BaseField::arbitrary(u)?;
+        let greatest = bool::arbitrary(u)?;
+
+        if let Some(p) = SWAffine::from_x_coordinate(x, greatest) {
+            Ok(p.mul_bits(
+                P::COFACTOR
+                    .iter()
+                    .flat_map(|limb| limb.view_bits::<Lsb0>())
+                    .map(|b| *b)
+                    .rev()
+                    .collect::<Vec<bool>>(),
+            )
+            .into())
+        } else {
+            Err(arbitrary::Error::IncorrectFormat)
         }
     }
 }

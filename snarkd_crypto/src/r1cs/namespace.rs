@@ -1,5 +1,7 @@
+use std::marker::PhantomData;
+
 use crate::{
-    bls12_377::Fp,
+    bls12_377::Field,
     r1cs::{ConstraintSystem, LinearCombination, Variable},
 };
 
@@ -7,16 +9,20 @@ use anyhow::Result;
 
 /// This is a "namespaced" constraint system which borrows a constraint system
 /// (pushing a namespace context) and, when dropped, pops out of the namespace context.
-pub struct Namespace<'a, CS: ConstraintSystem>(pub(crate) &'a mut CS);
+pub struct Namespace<'a, F: Field, CS: ConstraintSystem<Field = F>>(
+    pub(crate) &'a mut CS,
+    PhantomData<F>,
+);
 
-impl<'a, CS: ConstraintSystem> Namespace<'a, CS> {
+impl<'a, F: Field, CS: ConstraintSystem<Field = F>> Namespace<'a, F, CS> {
     pub fn new(cs: &'a mut CS) -> Self {
-        Self(cs)
+        Self(cs, PhantomData)
     }
 }
 
-impl<CS: ConstraintSystem> ConstraintSystem for Namespace<'_, CS> {
+impl<F: Field, CS: ConstraintSystem<Field = F>> ConstraintSystem for Namespace<'_, F, CS> {
     type Root = CS::Root;
+    type Field = F;
 
     fn one() -> Variable {
         CS::one()
@@ -24,7 +30,7 @@ impl<CS: ConstraintSystem> ConstraintSystem for Namespace<'_, CS> {
 
     fn alloc<FN, A, AR>(&mut self, annotation: A, f: FN) -> Result<Variable>
     where
-        FN: FnOnce() -> Result<Fp>,
+        FN: FnOnce() -> Result<Self::Field>,
         A: FnOnce() -> AR,
         AR: AsRef<str>,
     {
@@ -33,7 +39,7 @@ impl<CS: ConstraintSystem> ConstraintSystem for Namespace<'_, CS> {
 
     fn alloc_input<FN, A, AR>(&mut self, annotation: A, f: FN) -> Result<Variable>
     where
-        FN: FnOnce() -> Result<Fp>,
+        FN: FnOnce() -> Result<Self::Field>,
         A: FnOnce() -> AR,
         AR: AsRef<str>,
     {
@@ -44,9 +50,9 @@ impl<CS: ConstraintSystem> ConstraintSystem for Namespace<'_, CS> {
     where
         A: FnOnce() -> AR,
         AR: AsRef<str>,
-        LA: FnOnce(LinearCombination<Fp>) -> LinearCombination<Fp>,
-        LB: FnOnce(LinearCombination<Fp>) -> LinearCombination<Fp>,
-        LC: FnOnce(LinearCombination<Fp>) -> LinearCombination<Fp>,
+        LA: FnOnce(LinearCombination<Self::Field>) -> LinearCombination<Self::Field>,
+        LB: FnOnce(LinearCombination<Self::Field>) -> LinearCombination<Self::Field>,
+        LC: FnOnce(LinearCombination<Self::Field>) -> LinearCombination<Self::Field>,
     {
         self.0.enforce(annotation, a, b, c)
     }
@@ -87,7 +93,7 @@ impl<CS: ConstraintSystem> ConstraintSystem for Namespace<'_, CS> {
     }
 }
 
-impl<CS: ConstraintSystem> Drop for Namespace<'_, CS> {
+impl<F: Field, CS: ConstraintSystem<Field = F>> Drop for Namespace<'_, F, CS> {
     fn drop(&mut self) {
         self.get_root().pop_namespace()
     }

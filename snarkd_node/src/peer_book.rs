@@ -1,6 +1,6 @@
 use std::{net::SocketAddr, sync::Arc};
 
-use crate::{config::CONFIG, peer::Peer};
+use crate::{config::CONFIG, peer::Peer, rpc::RpcChannels};
 use anyhow::Result;
 use dashmap::{
     mapref::{
@@ -18,22 +18,23 @@ use snarkd_storage::{Database, PeerData, PeerDirection};
 
 #[derive(Clone)]
 pub struct PeerBook {
+    rpc_channels: Arc<RpcChannels>,
     peers: Arc<DashMap<SocketAddr, Peer>>,
 }
 
 impl PeerBook {
-    pub fn new() -> Self {
+    pub fn new(rpc_channels: Arc<RpcChannels>) -> Self {
         Self {
+            rpc_channels,
             peers: Default::default(),
         }
     }
 
     pub async fn load_saved_peers(&self, db: &Database) -> Result<()> {
-        for peer_data in PeerData::load_all(db).await? {
-            let mut peer = self
-                .peers
-                .entry(peer_data.address)
-                .or_insert_with(|| Peer::new(peer_data.address, peer_data));
+        for peer_data in db.load_all_peers().await? {
+            let mut peer = self.peers.entry(peer_data.address).or_insert_with(|| {
+                Peer::new(peer_data.address, peer_data, self.rpc_channels.clone())
+            });
             peer.data.merge_from(&peer_data);
         }
         Ok(())
@@ -52,8 +53,8 @@ impl PeerBook {
                 Entry::Vacant(slot) => {
                     debug!("peer {address} discovered");
                     let peer_data = PeerData::new(address);
-                    slot.insert(Peer::new(address, peer_data));
-                    peer_data.save(db).await?;
+                    slot.insert(Peer::new(address, peer_data, self.rpc_channels.clone()));
+                    db.save_peer(peer_data).await?;
                 }
             }
         }

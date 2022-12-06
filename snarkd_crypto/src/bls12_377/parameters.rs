@@ -5,6 +5,9 @@ use core::{
 };
 
 pub trait Parameters: Hash + Clone + Copy + Debug + PartialEq + Eq {
+    #[cfg(feature = "fuzz")]
+    type BaseField: Field + Ord + Display + for<'a> arbitrary::Arbitrary<'a>;
+    #[cfg(not(feature = "fuzz"))]
     type BaseField: Field + Ord + Display;
 
     const COFACTOR: &'static [u64];

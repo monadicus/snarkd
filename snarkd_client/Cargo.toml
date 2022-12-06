@@ -1,0 +1,10 @@
+[package]
+name = "snarkd_client"
+version = "0.1.0"
+edition = "2021"
+
+
+[dependencies]
+snarkd_rpc = { workspace = true, features = ["client"] }
+anyhow = { workspace = true }
+url = { workspace = true }

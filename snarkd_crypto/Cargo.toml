@@ -6,8 +6,10 @@ edition = "2021"
 [dependencies]
 anyhow = { workspace = true }
 bitvec = { workspace = true }
+blake2 = { workspace = true }
 fxhash = { workspace = true }
 hashbrown = { workspace = true }
+hex = { workspace = true }
 indexmap = { workspace = true }
 itertools = { workspace = true }
 num-bigint = { workspace = true }
@@ -18,8 +20,29 @@ rand = { workspace = true }
 rand_core = { workspace = true }
 rand_xorshift = { workspace = true }
 rayon = { workspace = true }
-ruint = { workspace = true }
+ruint = { workspace = true, features = ["arbitrary"] }
+rusqlite = { workspace = true }
+serde = { workspace = true }
 smallvec = { workspace = true }
-snarkd_common = { workspace = true }
 sha2 = { workspace = true }
 thiserror = { workspace = true }
+
+# used for cargo-fuzz
+arbitrary = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
+test-runner = { workspace = true, optional = true }
+
+[dev-dependencies]
+ruint = { workspace = true, features = ["serde", "arbitrary"] }
+arbitrary = { workspace = true }
+serde_json = { workspace = true }
+test-runner = { workspace = true }
+
+[features]
+fuzz = [
+  "serde_json",
+  "arbitrary",
+  "test-runner",
+  "ruint/serde",
+  "ruint/arbitrary",
+]

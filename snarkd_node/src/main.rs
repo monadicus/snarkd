@@ -5,20 +5,23 @@ use std::{
 };
 
 use clap::Parser;
-use config::{Verbosity, CONFIG};
+use config::{CONFIG, NODE_ID};
 use log::{debug, error, info, warn, LevelFilter};
 use peer_book::PeerBook;
+use snarkd_common::config::Verbosity;
 use snarkd_network::Connection;
 use snarkd_peer::announcer::AnnouncerConsumer;
+use snarkd_rpc::server::websocket_server;
 use snarkd_storage::{Database, PeerDirection};
 use tokio::{net::TcpListener, sync::oneshot, time::MissedTickBehavior};
 
-use crate::{config::NODE_ID, inbound_handler::InboundHandler, peer::PEER_PING_INTERVAL};
+use crate::{inbound_handler::InboundHandler, peer::PEER_PING_INTERVAL};
 
 mod config;
 mod inbound_handler;
 mod peer;
 mod peer_book;
+mod rpc;
 
 /// Snarkd Blockchain Node
 #[derive(Parser, Debug)]
@@ -67,6 +70,7 @@ async fn main() {
     lazy_static::initialize(&CONFIG);
 
     let config = CONFIG.load();
+    let rpc_enabled = config.rpc_port != 0;
 
     match config.verbosity {
         Verbosity::None => {}
@@ -88,7 +92,7 @@ async fn main() {
     }
 
     let database = match config.database_file.as_ref() {
-        Some(path) => match Database::open_file(path).await {
+        Some(path) => match Database::open_file(path.clone()).await {
             Ok(x) => x,
             Err(e) => {
                 error!("failed to load database file @ {path}: {e:?}");
@@ -107,8 +111,9 @@ async fn main() {
         }
     };
     let database = Arc::new(database);
+    let rpc_channels = Arc::new(rpc::RpcChannels::new(rpc_enabled));
 
-    let peer_book = PeerBook::new();
+    let peer_book = PeerBook::new(rpc_channels.clone());
 
     // spawn network listener
     {
@@ -116,6 +121,7 @@ async fn main() {
         let listen_ip = config.listen_ip;
         let peer_book = peer_book.clone();
         let database = database.clone();
+        let rpc_channels = rpc_channels.clone();
         tokio::spawn(async move {
             let listener =
                 match TcpListener::bind(SocketAddr::V4(SocketAddrV4::new(listen_ip, listen_port)))
@@ -129,6 +135,8 @@ async fn main() {
                 };
 
             loop {
+                let rpc_channels = rpc_channels.clone();
+
                 let (stream, address) = match listener.accept().await {
                     Ok(x) => x,
                     Err(e) => {
@@ -136,6 +144,7 @@ async fn main() {
                         continue;
                     }
                 };
+
                 let (intro_sender, intro_receiver) =
                     oneshot::channel::<snarkd_network::proto::Introduction>();
                 let handler = InboundHandler::new(address, peer_book.clone(), Some(intro_sender));
@@ -144,6 +153,7 @@ async fn main() {
 
                 let peer_book = peer_book.clone();
                 let database = database.clone();
+
                 tokio::spawn(async move {
                     let introduction = match intro_receiver.await {
                         Ok(x) => x,
@@ -160,8 +170,9 @@ async fn main() {
                     let mut remote_addr = connection.remote_addr();
                     remote_addr.set_port(introduction.inbound_port as u16);
                     info!("received connection from {}", remote_addr);
+                    rpc_channels.peer_message(rpc::PeerMessage::Accept(address));
 
-                    if let Err(e) = peer_book.discovered_peers(&*database, [remote_addr]).await {
+                    if let Err(e) = peer_book.discovered_peers(&database, [remote_addr]).await {
                         error!(
                             "failed to discover received peer {}: {e:?}",
                             connection.remote_addr()
@@ -170,6 +181,11 @@ async fn main() {
                     }
                     if let Some(mut peer) = peer_book.peer_mut(&remote_addr) {
                         peer.register_connection(PeerDirection::Inbound, connection);
+                        rpc_channels.peer_message(rpc::PeerMessage::Handshake {
+                            address,
+                            peer: peer.data,
+                        });
+
                         if let Err(e) = peer.save(&database).await {
                             error!("failed to save received peer: {e:?}");
                         }
@@ -271,9 +287,43 @@ async fn main() {
 
     //TODO: spawn peer syncer
 
-    //TODO: spawn RPC
+    let rpc_handle = if rpc_enabled {
+        let rpc_addr = SocketAddr::new(config.rpc_ip.into(), config.rpc_port);
+        let rpc_module = rpc::SnarkdRpc {
+            peer_book,
+            channels: rpc_channels,
+        }
+        .module();
+
+        match websocket_server(rpc_module, rpc_addr).await {
+            Ok((addr, handle)) => {
+                info!("json rpc listening on ws://{}", addr);
+                Some(handle)
+            }
+            Err(e) => {
+                error!("failed to start json rpc on {rpc_addr}: {e:?}");
+                None
+            }
+        }
+    } else {
+        None
+    };
 
     //TODO: start miner
 
-    std::future::pending::<()>().await;
+    tokio::select! {
+        _ = std::future::pending::<()>() => {
+            info!("all pending tasks finished... somehow");
+        },
+        _ = tokio::signal::ctrl_c() => {
+            info!("detected interrupt");
+        },
+    };
+
+    if let Some(rpc_handle) = rpc_handle {
+        info!("stopping rpc server...");
+        if let Err(e) = rpc_handle.stop() {
+            error!("failed stopping json rpc: {e:?}");
+        }
+    }
 }

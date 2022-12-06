@@ -1,0 +1,27 @@
+{
+  "namespace": "Fp2Ns",
+  "method": "sqrt",
+  "tests": {
+    "zero": {
+      "expectation": "Pass",
+      "input": [
+        "0x0",
+        "0x0"
+      ]
+    },
+    "one": {
+      "expectation": "Pass",
+      "input": [
+        "0x1",
+        "0x0"
+      ]
+    },
+    "four": {
+      "expectation": "Pass",
+      "input": [
+        "0x4",
+        "0x0"
+      ]
+    }
+  }
+}

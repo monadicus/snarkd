@@ -16,6 +16,7 @@ pub struct ConstraintCounter {
 
 impl ConstraintSystem for ConstraintCounter {
     type Root = Self;
+    type Field = Fp;
 
     fn alloc<FN, A, AR>(&mut self, _: A, _: FN) -> Result<Variable>
     where

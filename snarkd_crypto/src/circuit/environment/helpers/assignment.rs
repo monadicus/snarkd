@@ -101,9 +101,9 @@ impl Assignment {
     }
 }
 
-impl ConstraintSynthesizer for Assignment {
+impl ConstraintSynthesizer<Fp> for Assignment {
     /// Synthesizes the constraints from the environment into a `snarkvm_r1cs`-compliant constraint system.
-    fn generate_constraints<CS: ConstraintSystem>(&self, cs: &mut CS) -> Result<()> {
+    fn generate_constraints<CS: ConstraintSystem<Field = Fp>>(&self, cs: &mut CS) -> Result<()> {
         /// A struct for tracking the mapping of variables from the virtual machine (first) to the gadget constraint system (second).
         struct Converter {
             public: IndexMap<u64, R1csVariable>,

@@ -3,10 +3,7 @@
 use crate::{
     bls12_377::{Field, Scalar},
     fft::{DensePolynomial, EvaluationDomain},
-    utils::*,
 };
-#[cfg(not(feature = "parallel"))]
-use itertools::Itertools;
 use rayon::prelude::*;
 
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};

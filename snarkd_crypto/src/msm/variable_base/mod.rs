@@ -8,9 +8,7 @@ mod cuda;
 pub mod prefetch;
 
 use crate::bls12_377::{Affine, G1Affine};
-use bitvec::prelude::*;
 use core::any::TypeId;
-use core::ops::Deref;
 use ruint::Uint;
 
 #[cfg(all(feature = "cuda", target_arch = "x86_64"))]
@@ -45,6 +43,8 @@ impl VariableBase {
 
     #[cfg(test)]
     fn msm_naive<A: Affine>(bases: &[A], scalars: &[Uint<256, 4>]) -> A::Projective {
+        use bitvec::prelude::*;
+        use core::ops::Deref;
         use itertools::Itertools;
 
         bases
@@ -66,6 +66,8 @@ impl VariableBase {
 
     #[cfg(test)]
     fn msm_naive_parallel<A: Affine>(bases: &[A], scalars: &[Uint<256, 4>]) -> A::Projective {
+        use bitvec::prelude::*;
+        use core::ops::Deref;
         use rayon::prelude::*;
 
         bases
@@ -89,8 +91,8 @@ impl VariableBase {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::bls12_377::{Field, Fp, G1Affine, Projective, Scalar};
-    use ruint::uint;
+    use crate::bls12_377::{Field, G1Affine, Projective, Scalar};
+    use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 
     fn create_scalar_bases(size: usize) -> (Vec<G1Affine>, Vec<Uint<256, 4>>) {
         let bases = (0..size).map(|_| G1Affine::rand()).collect::<Vec<_>>();
@@ -100,20 +102,24 @@ mod tests {
 
     #[test]
     fn test_msm() {
-        for msm_size in [1, 5, 10, 50, 100, 500, 1000] {
-            let (bases, scalars) = create_scalar_bases(msm_size);
+        [1, 5, 10, 50, 100, 500, 1000]
+            .into_par_iter()
+            .for_each(|msm_size| {
+                let (bases, scalars) = create_scalar_bases(msm_size);
 
-            let naive_a = VariableBase::msm_naive(bases.as_slice(), scalars.as_slice()).to_affine();
-            let naive_b =
-                VariableBase::msm_naive_parallel(bases.as_slice(), scalars.as_slice()).to_affine();
-            assert_eq!(naive_a, naive_b, "MSM size: {msm_size}");
+                let naive_a =
+                    VariableBase::msm_naive(bases.as_slice(), scalars.as_slice()).to_affine();
+                let naive_b =
+                    VariableBase::msm_naive_parallel(bases.as_slice(), scalars.as_slice())
+                        .to_affine();
+                assert_eq!(naive_a, naive_b, "MSM size: {msm_size}");
 
-            let candidate = standard::msm(bases.as_slice(), scalars.as_slice()).to_affine();
-            assert_eq!(naive_a, candidate, "MSM size: {msm_size}");
+                let candidate = standard::msm(bases.as_slice(), scalars.as_slice()).to_affine();
+                assert_eq!(naive_a, candidate, "MSM size: {msm_size}");
 
-            let candidate = batched::msm(bases.as_slice(), scalars.as_slice()).to_affine();
-            assert_eq!(naive_a, candidate, "MSM size: {msm_size}");
-        }
+                let candidate = batched::msm(bases.as_slice(), scalars.as_slice()).to_affine();
+                assert_eq!(naive_a, candidate, "MSM size: {msm_size}");
+            });
     }
 
     #[cfg(all(feature = "cuda", target_arch = "x86_64"))]

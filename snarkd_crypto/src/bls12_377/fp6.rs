@@ -6,6 +6,7 @@ use core::{
 use ruint::uint;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+#[cfg_attr(feature = "fuzz", derive(arbitrary::Arbitrary))]
 pub struct Fp6 {
     pub c0: Fp2,
     pub c1: Fp2,
@@ -522,22 +523,8 @@ impl Sum<Fp6> for Fp6 {
     }
 }
 
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn test_fq2_mul_nonresidue() {
-        let nqr = Fp2::new(Fp::ZERO, Fp::ONE);
-        println!("One: {:?}", Fp::ONE);
-
-        for _ in 0..1000 {
-            let mut a = Fp2::rand();
-            let mut b = a;
-            a *= &NONRESIDUE;
-            b *= &nqr;
-
-            assert_eq!(a, b);
-        }
+impl std::fmt::Display for Fp6 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Fp6({} + {} + {})", self.c0, self.c1, self.c2)
     }
 }
