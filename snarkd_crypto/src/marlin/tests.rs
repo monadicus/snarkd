@@ -1,9 +1,8 @@
 use crate::{
     bls12_377::{Field, Scalar},
     marlin::SNARK,
-    r1cs::ConstraintSystem,
+    r1cs::{ConstraintSynthesizer, ConstraintSystem},
     utils::PoseidonParameters,
-    ConstraintSynthesizer,
 };
 use anyhow::{anyhow, Result};
 use std::ops::MulAssign;
@@ -16,7 +15,7 @@ pub struct Circuit {
     pub num_variables: usize,
 }
 
-impl ConstraintSynthesizer for Circuit {
+impl ConstraintSynthesizer<Scalar> for Circuit {
     fn generate_constraints<CS: ConstraintSystem<Field = Scalar>>(
         &self,
         cs: &mut CS,

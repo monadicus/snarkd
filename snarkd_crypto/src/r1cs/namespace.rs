@@ -1,14 +1,28 @@
-use crate::{r1cs::ConstraintSystem, LinearCombination, Variable};
+use std::marker::PhantomData;
+
+use crate::{
+    bls12_377::Field,
+    r1cs::{ConstraintSystem, LinearCombination, Variable},
+};
 
 use anyhow::Result;
 
 /// This is a "namespaced" constraint system which borrows a constraint system
 /// (pushing a namespace context) and, when dropped, pops out of the namespace context.
-pub struct Namespace<'a, CS: ConstraintSystem>(pub(crate) &'a mut CS);
+pub struct Namespace<'a, F: Field, CS: ConstraintSystem<Field = F>>(
+    pub(crate) &'a mut CS,
+    PhantomData<F>,
+);
 
-impl<CS: ConstraintSystem> ConstraintSystem for Namespace<'_, CS> {
+impl<'a, F: Field, CS: ConstraintSystem<Field = F>> Namespace<'a, F, CS> {
+    pub fn new(cs: &'a mut CS) -> Self {
+        Self(cs, PhantomData)
+    }
+}
+
+impl<F: Field, CS: ConstraintSystem<Field = F>> ConstraintSystem for Namespace<'_, F, CS> {
     type Root = CS::Root;
-    type Field = CS::Field;
+    type Field = F;
 
     fn one() -> Variable {
         CS::one()
@@ -79,7 +93,7 @@ impl<CS: ConstraintSystem> ConstraintSystem for Namespace<'_, CS> {
     }
 }
 
-impl<CS: ConstraintSystem> Drop for Namespace<'_, CS> {
+impl<F: Field, CS: ConstraintSystem<Field = F>> Drop for Namespace<'_, F, CS> {
     fn drop(&mut self) {
         self.get_root().pop_namespace()
     }

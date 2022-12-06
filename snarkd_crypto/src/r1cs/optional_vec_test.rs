@@ -1,4 +1,4 @@
-use crate::{optional_vec, OptionalVec};
+use crate::{optional_vec, r1cs::OptionalVec};
 
 #[test]
 fn insert_remove() {

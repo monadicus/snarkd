@@ -1,17 +1,18 @@
 use crate::{
-    bls12_377::{Field, Scalar},
-    Index, LinearCombination, Namespace, Variable,
+    bls12_377::Field,
+    r1cs::{LinearCombination, Namespace, Variable},
 };
 
 use anyhow::Result;
 
+use super::Index;
+
 /// Computations are expressed in terms of rank-1 constraint systems (R1CS).
 /// The `generate_constraints` method is called to generate constraints for
 /// both CRS generation and for proving.
-pub trait ConstraintSynthesizer: Sync {
+pub trait ConstraintSynthesizer<F>: Sync {
     /// Drives generation of new constraints inside `CS`.
-    fn generate_constraints<CS: ConstraintSystem<Field = Scalar>>(&self, cs: &mut CS)
-        -> Result<()>;
+    fn generate_constraints<CS: ConstraintSystem<Field = F>>(&self, cs: &mut CS) -> Result<()>;
 }
 
 /// Represents a constraint system which can have new variables
@@ -19,7 +20,7 @@ pub trait ConstraintSynthesizer: Sync {
 pub trait ConstraintSystem: Sized {
     /// Represents the type of the "root" of this constraint system
     /// so that nested namespaces can minimize indirection.
-    type Root: ConstraintSystem;
+    type Root: ConstraintSystem<Field = Self::Field>;
     type Field: Field;
 
     /// Return the "one" input variable
@@ -72,14 +73,14 @@ pub trait ConstraintSystem: Sized {
     fn get_root(&mut self) -> &mut Self::Root;
 
     /// Begin a namespace for this constraint system.
-    fn ns<NR, N>(&mut self, name_fn: N) -> Namespace<'_, Self::Root>
+    fn ns<NR, N>(&mut self, name_fn: N) -> Namespace<'_, Self::Field, Self::Root>
     where
         NR: AsRef<str>,
         N: FnOnce() -> NR,
     {
         self.get_root().push_namespace(name_fn);
 
-        Namespace(self.get_root())
+        Namespace::new(self.get_root())
     }
 
     /// Output the number of constraints in the system.

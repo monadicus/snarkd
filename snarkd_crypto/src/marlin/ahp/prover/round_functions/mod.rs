@@ -17,7 +17,7 @@ mod third;
 
 impl AHPForR1CS {
     /// Initialize the AHP prover.
-    pub fn init_prover<'a, C: ConstraintSynthesizer>(
+    pub fn init_prover<'a, C: ConstraintSynthesizer<Scalar>>(
         index: &'a Circuit,
         circuits: &[C],
         mode: bool,

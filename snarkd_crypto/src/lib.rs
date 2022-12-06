@@ -7,6 +7,7 @@ pub mod utils;
 pub use utils::*;
 
 pub mod bls12_377;
+pub mod circuit;
 pub mod coinbase_puzzle;
 pub mod fft;
 pub mod keys;
@@ -16,7 +17,6 @@ pub use marlin::*;
 mod msm;
 pub mod polycommit;
 pub use polycommit::*;
-mod r1cs;
-pub use r1cs::*;
+pub mod r1cs;
 mod test;
 pub(crate) use test::Testable;

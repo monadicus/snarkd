@@ -1,25 +1,26 @@
-use std::marker::PhantomData;
-
-use crate::{bls12_377::Field, r1cs::ConstraintSystem, Index, LinearCombination, Variable};
+use crate::{
+    bls12_377::Fp,
+    r1cs::{ConstraintSystem, LinearCombination, Variable},
+};
 use anyhow::Result;
+
+use super::Index;
 
 /// Constraint counter for testing purposes.
 #[derive(Default)]
-pub struct ConstraintCounter<F: Field> {
+pub struct ConstraintCounter {
     pub num_public_variables: usize,
     pub num_private_variables: usize,
     pub num_constraints: usize,
-    // TODO see if we can avoid
-    _pd: PhantomData<F>,
 }
 
-impl<F: Field> ConstraintSystem for ConstraintCounter<F> {
+impl ConstraintSystem for ConstraintCounter {
     type Root = Self;
-    type Field = F;
+    type Field = Fp;
 
     fn alloc<FN, A, AR>(&mut self, _: A, _: FN) -> Result<Variable>
     where
-        FN: FnOnce() -> Result<Self::Field>,
+        FN: FnOnce() -> Result<Fp>,
         A: FnOnce() -> AR,
         AR: AsRef<str>,
     {
@@ -30,7 +31,7 @@ impl<F: Field> ConstraintSystem for ConstraintCounter<F> {
 
     fn alloc_input<FN, A, AR>(&mut self, _: A, _: FN) -> Result<Variable>
     where
-        FN: FnOnce() -> Result<Self::Field>,
+        FN: FnOnce() -> Result<Fp>,
         A: FnOnce() -> AR,
         AR: AsRef<str>,
     {
@@ -44,9 +45,9 @@ impl<F: Field> ConstraintSystem for ConstraintCounter<F> {
     where
         A: FnOnce() -> AR,
         AR: AsRef<str>,
-        LA: FnOnce(LinearCombination<F>) -> LinearCombination<F>,
-        LB: FnOnce(LinearCombination<F>) -> LinearCombination<F>,
-        LC: FnOnce(LinearCombination<F>) -> LinearCombination<F>,
+        LA: FnOnce(LinearCombination<Fp>) -> LinearCombination<Fp>,
+        LB: FnOnce(LinearCombination<Fp>) -> LinearCombination<Fp>,
+        LC: FnOnce(LinearCombination<Fp>) -> LinearCombination<Fp>,
     {
         self.num_constraints += 1;
     }

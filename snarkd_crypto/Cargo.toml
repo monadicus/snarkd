@@ -14,6 +14,7 @@ indexmap = { workspace = true }
 itertools = { workspace = true }
 num-bigint = { workspace = true }
 num_cpus = { workspace = true }
+once_cell = { workspace = true }
 parking_lot = { workspace = true }
 rand = { workspace = true }
 rand_core = { workspace = true }
@@ -21,11 +22,11 @@ rand_xorshift = { workspace = true }
 rayon = { workspace = true }
 ruint = { workspace = true, features = ["arbitrary"] }
 rusqlite = { workspace = true }
-# uses arbitrary for cargo-fuzz
 serde = { workspace = true }
 smallvec = { workspace = true }
 sha2 = { workspace = true }
 thiserror = { workspace = true }
+
 # used for cargo-fuzz
 arbitrary = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }
@@ -38,4 +39,10 @@ serde_json = { workspace = true }
 test-runner = { workspace = true }
 
 [features]
-fuzz = ["serde_json", "arbitrary", "test-runner", "ruint/serde", "ruint/arbitrary", ]
+fuzz = [
+  "serde_json",
+  "arbitrary",
+  "test-runner",
+  "ruint/serde",
+  "ruint/arbitrary",
+]

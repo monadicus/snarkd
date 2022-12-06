@@ -10,8 +10,9 @@ use crate::{
         Commitment, Evaluations, LabeledCommitment, QuerySet, Randomness, SonicKZG10,
         UniversalParams,
     },
+    r1cs::ConstraintSynthesizer,
     utils::*,
-    ConstraintSynthesizer, SNARKError, SNARK, SRS,
+    SNARKError, SNARK, SRS,
 };
 use itertools::Itertools;
 use rand::{CryptoRng, Rng};
@@ -42,7 +43,7 @@ impl MarlinSNARK {
     /// In production, one should instead perform a universal setup via [`Self::universal_setup`],
     /// and then deterministically specialize the resulting universal SRS via [`Self::circuit_setup`].
     #[allow(clippy::type_complexity)]
-    pub fn circuit_specific_setup<C: ConstraintSynthesizer>(
+    pub fn circuit_specific_setup<C: ConstraintSynthesizer<Scalar>>(
         c: &C,
         mode: bool,
     ) -> Result<(CircuitProvingKey, CircuitVerifyingKey), SNARKError> {
@@ -54,7 +55,7 @@ impl MarlinSNARK {
     /// Generates the circuit proving and verifying keys.
     /// This is a deterministic algorithm that anyone can rerun.
     #[allow(clippy::type_complexity)]
-    pub fn circuit_setup<C: ConstraintSynthesizer>(
+    pub fn circuit_setup<C: ConstraintSynthesizer<Scalar>>(
         universal_srs: &UniversalParams,
         circuit: &C,
         mode: bool,
@@ -189,7 +190,7 @@ impl SNARK for MarlinSNARK {
         srs
     }
 
-    fn setup<C: ConstraintSynthesizer>(
+    fn setup<C: ConstraintSynthesizer<Scalar>>(
         circuit: &C,
         srs: &mut SRS<UniversalParams>,
         mode: bool,
@@ -250,7 +251,7 @@ impl SNARK for MarlinSNARK {
         Ok(Certificate::new(certificate))
     }
 
-    fn verify_vk<C: ConstraintSynthesizer>(
+    fn verify_vk<C: ConstraintSynthesizer<Scalar>>(
         fs_parameters: &PoseidonParameters,
         circuit: &C,
         verifying_key: &CircuitVerifyingKey,
@@ -306,7 +307,7 @@ impl SNARK for MarlinSNARK {
     }
 
     #[allow(clippy::only_used_in_recursion)]
-    fn prove_batch_with_terminator<C: ConstraintSynthesizer, R: Rng + CryptoRng>(
+    fn prove_batch_with_terminator<C: ConstraintSynthesizer<Scalar>, R: Rng + CryptoRng>(
         &self,
         fs_parameters: &PoseidonParameters,
         circuit_proving_key: &CircuitProvingKey,
@@ -763,7 +764,7 @@ pub mod test {
         pub num_variables: usize,
     }
 
-    impl ConstraintSynthesizer for Circuit {
+    impl ConstraintSynthesizer<Scalar> for Circuit {
         fn generate_constraints<CS: ConstraintSystem<Field = Scalar>>(
             &self,
             cs: &mut CS,

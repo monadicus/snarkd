@@ -11,8 +11,7 @@ use crate::{
         num_non_zero,
     },
     polycommit::sonic_pc::{PolynomialInfo, PolynomialLabel},
-    r1cs::ConstraintSystem,
-    ConstraintSynthesizer,
+    r1cs::{ConstraintSynthesizer, ConstraintSystem},
 };
 use anyhow::anyhow;
 
@@ -24,7 +23,7 @@ use super::Matrix;
 
 impl AHPForR1CS {
     /// Generate the index for this constraint system.
-    pub fn index<C: ConstraintSynthesizer>(c: &C, mode: bool) -> Result<Circuit, AHPError> {
+    pub fn index<C: ConstraintSynthesizer<Scalar>>(c: &C, mode: bool) -> Result<Circuit, AHPError> {
         let IndexerState {
             constraint_domain,
 
@@ -106,7 +105,7 @@ impl AHPForR1CS {
         })
     }
 
-    fn index_helper<C: ConstraintSynthesizer>(c: &C) -> Result<IndexerState, AHPError> {
+    fn index_helper<C: ConstraintSynthesizer<Scalar>>(c: &C) -> Result<IndexerState, AHPError> {
         let mut ics = IndexerConstraintSystem::new();
         c.generate_constraints(&mut ics)?;
 
@@ -217,7 +216,7 @@ impl AHPForR1CS {
         result
     }
 
-    pub fn evaluate_index_polynomials<C: ConstraintSynthesizer>(
+    pub fn evaluate_index_polynomials<C: ConstraintSynthesizer<Scalar>>(
         c: &C,
         point: Scalar,
     ) -> Result<impl Iterator<Item = Scalar>, AHPError> {

@@ -11,7 +11,10 @@
 #![allow(clippy::type_complexity)]
 
 use crate::{
-    bls12_377::ToScalar, sonic_pc::UniversalParams, ConstraintSynthesizer, PoseidonParameters,
+    bls12_377::{Scalar, ToScalar},
+    r1cs::ConstraintSynthesizer,
+    sonic_pc::UniversalParams,
+    PoseidonParameters,
 };
 use core::{borrow::Borrow, sync::atomic::AtomicBool};
 use rand::Rng;
@@ -77,7 +80,7 @@ pub enum SRS<'a, T> {
 pub trait SNARK {
     fn universal_setup(config: usize) -> Result<UniversalParams, SNARKError>;
 
-    fn setup<C: ConstraintSynthesizer>(
+    fn setup<C: ConstraintSynthesizer<Scalar>>(
         circuit: &C,
         srs: &mut SRS<UniversalParams>,
         mode: bool,
@@ -89,7 +92,7 @@ pub trait SNARK {
         proving_key: &CircuitProvingKey,
     ) -> Result<Certificate, SNARKError>;
 
-    fn prove_batch<C: ConstraintSynthesizer, R: Rng + CryptoRng>(
+    fn prove_batch<C: ConstraintSynthesizer<Scalar>, R: Rng + CryptoRng>(
         &self,
         fs_parameters: &PoseidonParameters,
         proving_key: &CircuitProvingKey,
@@ -105,7 +108,7 @@ pub trait SNARK {
         )
     }
 
-    fn prove<C: ConstraintSynthesizer, R: Rng + CryptoRng>(
+    fn prove<C: ConstraintSynthesizer<Scalar>, R: Rng + CryptoRng>(
         &self,
         fs_parameters: &PoseidonParameters,
         proving_key: &CircuitProvingKey,
@@ -120,7 +123,7 @@ pub trait SNARK {
         )
     }
 
-    fn prove_batch_with_terminator<C: ConstraintSynthesizer, R: Rng + CryptoRng>(
+    fn prove_batch_with_terminator<C: ConstraintSynthesizer<Scalar>, R: Rng + CryptoRng>(
         &self,
         fs_parameters: &PoseidonParameters,
         proving_key: &CircuitProvingKey,
@@ -129,7 +132,7 @@ pub trait SNARK {
         rng: &mut R,
     ) -> Result<Proof, SNARKError>;
 
-    fn prove_with_terminator<C: ConstraintSynthesizer, R: Rng + CryptoRng>(
+    fn prove_with_terminator<C: ConstraintSynthesizer<Scalar>, R: Rng + CryptoRng>(
         &self,
         fs_parameters: &PoseidonParameters,
         proving_key: &CircuitProvingKey,
@@ -146,7 +149,7 @@ pub trait SNARK {
         )
     }
 
-    fn verify_vk<C: ConstraintSynthesizer>(
+    fn verify_vk<C: ConstraintSynthesizer<Scalar>>(
         fs_parameters: &PoseidonParameters,
         circuit: &C,
         verifying_key: &CircuitVerifyingKey,
