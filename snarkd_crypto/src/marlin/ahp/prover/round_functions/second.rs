@@ -236,7 +236,7 @@ impl AHPForR1CS {
         job_pool.add_job(|| {
             let r_alpha_x_evals = constraint_domain
                 .batch_eval_unnormalized_bivariate_lagrange_poly_with_diff_inputs(alpha);
-            
+
             Self::calculate_t(
                 &[&state.index.a, &state.index.b, &state.index.c],
                 [Scalar::ONE, eta_b, eta_c],
