@@ -236,15 +236,15 @@ impl AHPForR1CS {
         job_pool.add_job(|| {
             let r_alpha_x_evals = constraint_domain
                 .batch_eval_unnormalized_bivariate_lagrange_poly_with_diff_inputs(alpha);
-            let t = Self::calculate_t(
+            
+            Self::calculate_t(
                 &[&state.index.a, &state.index.b, &state.index.c],
                 [Scalar::ONE, eta_b, eta_c],
                 &state.input_domain,
                 &state.constraint_domain,
                 &r_alpha_x_evals,
                 ifft_precomputation,
-            );
-            t
+            )
         });
         let [summed_z_m, t]: [DensePolynomial; 2] = job_pool.execute_all().try_into().unwrap();
         (summed_z_m, t)

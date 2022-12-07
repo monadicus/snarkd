@@ -20,13 +20,19 @@ impl ConstraintSynthesizer<Scalar> for Circuit {
         &self,
         cs: &mut CS,
     ) -> Result<()> {
-        let a = cs.alloc(|| "a", || self.a.ok_or(anyhow!("assignment missing")))?;
-        let b = cs.alloc(|| "b", || self.b.ok_or(anyhow!("assignment missing")))?;
+        let a = cs.alloc(
+            || "a",
+            || self.a.ok_or_else(|| anyhow!("assignment missing")),
+        )?;
+        let b = cs.alloc(
+            || "b",
+            || self.b.ok_or_else(|| anyhow!("assignment missing")),
+        )?;
         let c = cs.alloc_input(
             || "c",
             || {
-                let mut a = self.a.ok_or(anyhow!("assignment missing"))?;
-                let b = self.b.ok_or(anyhow!("assignment missing"))?;
+                let mut a = self.a.ok_or_else(|| anyhow!("assignment missing"))?;
+                let b = self.b.ok_or_else(|| anyhow!("assignment missing"))?;
 
                 a.mul_assign(&b);
                 Ok(a)
@@ -35,8 +41,8 @@ impl ConstraintSynthesizer<Scalar> for Circuit {
         let d = cs.alloc_input(
             || "d",
             || {
-                let mut a = self.a.ok_or(anyhow!("assignment missing"))?;
-                let b = self.b.ok_or(anyhow!("assignment missing"))?;
+                let mut a = self.a.ok_or_else(|| anyhow!("assignment missing"))?;
+                let b = self.b.ok_or_else(|| anyhow!("assignment missing"))?;
 
                 a.mul_assign(&b);
                 a.mul_assign(&b);
@@ -47,7 +53,7 @@ impl ConstraintSynthesizer<Scalar> for Circuit {
         for i in 0..(self.num_variables - 3) {
             let _ = cs.alloc(
                 || format!("var {}", i),
-                || self.a.ok_or(anyhow!("assignment missing")),
+                || self.a.ok_or_else(|| anyhow!("assignment missing")),
             )?;
         }
 

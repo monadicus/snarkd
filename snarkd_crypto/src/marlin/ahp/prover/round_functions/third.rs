@@ -148,13 +148,13 @@ impl AHPForR1CS {
     ) -> (Scalar, DensePolynomial, LabeledPolynomial) {
         let mut job_pool = crate::utils::ExecutionPool::with_capacity(2);
         job_pool.add_job(|| {
-            let a_poly = {
+            
+            {
                 let coeffs = cfg_iter!(arithmetization.val.as_dense().unwrap().coeffs())
                     .map(|a| v_H_alpha_v_H_beta * a)
                     .collect();
                 DensePolynomial::from_coefficients_vec(coeffs)
-            };
-            a_poly
+            }
         });
 
         let (row_on_K, col_on_K, row_col_on_K) = (
@@ -165,7 +165,8 @@ impl AHPForR1CS {
 
         job_pool.add_job(|| {
             let alpha_beta = alpha * beta;
-            let b_poly = {
+            
+            {
                 let evals: Vec<Scalar> = cfg_iter!(row_on_K.evaluations)
                     .zip_eq(&col_on_K.evaluations)
                     .zip_eq(&row_col_on_K.evaluations)
@@ -173,8 +174,7 @@ impl AHPForR1CS {
                     .collect();
                 EvaluationsOnDomain::from_vec_and_domain(evals, non_zero_domain)
                     .interpolate_with_pc(ifft_precomputation)
-            };
-            b_poly
+            }
         });
         let [a_poly, b_poly]: [_; 2] = job_pool.execute_all().try_into().unwrap();
 

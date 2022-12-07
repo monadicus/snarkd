@@ -152,12 +152,10 @@ impl KZG10 {
             .collect::<Vec<_>>();
 
         G1Projective::batch_normalization(&mut powers_of_beta_times_gamma_g);
+
         let powers_of_beta_times_gamma_g = powers_of_beta_times_gamma_g
             .into_iter()
             .map(|g| g.into())
-            .collect::<Vec<_>>();
-        let powers_of_beta_times_gamma_g = powers_of_beta_times_gamma_g
-            .into_iter()
             .enumerate()
             .collect();
 
@@ -619,8 +617,7 @@ fn skip_leading_zeros_and_convert_to_bigints(p: &DensePolynomial) -> (usize, Vec
 }
 
 fn convert_to_bigints(p: &[Scalar]) -> Vec<Uint<256, 4>> {
-    let coeffs = cfg_iter!(p).map(|s| s.0).collect::<Vec<_>>();
-    coeffs
+    cfg_iter!(p).map(|s| s.0).collect::<Vec<_>>()
 }
 
 #[cfg(test)]

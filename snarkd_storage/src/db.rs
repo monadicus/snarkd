@@ -33,7 +33,7 @@ pub(crate) struct InnerDatabase {
 
 impl Database {
     pub async fn open_in_memory() -> Result<Self> {
-        let connection = tokio::task::spawn_blocking(|| Connection::open_in_memory()).await??;
+        let connection = tokio::task::spawn_blocking(Connection::open_in_memory).await??;
         Self::open(connection).await
     }
 

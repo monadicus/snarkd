@@ -353,7 +353,7 @@ impl CoinbasePuzzle {
                 // Compute the prover polynomial.
                 true => solution.to_prover_polynomial(epoch_challenge),
                 false => {
-                    return Err(anyhow!(
+                    Err(anyhow!(
                         "Prover puzzle does not meet the proof target requirements."
                     ))
                 }
@@ -423,7 +423,7 @@ impl CoinbasePuzzle {
         match self {
             Self::Prover(coinbase_proving_key) => Ok(coinbase_proving_key),
             Self::Verifier(_) => {
-                return Err(anyhow!(
+                Err(anyhow!(
                     "Cannot fetch the coinbase proving key with a verifier"
                 ))
             }

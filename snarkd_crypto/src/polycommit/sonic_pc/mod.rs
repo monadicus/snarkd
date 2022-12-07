@@ -369,13 +369,11 @@ impl SonicKZG10 {
                 proof
             });
         }
-        let batch_proof = pool
-            .execute_all()
+
+        pool.execute_all()
             .into_iter()
             .collect::<Result<_, _>>()
-            .map(BatchProof);
-
-        batch_proof
+            .map(BatchProof)
     }
 
     pub fn batch_check<'a>(
@@ -446,13 +444,12 @@ impl SonicKZG10 {
             randomizer = fs_rng.squeeze_short_nonnative_field_element();
         }
 
-        let result = Self::check_elems(
+        Self::check_elems(
             combined_comms,
             combined_witness,
             combined_adjusted_witness,
             vk,
-        );
-        result
+        )
     }
 
     pub fn open_combinations<'a>(
@@ -649,8 +646,7 @@ impl SonicKZG10 {
     fn normalize_commitments(commitments: Vec<G1Projective>) -> impl Iterator<Item = Commitment> {
         let mut comms = commitments;
         G1Projective::batch_normalization(&mut comms);
-        let comms = comms.iter().map(|c| (*c).into()).collect::<Vec<_>>();
-        comms.into_iter().map(|c| kzg10::Commitment(c))
+        comms.into_iter().map(|v| kzg10::Commitment(v.into()))
     }
 }
 

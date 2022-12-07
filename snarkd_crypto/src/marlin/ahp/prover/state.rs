@@ -78,17 +78,17 @@ impl<'a> State<'a> {
     ) -> Result<Self, AHPError> {
         let index_info = &index.index_info;
         let constraint_domain = EvaluationDomain::new(index_info.num_constraints)
-            .ok_or(anyhow!("polynomial degree too large"))?;
+            .ok_or_else(|| anyhow!("polynomial degree too large"))?;
 
         let non_zero_a_domain = EvaluationDomain::new(index_info.num_non_zero_a)
-            .ok_or(anyhow!("polynomial degree too large"))?;
+            .ok_or_else(|| anyhow!("polynomial degree too large"))?;
         let non_zero_b_domain = EvaluationDomain::new(index_info.num_non_zero_b)
-            .ok_or(anyhow!("polynomial degree too large"))?;
+            .ok_or_else(|| anyhow!("polynomial degree too large"))?;
         let non_zero_c_domain = EvaluationDomain::new(index_info.num_non_zero_c)
-            .ok_or(anyhow!("polynomial degree too large"))?;
+            .ok_or_else(|| anyhow!("polynomial degree too large"))?;
 
         let input_domain = EvaluationDomain::new(padded_public_input[0].len())
-            .ok_or(anyhow!("polynomial degree too large"))?;
+            .ok_or_else(|| anyhow!("polynomial degree too large"))?;
 
         let x_poly = padded_public_input
             .iter()

@@ -13,7 +13,7 @@ use snarkd_crypto::keys::{ComputeKey, Signature};
 use crate::db::InnerDatabase;
 
 /// Current state of a block in storage
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BlockStatus {
     /// Block not known/not found
     Unknown,
@@ -43,7 +43,7 @@ fn write_deployment(connection: &Connection, deployment: &Deployment) -> Result<
     ",
     )?;
 
-    deployment_query.execute::<&[&dyn ToSql]>(&[
+    deployment_query.execute::<[&dyn ToSql; 5]>([
         &(deployment.edition as i32),
         &deployment.program,
         &deployment.verifying_key_id,
@@ -78,7 +78,7 @@ fn read_transitions(
         ORDER BY transaction_order ASC
     ",
     )?;
-    let mut rows = transition_query.query(&[&transaction_id])?;
+    let mut rows = transition_query.query([&transaction_id])?;
     let mut out = vec![];
     while let Some(row) = rows.next()? {
         out.push((
@@ -148,7 +148,7 @@ fn write_transition(
     ",
     )?;
 
-    transition_query.execute::<&[&dyn ToSql]>(&[
+    transition_query.execute::<[&dyn ToSql; 14]>([
         &transaction_id,
         &transaction_order,
         &transition.id,
@@ -223,7 +223,7 @@ impl InnerDatabase {
             )
             ",
             )?;
-            block_query.execute::<&[&dyn ToSql]>(&[
+            block_query.execute::<[&dyn ToSql; 16]>([
                 &hash,
                 &block.header.previous_hash,
                 &block.header.previous_hash,
@@ -282,17 +282,13 @@ impl InnerDatabase {
 
             for (i, to_insert) in block.transactions.into_iter().enumerate() {
                 match to_insert {
-                    Transaction::Deploy(DeployTransaction {
-                        id,
-                        deployment,
-                        transition,
-                    }) => {
-                        let deployment_id = write_deployment(&transaction, &deployment)?;
+                    Transaction::Deploy(tx) => {
+                        let deployment_id = write_deployment(&transaction, &tx.deployment)?;
 
-                        transaction_query.execute(params![&id, &None::<i32>, &"deploy",])?;
+                        transaction_query.execute(params![&tx.id, &None::<i32>, &"deploy",])?;
                         let transaction_id = transaction.query_row(
                             r"SELECT id FROM transactions WHERE transaction_id = ?",
-                            [&id],
+                            [&tx.id],
                             |row| row.get::<usize, i64>(0),
                         )?;
                         transaction_block_query.execute(params![
@@ -304,33 +300,25 @@ impl InnerDatabase {
                             &transaction,
                             transaction_id,
                             0,
-                            &transition,
+                            &tx.transition,
                             Some(deployment_id),
                         )?;
                     }
-                    Transaction::Execute(ExecuteTransaction {
-                        id,
-                        execution:
-                            Execution {
-                                edition,
-                                transitions,
-                            },
-                        transition,
-                    }) => {
+                    Transaction::Execute(tx) => {
                         transaction_query.execute(params![
-                            &id,
-                            &Some(edition as i32),
+                            &tx.id,
+                            &Some(tx.execution.edition as i32),
                             &"execute",
                         ])?;
                         let transaction_id = transaction.query_row(
                             r"SELECT id FROM transactions WHERE transaction_id = ?",
-                            [&id],
+                            [&tx.id],
                             |row| row.get::<usize, i64>(0),
                         )?;
-                        if let Some(transition) = transition {
+                        if let Some(transition) = tx.transition {
                             write_transition(&transaction, transaction_id, -1, &transition, None)?;
                         }
-                        for (i, transition) in transitions.into_iter().enumerate() {
+                        for (i, transition) in tx.execution.transitions.into_iter().enumerate() {
                             write_transition(
                                 &transaction,
                                 transaction_id,
@@ -339,7 +327,7 @@ impl InnerDatabase {
                                 None,
                             )?;
                         }
-                        transaction_block_query.execute(params![&id, block_id as usize, i])?;
+                        transaction_block_query.execute(params![&tx.id, block_id as usize, i])?;
                     }
                 }
             }
@@ -371,7 +359,7 @@ impl InnerDatabase {
             ORDER BY transaction_blocks.block_order ASC
         ",
         )?;
-        let mut rows = transaction_query.query(&[&block_id])?;
+        let mut rows = transaction_query.query([&block_id])?;
         let mut out = vec![];
         while let Some(row) = rows.next()? {
             let transaction_db_id: i64 = row.get(0)?;
@@ -382,7 +370,7 @@ impl InnerDatabase {
                     if transitions.len() != 1 {
                         bail!("invalid number of transitions for transaction {transaction_db_id}");
                     }
-                    out.push(Transaction::Deploy(DeployTransaction {
+                    out.push(Transaction::Deploy(Box::new(DeployTransaction {
                         id: transaction_id,
                         deployment: Deployment {
                             edition: row
@@ -403,7 +391,7 @@ impl InnerDatabase {
                                 .context("missing certificate for deploy transaction")?,
                         },
                         transition: transitions.into_iter().next().unwrap().1,
-                    }));
+                    })));
                 }
                 "execute" => {
                     let execute_edition: u16 = row
@@ -416,14 +404,14 @@ impl InnerDatabase {
                     } else {
                         None
                     };
-                    out.push(Transaction::Execute(ExecuteTransaction {
+                    out.push(Transaction::Execute(Box::new(ExecuteTransaction {
                         id: transaction_id,
                         execution: Execution {
                             edition: execute_edition,
                             transitions: transitions.into_iter().map(|x| x.1).collect(),
                         },
                         transition: extra_transition,
-                    }));
+                    })));
                 }
                 type_ => {
                     warn!("invalid transaction type in block: {type_}");
