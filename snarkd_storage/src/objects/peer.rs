@@ -126,15 +126,15 @@ impl InnerDatabase {
                 address: row.get::<_, String>(1)?.parse()?,
                 last_peer_direction: row.get::<_, String>(2)?.parse()?,
                 block_height: row.get(3)?,
-                first_seen: row
-                    .get::<_, Option<i64>>(4)?
-                    .map(|x| DateTime::from_utc(NaiveDateTime::from_timestamp(x, 0), Utc)),
-                last_seen: row
-                    .get::<_, Option<i64>>(5)?
-                    .map(|x| DateTime::from_utc(NaiveDateTime::from_timestamp(x, 0), Utc)),
-                last_connected: row
-                    .get::<_, Option<i64>>(6)?
-                    .map(|x| DateTime::from_utc(NaiveDateTime::from_timestamp(x, 0), Utc)),
+                first_seen: row.get::<_, Option<i64>>(4)?.map(|x| {
+                    DateTime::from_utc(NaiveDateTime::from_timestamp_opt(x, 0).unwrap(), Utc)
+                }),
+                last_seen: row.get::<_, Option<i64>>(5)?.map(|x| {
+                    DateTime::from_utc(NaiveDateTime::from_timestamp_opt(x, 0).unwrap(), Utc)
+                }),
+                last_connected: row.get::<_, Option<i64>>(6)?.map(|x| {
+                    DateTime::from_utc(NaiveDateTime::from_timestamp_opt(x, 0).unwrap(), Utc)
+                }),
                 blocks_synced_to: row.get(7)?,
                 blocks_synced_from: row.get(8)?,
                 blocks_received_from: row.get(9)?,

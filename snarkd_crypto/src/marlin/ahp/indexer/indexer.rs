@@ -55,7 +55,7 @@ impl AHPForR1CS {
             non_zero_b_domain.size(),
             non_zero_c_domain.size(),
         )
-        .ok_or(anyhow!("polynomial degree too large"))?;
+        .ok_or_else(|| anyhow!("polynomial degree too large"))?;
 
         Ok(Circuit {
             index_info,
@@ -162,17 +162,17 @@ impl AHPForR1CS {
             num_non_zero_c,
         };
 
-        let constraint_domain =
-            EvaluationDomain::new(num_constraints).ok_or(anyhow!("polynomial degree too large"))?;
+        let constraint_domain = EvaluationDomain::new(num_constraints)
+            .ok_or_else(|| anyhow!("polynomial degree too large"))?;
         let input_domain = EvaluationDomain::new(num_padded_public_variables)
-            .ok_or(anyhow!("polynomial degree too large"))?;
+            .ok_or_else(|| anyhow!("polynomial degree too large"))?;
 
-        let non_zero_a_domain =
-            EvaluationDomain::new(num_non_zero_a).ok_or(anyhow!("polynomial degree too large"))?;
-        let non_zero_b_domain =
-            EvaluationDomain::new(num_non_zero_b).ok_or(anyhow!("polynomial degree too large"))?;
-        let non_zero_c_domain =
-            EvaluationDomain::new(num_non_zero_c).ok_or(anyhow!("polynomial degree too large"))?;
+        let non_zero_a_domain = EvaluationDomain::new(num_non_zero_a)
+            .ok_or_else(|| anyhow!("polynomial degree too large"))?;
+        let non_zero_b_domain = EvaluationDomain::new(num_non_zero_b)
+            .ok_or_else(|| anyhow!("polynomial degree too large"))?;
+        let non_zero_c_domain = EvaluationDomain::new(num_non_zero_c)
+            .ok_or_else(|| anyhow!("polynomial degree too large"))?;
 
         let (constraint_domain_elements, constraint_domain_eq_poly_vals) =
             precomputation_for_matrix_evals(&constraint_domain);
@@ -196,7 +196,7 @@ impl AHPForR1CS {
         .try_into()
         .unwrap();
 
-        let result = Ok(IndexerState {
+        Ok(IndexerState {
             constraint_domain,
 
             a,
@@ -212,8 +212,7 @@ impl AHPForR1CS {
             c_evals,
 
             index_info,
-        });
-        result
+        })
     }
 
     pub fn evaluate_index_polynomials<C: ConstraintSynthesizer<Scalar>>(

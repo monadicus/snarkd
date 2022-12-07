@@ -6,8 +6,8 @@ type TransactionID = Digest32;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Transaction {
-    Deploy(DeployTransaction),
-    Execute(ExecuteTransaction),
+    Deploy(Box<DeployTransaction>),
+    Execute(Box<ExecuteTransaction>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

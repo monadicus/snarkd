@@ -59,48 +59,48 @@ impl RequestHandler for InboundHandler {
 
     async fn on_blocks(
         &mut self,
-        blocks: Vec<Block>,
-        response: Option<ResponseHandle<'_>>,
+        _blocks: Vec<Block>,
+        _response: Option<ResponseHandle<'_>>,
     ) -> Result<()> {
         todo!()
     }
 
     async fn on_transactions(
         &mut self,
-        transactions: Vec<Transaction>,
-        response: Option<ResponseHandle<'_>>,
+        _transactions: Vec<Transaction>,
+        _response: Option<ResponseHandle<'_>>,
     ) -> Result<()> {
         todo!()
     }
 
     async fn on_get_blocks(
         &mut self,
-        digests: Vec<Digest>,
-        response: Option<ResponseHandle<'_>>,
+        _digests: Vec<Digest>,
+        _response: Option<ResponseHandle<'_>>,
     ) -> Result<()> {
         todo!()
     }
 
     async fn on_sync_memory_pool(
         &mut self,
-        digests: Vec<Digest>,
-        response: Option<ResponseHandle<'_>>,
+        _digests: Vec<Digest>,
+        _response: Option<ResponseHandle<'_>>,
     ) -> Result<()> {
         todo!()
     }
 
     async fn on_sync_peers(
         &mut self,
-        peers: Vec<String>,
-        response: Option<ResponseHandle<'_>>,
+        _peers: Vec<String>,
+        _response: Option<ResponseHandle<'_>>,
     ) -> Result<()> {
         todo!()
     }
 
     async fn on_sync_blocks(
         &mut self,
-        digests: Vec<Digest>,
-        response: Option<ResponseHandle<'_>>,
+        _digests: Vec<Digest>,
+        _response: Option<ResponseHandle<'_>>,
     ) -> Result<()> {
         todo!()
     }

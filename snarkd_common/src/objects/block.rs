@@ -3,7 +3,7 @@ use snarkd_crypto::keys::Signature;
 
 use crate::Digest32;
 
-use super::{Field, Scalar, Transaction};
+use super::{Field, Transaction};
 
 type BlockHash = Digest32;
 

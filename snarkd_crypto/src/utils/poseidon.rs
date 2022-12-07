@@ -38,7 +38,7 @@ fn overhead(num: Fp) -> usize {
         .collect::<Vec<_>>();
     let mut skipped_bits = 0;
     for b in num_bits.iter() {
-        if *b == false {
+        if !(*b) {
             skipped_bits += 1;
         } else {
             break;
@@ -47,7 +47,7 @@ fn overhead(num: Fp) -> usize {
 
     let mut is_power_of_2 = true;
     for b in num_bits.iter().skip(skipped_bits + 1) {
-        if *b == true {
+        if *b {
             is_power_of_2 = false;
         }
     }
@@ -784,7 +784,7 @@ impl Default for PoseidonSponge {
 impl PoseidonSponge {
     pub fn new(parameters: Arc<PoseidonParameters>) -> Self {
         Self {
-            parameters: parameters.clone(),
+            parameters,
             state: State::default(),
             mode: DuplexSpongeMode::Absorbing {
                 next_absorb_index: 0,
@@ -1106,7 +1106,7 @@ impl PoseidonSponge {
         for _ in 0..num_limbs {
             let cur_mod_r = cur & cmp;
             limbs.push(Fp(Uint::<384, 6>::from(cur_mod_r)));
-            cur = cur >> bits_per_limb;
+            cur >>= bits_per_limb;
         }
 
         // then we reserve, so that the limbs are ``big limb first''

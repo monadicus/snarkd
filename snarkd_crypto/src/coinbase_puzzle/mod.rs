@@ -352,11 +352,9 @@ impl CoinbasePuzzle {
             .map(|solution| match solution.to_target()? >= proof_target {
                 // Compute the prover polynomial.
                 true => solution.to_prover_polynomial(epoch_challenge),
-                false => {
-                    return Err(anyhow!(
-                        "Prover puzzle does not meet the proof target requirements."
-                    ))
-                }
+                false => Err(anyhow!(
+                    "Prover puzzle does not meet the proof target requirements."
+                )),
             })
             .collect::<Result<Vec<_>>>()?;
 
@@ -422,11 +420,9 @@ impl CoinbasePuzzle {
     pub fn coinbase_proving_key(&self) -> Result<&CoinbaseProvingKey> {
         match self {
             Self::Prover(coinbase_proving_key) => Ok(coinbase_proving_key),
-            Self::Verifier(_) => {
-                return Err(anyhow!(
-                    "Cannot fetch the coinbase proving key with a verifier"
-                ))
-            }
+            Self::Verifier(_) => Err(anyhow!(
+                "Cannot fetch the coinbase proving key with a verifier"
+            )),
         }
     }
 

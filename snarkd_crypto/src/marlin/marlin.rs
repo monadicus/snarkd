@@ -126,7 +126,7 @@ impl MarlinSNARK {
         sponge.absorb_bytes(&batch_size.to_le_bytes());
         sponge.absorb_native_field_elements(
             &circuit_commitments
-                .into_iter()
+                .iter()
                 .flat_map(|comm| [comm.0.x, comm.0.y])
                 .collect::<Vec<_>>(),
         );
@@ -144,7 +144,7 @@ impl MarlinSNARK {
         sponge.absorb_bytes(&b"MARLIN-2019"[..]);
         sponge.absorb_native_field_elements(
             &circuit_commitments
-                .into_iter()
+                .iter()
                 .flat_map(|comm| [comm.0.x, comm.0.y])
                 .collect::<Vec<_>>(),
         );
@@ -168,7 +168,7 @@ impl MarlinSNARK {
     fn absorb(commitments: &[Commitment], sponge: &mut PoseidonSponge) {
         sponge.absorb_native_field_elements(
             &commitments
-                .into_iter()
+                .iter()
                 .flat_map(|comm| [comm.0.x, comm.0.y])
                 .collect::<Vec<_>>(),
         );
@@ -186,8 +186,7 @@ impl MarlinSNARK {
 
 impl SNARK for MarlinSNARK {
     fn universal_setup(max_degree: usize) -> Result<UniversalParams, SNARKError> {
-        let srs = SonicKZG10::setup(max_degree).map_err(Into::into);
-        srs
+        SonicKZG10::setup(max_degree).map_err(Into::into)
     }
 
     fn setup<C: ConstraintSynthesizer<Scalar>>(
@@ -769,13 +768,19 @@ pub mod test {
             &self,
             cs: &mut CS,
         ) -> Result<()> {
-            let a = cs.alloc(|| "a", || self.a.ok_or(anyhow!("assignment missing")))?;
-            let b = cs.alloc(|| "b", || self.b.ok_or(anyhow!("assignment missing")))?;
+            let a = cs.alloc(
+                || "a",
+                || self.a.ok_or_else(|| anyhow!("assignment missing")),
+            )?;
+            let b = cs.alloc(
+                || "b",
+                || self.b.ok_or_else(|| anyhow!("assignment missing")),
+            )?;
             let c = cs.alloc_input(
                 || "c",
                 || {
-                    let mut a = self.a.ok_or(anyhow!("assignment missing"))?;
-                    let b = self.b.ok_or(anyhow!("assignment missing"))?;
+                    let mut a = self.a.ok_or_else(|| anyhow!("assignment missing"))?;
+                    let b = self.b.ok_or_else(|| anyhow!("assignment missing"))?;
 
                     a.mul_assign(&b);
                     Ok(a)
@@ -785,7 +790,7 @@ pub mod test {
             for i in 0..(self.num_variables - 3) {
                 let _ = cs.alloc(
                     || format!("var {}", i),
-                    || self.a.ok_or(anyhow!("assignment missing")),
+                    || self.a.ok_or_else(|| anyhow!("assignment missing")),
                 )?;
             }
 
@@ -833,7 +838,7 @@ pub mod test {
 
         assert!(
             snark
-                .verify::<[Scalar], _>(&fs_parameters, &vk.clone(), [c], &proof)
+                .verify::<[Scalar], _>(&fs_parameters, &vk, [c], &proof)
                 .unwrap(),
             "The native verification check fails."
         );

@@ -70,7 +70,7 @@ impl CoinbaseSolution {
         // Pop the last challenge point as the accumulator challenge point.
         match challenge_points.pop() {
             Some(point) => Ok(point),
-            None => return Err(anyhow!("Missing the accumulator challenge point")),
+            None => Err(anyhow!("Missing the accumulator challenge point")),
         }
     }
 }

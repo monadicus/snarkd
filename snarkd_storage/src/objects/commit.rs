@@ -5,7 +5,7 @@ use log::debug;
 use rusqlite::params;
 use snarkd_common::{objects::Block, Digest, DigestTree};
 
-use crate::{db::InnerDatabase, BlockStatus, Database};
+use crate::{db::InnerDatabase, BlockStatus};
 
 #[derive(Debug)]
 pub struct CanonData {
