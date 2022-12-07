@@ -15,7 +15,7 @@ use crate::circuit::{
 use super::Boolean;
 
 impl Not for Boolean {
-    type Output = Boolean;
+    type Output = Self;
 
     /// Returns `(NOT a)`.
     fn not(self) -> Self::Output {

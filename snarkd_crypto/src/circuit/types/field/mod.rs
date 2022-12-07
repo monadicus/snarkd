@@ -1,5 +1,6 @@
 mod add;
 // mod compare;
+mod div;
 mod mul;
 mod neg;
 mod sub;
@@ -104,6 +105,8 @@ mod test {
     use super::*;
 
     mod add_tests;
+    // mod compare_tests;
+    mod div_tests;
     mod mul_tests;
     mod neg_tests;
     mod sub_tests;

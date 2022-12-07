@@ -4,3 +4,6 @@ pub mod types;
 
 #[cfg(test)]
 pub mod rng_test_struct;
+
+#[cfg(test)]
+mod tests;

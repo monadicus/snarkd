@@ -7,8 +7,8 @@ use crate::{
 
 use super::Boolean;
 
-impl BitOr<Boolean> for Boolean {
-    type Output = Boolean;
+impl BitOr<Self> for Boolean {
+    type Output = Self;
 
     /// Returns `(self OR other)`.
     fn bitor(self, other: Boolean) -> Self::Output {
@@ -45,9 +45,9 @@ impl BitOr<&Boolean> for &Boolean {
     }
 }
 
-impl BitOrAssign<Boolean> for Boolean {
+impl BitOrAssign<Self> for Boolean {
     /// Sets `self` as `(self OR other)`.
-    fn bitor_assign(&mut self, other: Boolean) {
+    fn bitor_assign(&mut self, other: Self) {
         *self |= &other;
     }
 }

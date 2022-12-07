@@ -1,7 +1,6 @@
 mod and;
 mod equal;
-mod nand;
-mod nor;
+mod helpers;
 mod not;
 mod or;
 mod ternary;
@@ -111,8 +110,6 @@ mod test {
     mod and_tests;
     mod boolean_tests;
     mod equal_tests;
-    mod nand_tests;
-    mod nor_tests;
     mod not_tests;
     mod or_tests;
     mod ternary_tests;

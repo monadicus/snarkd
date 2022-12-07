@@ -11,11 +11,8 @@ use crate::{
 use super::Boolean;
 
 impl Ternary for Boolean {
-    type Boolean = Boolean;
-    type Output = Self;
-
     /// Returns `first` if `condition` is `true`, otherwise returns `second`.
-    fn ternary(condition: &Self::Boolean, first: &Self, second: &Self) -> Self::Output {
+    fn ternary(condition: &Boolean, first: &Self, second: &Self) -> Self {
         // Constant `condition`
         if condition.is_constant() {
             match condition.eject_value() {
