@@ -12,6 +12,7 @@ members = [
     "snarkd_peer",
     "snarkd_rpc",
     "snarkd_storage",
+    "snarkd_consensus",
     "tools/coverage",
     "tools/test-runner",
 ]
@@ -66,14 +67,17 @@ tokio-rusqlite = "0.3.0"
 uuid = { version = "1.2", features = ["serde", "v4"] }
 url = { version = "2.3.1", features = ["serde"] }
 walkdir = "2.3"
+metrics = "0.20"
 
 snarkd_network = { path = "./snarkd_network" }
 snarkd_client = { path = "./snarkd_client" }
 snarkd_common = { path = "./snarkd_common" }
+snarkd_crypto = { path = "./snarkd_crypto" }
 snarkd_errors = { path = "./snarkd_errors" }
 snarkd_peer = { path = "./snarkd_peer" }
 snarkd_rpc = { path = "./snarkd_rpc" }
 snarkd_storage = { path = "./snarkd_storage" }
+snarkd_consensus = { path = "./snarkd_consensus" }
 test-runner = { path = "./tools/test-runner" }
 
 [profile.test]

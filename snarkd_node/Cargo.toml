@@ -30,3 +30,5 @@ snarkd_network = { workspace = true }
 snarkd_peer = { workspace = true }
 snarkd_rpc = { workspace = true, features = ["server"] }
 snarkd_storage = { workspace = true }
+snarkd_consensus = { workspace = true }
+snarkd_crypto = { workspace = true }

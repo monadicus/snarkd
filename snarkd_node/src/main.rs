@@ -9,11 +9,12 @@ use config::{CONFIG, NODE_ID};
 use log::{debug, error, info, warn, LevelFilter};
 use peer_book::PeerBook;
 use snarkd_common::config::Verbosity;
+use snarkd_consensus::Consensus;
 use snarkd_network::Connection;
 use snarkd_peer::announcer::AnnouncerConsumer;
 use snarkd_rpc::server::websocket_server;
 use snarkd_storage::{Database, PeerDirection};
-use tokio::{net::TcpListener, sync::oneshot, time::MissedTickBehavior};
+use tokio::{net::TcpListener, sync::{oneshot, RwLock}, time::MissedTickBehavior};
 
 use crate::{inbound_handler::InboundHandler, peer::PEER_PING_INTERVAL};
 
@@ -22,6 +23,7 @@ mod inbound_handler;
 mod peer;
 mod peer_book;
 mod rpc;
+mod miner;
 
 /// Snarkd Blockchain Node
 #[derive(Parser, Debug)]
@@ -111,9 +113,11 @@ async fn main() {
         }
     };
     let database = Arc::new(database);
+    let consensus = Arc::new(RwLock::new(Consensus::new(database.clone())));
+
     let rpc_channels = Arc::new(rpc::RpcChannels::new(rpc_enabled));
 
-    let peer_book = PeerBook::new(rpc_channels.clone());
+    let peer_book = PeerBook::new(rpc_channels.clone(), database.clone(), consensus.clone());
 
     // spawn network listener
     {

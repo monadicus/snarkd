@@ -727,6 +727,10 @@ pub struct Poseidon {
     parameters: Arc<PoseidonParameters>,
 }
 
+lazy_static::lazy_static! {
+    pub static ref POSEIDON: Poseidon = Poseidon::setup();
+}
+
 impl Poseidon {
     /// Initializes a new instance of the cryptographic hash function.
     pub fn setup() -> Self {

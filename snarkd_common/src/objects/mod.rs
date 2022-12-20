@@ -1,7 +1,6 @@
 use crate::{Digest32, Digest48};
 
 // NOTE: placeholder
-type Scalar = Digest32;
 type Group = Digest48;
 type Field = Digest32;
 type VerifyingKey = Digest32;

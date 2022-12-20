@@ -14,19 +14,25 @@ use itertools::Itertools;
 use log::{debug, error, info, trace, warn};
 use rand::seq::IteratorRandom;
 use rand::thread_rng;
+use snarkd_consensus::Consensus;
 use snarkd_storage::{Database, PeerData, PeerDirection};
+use tokio::sync::RwLock;
 
 #[derive(Clone)]
 pub struct PeerBook {
     rpc_channels: Arc<RpcChannels>,
     peers: Arc<DashMap<SocketAddr, Peer>>,
+    pub database: Arc<Database>,
+    pub consensus: Arc<RwLock<Consensus>>,
 }
 
 impl PeerBook {
-    pub fn new(rpc_channels: Arc<RpcChannels>) -> Self {
+    pub fn new(rpc_channels: Arc<RpcChannels>, database: Arc<Database>, consensus: Arc<RwLock<Consensus>>) -> Self {
         Self {
             rpc_channels,
             peers: Default::default(),
+            database,
+            consensus,
         }
     }
 

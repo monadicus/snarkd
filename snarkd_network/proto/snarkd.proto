@@ -28,15 +28,12 @@ enum ResponseCode {
 
 message BlockHeader {
     uint32 canon_height = 1;
-    snarkd_common.Digest canon_ledger_digest = 2;
-    snarkd_common.Digest hash = 3;
-    snarkd_common.Digest previous_block_hash = 4;
-    snarkd_common.Digest merkle_root_hash = 5;
-    snarkd_common.Digest pedersen_merkle_root_hash = 6;
-    bytes proof = 7;
-    uint32 time = 8;
-    uint32 difficulty_target = 9;
-    uint32 nonce = 10;
+    snarkd_common.Digest hash = 2;
+    snarkd_common.Digest previous_hash = 3;
+    uint32 nonce = 4;
+    uint32 network = 5;
+    uint64 coinbase_target = 6;
+    uint64 timestamp = 7;
 }
 
 message Block {

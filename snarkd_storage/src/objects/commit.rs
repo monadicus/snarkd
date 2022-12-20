@@ -1,6 +1,6 @@
 use std::collections::{HashMap, VecDeque};
 
-use anyhow::{anyhow, bail, Result};
+use anyhow::{anyhow, bail, Result, Context};
 use log::debug;
 use rusqlite::params;
 use snarkd_common::{objects::Block, Digest, DigestTree};
@@ -34,6 +34,40 @@ pub enum ForkDescription {
 impl CanonData {
     pub fn is_empty(&self) -> bool {
         self.block_height == 0 && self.hash.is_empty()
+    }
+}
+
+impl Database {
+    pub async fn commit_block(&self, hash: Digest, previous_state_root: Digest) -> Result<BlockStatus> {
+        self.call(move |x| x.commit_block(&hash, &previous_state_root)).await
+    }
+
+    pub async fn canon(&self) -> Result<CanonData> {
+        self.call(|x| x.canon()).await
+    }
+
+    pub async fn get_fork_path(
+        &self,
+        hash: Digest,
+        oldest_fork_threshold: usize,
+    ) -> Result<ForkDescription> {
+        self.call(move |x| x.get_fork_path(&hash, oldest_fork_threshold)).await
+    }
+
+    pub async fn recommit_blockchain(&self, root_hash: Digest) -> Result<()> {
+        self.call(move |x| x.recommit_blockchain(&root_hash)).await
+    }
+
+    pub async fn recommit_block(&self, hash: Digest) -> Result<BlockStatus> {
+        self.call(move |x| x.recommit_block(&hash)).await
+    }
+
+    pub async fn get_block_digest_tree(&self, hash: Digest) -> Result<DigestTree> {
+        self.call(move |x| x.get_block_digest_tree(&hash)).await
+    }
+
+    pub async fn decommit_blocks(&self, hash: Digest) -> Result<Vec<Block>> {
+        self.call(move |x| x.decommit_blocks(&hash)).await
     }
 }
 
@@ -154,7 +188,9 @@ impl InnerDatabase {
 
         let mut last_hash = canon.hash;
         loop {
-            let block = self.get_block(&last_hash)?;
+            let Some(block) = self.get_block(&last_hash)? else {
+                bail!("missing block in chain, database corrupt? {last_hash}");
+            };
             let block_number = match self.get_block_state(&last_hash)? {
                 BlockStatus::Unknown => return Err(anyhow!("unknown block state")),
                 BlockStatus::Committed(n) => n as u32,
@@ -370,7 +406,7 @@ impl InnerDatabase {
         oldest_fork_threshold: usize,
     ) -> Result<ForkDescription> {
         let mut side_chain_path = VecDeque::new();
-        let header = self.get_block_header(hash)?;
+        let header = self.get_block_header(hash)?.context("hash doesn't exist")?;
         let canon_height = self.canon_height()?;
         let mut parent_hash = header.previous_hash;
         for _ in 0..=oldest_fork_threshold {
@@ -395,7 +431,7 @@ impl InnerDatabase {
                 // Add to the side_chain_path
                 BlockStatus::Uncommitted => {
                     side_chain_path.push_front(parent_hash.clone());
-                    parent_hash = self.get_block_header(&parent_hash)?.previous_hash;
+                    parent_hash = self.get_block_header(&parent_hash)?.context("parent hash doesn't exist")?.previous_hash;
                 }
                 BlockStatus::Unknown => {
                     return Ok(ForkDescription::Orphan);

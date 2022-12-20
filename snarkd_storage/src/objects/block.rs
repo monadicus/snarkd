@@ -4,13 +4,12 @@ use rusqlite::{params, Connection, OptionalExtension, ToSql};
 use snarkd_common::{
     objects::{
         Block, BlockHeader, DeployTransaction, Deployment, ExecuteTransaction, Execution,
-        Identifier, Metadata, ProgramID, Transaction, Transition,
+        Identifier, ProgramID, Transaction, Transition,
     },
     Digest,
 };
-use snarkd_crypto::keys::{ComputeKey, Signature};
 
-use crate::db::InnerDatabase;
+use crate::{db::InnerDatabase, Database};
 
 /// Current state of a block in storage
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -167,6 +166,32 @@ fn write_transition(
     Ok(())
 }
 
+impl Database {
+    pub async fn insert_block(&self, block: Block) -> Result<()> {
+        self.call(|x| x.insert_block(block)).await
+    }
+
+    pub async fn get_block(&self, digest: Digest) -> Result<Option<Block>> {
+        self.call(move |x| x.get_block(&digest)).await
+    }
+
+    pub async fn get_block_state(&self, digest: Digest) -> Result<BlockStatus> {
+        self.call(move |x| x.get_block_state(&digest)).await
+    }
+
+    pub async fn get_block_header(&self, hash: Digest) -> Result<Option<BlockHeader>> {
+        self.call(move |x| x.get_block_header(&hash)).await
+    }
+
+    pub async fn get_block_hash(&self, block_num: u32) -> Result<Option<Digest>> {
+        self.call(move |x| x.get_block_hash(block_num)).await
+    }
+
+    pub async fn delete_block(&self, hash: Digest) -> Result<()> {
+        self.call(move |x| x.delete_block(&hash)).await
+    }
+}
+
 impl InnerDatabase {
     /// Inserts a block into storage, not committing it.
     pub fn insert_block(&mut self, block: Block) -> Result<()> {
@@ -189,31 +214,15 @@ impl InnerDatabase {
                 hash,
                 previous_block_id,
                 previous_block_hash,
-                previous_state_root,
-                transactions_root,
+                nonce,
                 network,
-                round,
                 height,
                 coinbase_target,
-                proof_target,
-                timestamp,
-                challenge,
-                response,
-                compute_key_public_key_signature,
-                compute_key_public_randomness_signature,
-                compute_key_secret_key_program
+                timestamp
             )
             VALUES (
                 ?,
                 (SELECT id from blocks where hash = ?),
-                ?,
-                ?,
-                ?,
-                ?,
-                ?,
-                ?,
-                ?,
-                ?,
                 ?,
                 ?,
                 ?,
@@ -227,23 +236,24 @@ impl InnerDatabase {
                 &hash,
                 &block.header.previous_hash,
                 &block.header.previous_hash,
-                &block.header.previous_state_root,
-                &block.header.transactions_root,
-                &block.header.metadata.network,
-                &block.header.metadata.round,
-                &block.header.metadata.height,
-                &block.header.metadata.coinbase_target,
-                &block.header.metadata.proof_target,
-                &block.header.metadata.timestamp,
-                &block.header.signature.challenge,
-                &block.header.signature.response,
-                &block.header.signature.compute_key.public_key_signature,
-                &block
-                    .header
-                    .signature
-                    .compute_key
-                    .public_randomness_signature,
-                &block.header.signature.compute_key.prf_secret_key,
+                &block.header.nonce,
+                // &block.header.previous_state_root,
+                // &block.header.transactions_root,
+                &block.header.network,
+                // &block.header.metadata.round,
+                &block.header.height,
+                &block.header.coinbase_target,
+                // &block.header.metadata.proof_target,
+                &block.header.timestamp,
+                // &block.header.signature.challenge,
+                // &block.header.signature.response,
+                // &block.header.signature.compute_key.public_key_signature,
+                // &block
+                //     .header
+                //     .signature
+                //     .compute_key
+                //     .public_randomness_signature,
+                // &block.header.signature.compute_key.prf_secret_key,
             ])?;
             let block_id = transaction.last_insert_rowid();
             transaction.execute(
@@ -349,8 +359,10 @@ impl InnerDatabase {
     }
 
     /// Gets a block header and transaction blob for a given hash.
-    pub fn get_block(&mut self, hash: &Digest) -> Result<Block> {
-        let (block_id, header) = self.get_block_header_and_id(hash)?;
+    pub fn get_block(&mut self, hash: &Digest) -> Result<Option<Block>> {
+        let Some((block_id, header)) = self.get_block_header_and_id(hash)? else {
+            return Ok(None);
+        };
         let mut transaction_query = self.connection.prepare_cached(
             r"
             SELECT (
@@ -430,10 +442,10 @@ impl InnerDatabase {
                 }
             }
         }
-        Ok(Block {
+        Ok(Some(Block {
             header,
             transactions: out,
-        })
+        }))
     }
 
     /// Deletes a block from storage, including any associated data. Must not be called on a committed block.
@@ -479,11 +491,11 @@ impl InnerDatabase {
     }
 
     /// Gets a block header for a given hash
-    pub fn get_block_header(&mut self, hash: &Digest) -> Result<BlockHeader> {
-        self.get_block_header_and_id(hash).map(|x| x.1)
+    pub fn get_block_header(&mut self, hash: &Digest) -> Result<Option<BlockHeader>> {
+        self.get_block_header_and_id(hash).map(|x| x.map(|x| x.1))
     }
 
-    fn get_block_header_and_id(&mut self, hash: &Digest) -> Result<(i32, BlockHeader)> {
+    fn get_block_header_and_id(&mut self, hash: &Digest) -> Result<Option<(i32, BlockHeader)>> {
         self.optimize()?;
 
         self.connection
@@ -491,51 +503,43 @@ impl InnerDatabase {
                 r"
         SELECT
             previous_hash,
-            previous_state_root,
-            transactions_root,
+            nonce,
             network,
-            round,
             height,
             coinbase_target,
-            proof_target,
             timestamp,
-            challenge,
-            response,
-            compute_key_public_key_signature,
-            compute_key_public_randomness_signature,
-            compute_key_secret_key_program,
             id
         FROM blocks WHERE hash = ?",
                 [&hash[..]],
                 |row| {
                     Ok((
-                        row.get(14)?,
+                        row.get(6)?,
                         BlockHeader {
                             block_hash: hash.clone(),
                             previous_hash: row.get(0)?,
-                            previous_state_root: row.get(1)?,
-                            transactions_root: row.get(2)?,
-                            metadata: Metadata {
-                                network: row.get(3)?,
-                                round: row.get(4)?,
-                                height: row.get(5)?,
-                                coinbase_target: row.get(6)?,
-                                proof_target: row.get(7)?,
-                                timestamp: row.get(8)?,
-                            },
-                            signature: Signature {
-                                challenge: row.get(9)?,
-                                response: row.get(10)?,
-                                compute_key: ComputeKey {
-                                    public_key_signature: row.get(11)?,
-                                    public_randomness_signature: row.get(12)?,
-                                    prf_secret_key: row.get(13)?,
-                                },
-                            },
+                            // previous_state_root: row.get(1)?,
+                            // transactions_root: row.get(2)?,
+                            nonce: row.get(1)?,
+                            network: row.get(2)?,
+                            // round: row.get(4)?,
+                            height: row.get(3)?,
+                            coinbase_target: row.get(4)?,
+                            // proof_target: row.get(7)?,
+                            timestamp: row.get(5)?,
+                            // signature: Signature {
+                            //     challenge: row.get(9)?,
+                            //     response: row.get(10)?,
+                            //     compute_key: ComputeKey {
+                            //         public_key_signature: row.get(11)?,
+                            //         public_randomness_signature: row.get(12)?,
+                            //         prf_secret_key: row.get(13)?,
+                            //     },
+                            // },
                         },
                     ))
                 },
             )
+            .optional()
             .map_err(Into::into)
     }
 

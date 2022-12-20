@@ -1428,6 +1428,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "metrics"
+version = "0.20.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b9b8653cec6897f73b519a43fba5ee3d50f62fe9af80b428accdcc093b4a849"
+dependencies = [
+ "ahash 0.7.6",
+ "metrics-macros",
+ "portable-atomic",
+]
+
+[[package]]
+name = "metrics-macros"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "731f8ecebd9f3a4aa847dfe75455e4757a45da40a7793d2f0b1f9b6ed18b23f3"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "mime"
 version = "0.3.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1718,6 +1740,12 @@ name = "pkg-config"
 version = "0.3.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6ac9a59f73473f1b8d852421e59e64809f025994837ef743615c6d0c5b305160"
+
+[[package]]
+name = "portable-atomic"
+version = "0.3.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "15eb2c6e362923af47e13c23ca5afb859e83d54452c55b0b9ac763b8f7c1ac16"
 
 [[package]]
 name = "ppv-lite86"
@@ -2400,8 +2428,24 @@ dependencies = [
  "serde_yaml",
  "sha2",
  "smallvec",
- "snarkd_crypto",
  "url",
+]
+
+[[package]]
+name = "snarkd_consensus"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "indexmap",
+ "lazy_static",
+ "log",
+ "metrics",
+ "rand",
+ "rayon",
+ "smallvec",
+ "snarkd_common",
+ "snarkd_crypto",
+ "snarkd_storage",
 ]
 
 [[package]]
@@ -2417,6 +2461,7 @@ dependencies = [
  "hex",
  "indexmap",
  "itertools",
+ "lazy_static",
  "num-bigint",
  "num_cpus",
  "parking_lot",
@@ -2429,6 +2474,7 @@ dependencies = [
  "serde",
  "sha2",
  "smallvec",
+ "snarkd_common",
  "thiserror",
 ]
 
@@ -2490,6 +2536,8 @@ dependencies = [
  "rand",
  "serde",
  "snarkd_common",
+ "snarkd_consensus",
+ "snarkd_crypto",
  "snarkd_network",
  "snarkd_peer",
  "snarkd_rpc",

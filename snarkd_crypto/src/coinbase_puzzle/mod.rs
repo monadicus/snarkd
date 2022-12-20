@@ -51,7 +51,6 @@ pub enum CoinbasePuzzle {
 
 impl CoinbasePuzzle {
     /// Initializes a new `SRS` for the coinbase puzzle.
-    #[cfg(any(test, feature = "setup"))]
     pub fn setup(config: PuzzleConfig) -> Result<SRS> {
         // The SRS must support committing to the product of two degree `n` polynomials.
         // Thus, the SRS must support committing to a polynomial of degree `2n - 1`.

@@ -4,19 +4,20 @@ CREATE TABLE blocks(
     hash BLOB UNIQUE NOT NULL,
     previous_block_id INTEGER, -- REFERENCES blocks(id) ON DELETE SET NULL -- can't do cyclic fk ref in sqlite
     previous_block_hash BLOB NOT NULL,
-    previous_state_root BLOB NOT NULL,
-    transactions_root BLOB NOT NULL,
+    -- previous_state_root BLOB NOT NULL,
+    -- transactions_root BLOB NOT NULL,
+    nonce INTEGER NOT NULL,
     network INTEGER NOT NULL,
-    round BIGINT NOT NULL,
+    -- round BIGINT NOT NULL,
     height INTEGER NOT NULL,
     coinbase_target BIGINT NOT NULL,
-    proof_target BIGINT NOT NULL,
+    -- proof_target BIGINT NOT NULL,
     timestamp BIGINT NOT NULL,
-    challenge BLOB NOT NULL,
-    response BLOB NOT NULL,
-    compute_key_public_key_signature BLOB NOT NULL,
-    compute_key_public_randomness_signature BLOB NOT NULL,
-    compute_key_secret_key_program BLOB NOT NULL
+    -- challenge BLOB NOT NULL,
+    -- response BLOB NOT NULL,
+    -- compute_key_public_key_signature BLOB NOT NULL,
+    -- compute_key_public_randomness_signature BLOB NOT NULL,
+    -- compute_key_secret_key_program BLOB NOT NULL
 );
 
 CREATE INDEX previous_block_id_lookup ON blocks(previous_block_id);

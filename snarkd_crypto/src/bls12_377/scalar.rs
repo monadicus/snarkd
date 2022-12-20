@@ -1,5 +1,7 @@
 use super::{adc, field::Field, mac_with_carry, LegendreSymbol};
+use anyhow::{bail, Result};
 use bitvec::prelude::*;
+use snarkd_common::Digest;
 use core::{
     fmt::{Display, Formatter, Result as FmtResult},
     iter::Sum,
@@ -38,6 +40,17 @@ pub struct Scalar(pub Uint<256, 4>);
 impl From<Uint<256, 4>> for Scalar {
     fn from(v: Uint<256, 4>) -> Self {
         Self(v)
+    }
+}
+
+impl TryFrom<Digest> for Scalar {
+    type Error = anyhow::Error;
+
+    fn try_from(v: Digest) -> Result<Self> {
+        if v.len() != 32 {
+            bail!("improper digest length for scalar");
+        }
+        Ok(Self(Uint::from_be_bytes::<32>(v[..].try_into().unwrap())))
     }
 }
 

@@ -19,3 +19,9 @@ pub struct Transition {
     pub tcm: Field,
     pub fee: i64,
 }
+
+impl Transition {
+    pub fn size(&self) -> usize {
+        self.id.len() + self.program_id.name.field.len() + self.program_id.network.field.len() + self.function_name.field.len() + self.inputs.len() + self.outputs.len() + self.finalize.as_ref().map(Vec::len).unwrap_or_default() + self.proof.len() + self.tpk.len() + self.tcm.len() + std::mem::size_of::<i64>()
+    }
+}
