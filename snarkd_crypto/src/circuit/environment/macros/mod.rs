@@ -6,3 +6,6 @@ pub use metrics::*;
 mod scope;
 #[cfg(test)]
 pub use scope::*;
+
+mod witness;
+pub use witness::*;

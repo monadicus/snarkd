@@ -6,10 +6,8 @@ use crate::circuit::{
 use super::Field;
 
 impl Compare<Field> for Field {
-    type Output = Boolean;
-
     /// Returns `true` if `self` is less than `other`.
-    fn is_less_than(&self, other: &Self) -> Self::Output {
+    fn is_less_than(&self, other: &Self) -> Boolean {
         // Case 1: Constant < Constant
         if self.is_constant() && other.is_constant() {
             Boolean::constant(self.eject_value() < other.eject_value())
@@ -72,17 +70,17 @@ impl Compare<Field> for Field {
     }
 
     /// Returns `true` if `self` is greater than `other`.
-    fn is_greater_than(&self, other: &Self) -> Self::Output {
+    fn is_greater_than(&self, other: &Self) -> Boolean {
         other.is_less_than(self)
     }
 
     /// Returns `true` if `self` is less than or equal to `other`.
-    fn is_less_than_or_equal(&self, other: &Self) -> Self::Output {
+    fn is_less_than_or_equal(&self, other: &Self) -> Boolean {
         other.is_greater_than_or_equal(self)
     }
 
     /// Returns `true` if `self` is greater than or equal to `other`.
-    fn is_greater_than_or_equal(&self, other: &Self) -> Self::Output {
+    fn is_greater_than_or_equal(&self, other: &Self) -> Boolean {
         !self.is_less_than(other)
     }
 }
